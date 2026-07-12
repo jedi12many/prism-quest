@@ -30,8 +30,9 @@ function startBattle(monster, ambush) {
   openScreen('battleScreen');
   document.getElementById('bMonEmoji').classList.remove('dying', 'hit');
   document.getElementById('bPlayerEmoji').classList.remove('hit');
-  blog(`${def.emoji} A wild ${def.name} appears!`);
-  if (def.boss) blog('🌑 The Gloom Dragon! The source of all this gloom!');
+  blog(def.boss ? `${def.emoji} ${def.name} bars your way!` : `${def.emoji} A wild ${def.name} appears!`);
+  if (def.finalBoss) blog('🌑 SOG\'NAROTH RISES. The rain bends toward it. The gloom has a heartbeat.');
+  else if (def.boss) blog('🌧️ The storm-fattened serpent coils around the Sunken Gate!');
   if (ambush && !eff('fleeSure')) {
     blog('😱 Ambush! It strikes first!');
     monsterHit();
@@ -49,9 +50,14 @@ function blog(msg) {
 function variance() { return 0.9 + Math.random() * 0.2; }
 function isCrit() { return Math.random() < 0.05 + eff('crit'); }
 
+// eldritch whispers sap your strength
+function dreadMult() {
+  return (B && B.pStatus.dread && B.pStatus.dread.turns > 0) ? 0.75 : 1;
+}
+
 function spellDamage(power) {
   const s = G.state;
-  let dmg = power * (1 + s.mag * 0.05) * (1 + eff('spellDmg')) * variance();
+  let dmg = power * (1 + s.mag * 0.05) * (1 + eff('spellDmg')) * variance() * dreadMult();
   const crit = isCrit();
   if (crit) dmg *= 1.7;
   dmg = Math.max(1, Math.round(dmg - B.def.def * 0.3));
@@ -74,7 +80,7 @@ function playerAction(action, spellId) {
     fxBurst(fxTo.x, fxTo.y, { count: 10, colors: ['#ffffff', '#ffd24a'], star: true, speed: 220, life: 0.5 });
     shakeEl('bMonEmoji');
     const crit = isCrit();
-    let dmg = s.atk * 2 * (1 + eff('basicDmg')) * variance();
+    let dmg = s.atk * 2 * (1 + eff('basicDmg')) * variance() * dreadMult();
     if (crit) dmg *= 1.7;
     dmg = Math.max(1, Math.round(dmg - B.def.def * 0.5));
     if (hitMonster(dmg, crit ? '💥 CRITICAL BONK!' : '🪄 Bonk!')) return;
@@ -110,7 +116,9 @@ function playerAction(action, spellId) {
       B.unicorn = { turns, power: 1 + eff('unicornPower') };
       blog(`🦄 A radiant unicorn gallops to your side! (${turns} turns)`);
     } else {
-      const { dmg, crit } = spellDamage(sp.power);
+      const sunSpell = B.def.finalBoss && ['sunflare', 'rainbowbeam', 'stardust'].includes(spellId);
+      const { dmg, crit } = spellDamage(sp.power * (sunSpell ? 1.5 : 1));
+      if (sunSpell) blog('☀️ Sunlight! The horror sizzles where the light lands!');
       const label = `${sp.emoji} ${sp.name}${crit ? ' CRIT!' : '!'}`;
       if (hitMonster(dmg, label)) return;
       if (spellId === 'sunflare') { B.mStatus.burn = { turns: 3, dmg: 4 }; blog('🔥 It\'s burning!'); }
@@ -134,6 +142,7 @@ function playerAction(action, spellId) {
     }
   }
   if (B.mStatus.weaken && B.mStatus.weaken.turns > 0) B.mStatus.weaken.turns--;
+  if (B.pStatus.dread && B.pStatus.dread.turns > 0) B.pStatus.dread.turns--;
 
   // unicorn acts
   if (B.unicorn && B.unicorn.turns > 0) {
@@ -192,6 +201,14 @@ function monsterHit() {
     blog(`🟣 Poison stings you for ${pp.dmg}.`);
     applyPlayerDamage(pp.dmg);
   }
+  if (B.def.dread && !B.over && Math.random() < 0.35) {
+    B.pStatus.dread = { turns: 2 };
+    blog('😰 It whispers something you should not have heard… (your damage -25%)');
+  }
+  if (B.def.regen && !B.over && B.mhp > 0 && B.mhp < B.mhpMax) {
+    B.mhp = Math.min(B.mhpMax, B.mhp + B.def.regen);
+    blog(`🌧️ The rain knits its wounds closed (+${B.def.regen}).`);
+  }
   renderBattle();
   renderHUD();
 }
@@ -249,14 +266,21 @@ function victory() {
   B.monster.alive = false;
   B.monster.respawnAt = def.boss ? Infinity : G.time + 45;
 
-  if (def.boss && !s.bossDefeated) {
-    s.bossDefeated = true;
+  if (def.finalBoss && !s.sunRestored) {
+    // the sun returns to Rainyday — gloom-things cannot exist beneath it
+    s.sunRestored = true;
+    for (const m of G.monsters) { m.alive = false; m.respawnAt = Infinity; }
     setTimeout(() => {
       closeScreen('battleScreen');
       openScreen('winBanner');
       fxConfetti(window.innerWidth / 2, 160, 80);
       setTimeout(() => fxConfetti(window.innerWidth / 2, window.innerHeight / 2, 60), 500);
     }, 900);
+  } else if (B.monster.type === 'dragon' && !s.bossDefeated) {
+    s.bossDefeated = true;
+    spawnSognaroth();
+    setTimeout(() => toast('🌊 The Rainwyrm bursts into mist — and the Sunken Gate groans open…'), 900);
+    setTimeout(() => toast("🐙 Something VAST uncoils in the dark corner. Sog'naroth waits."), 3800);
   }
   renderBattle(true);
   renderHUD();
@@ -326,6 +350,7 @@ function renderBattle(won, lost) {
   const pchips = [];
   if (B.pStatus.shield && B.pStatus.shield.turns > 0) pchips.push(`🛡️ shield ×${B.pStatus.shield.turns}`);
   if (B.pStatus.poison && B.pStatus.poison.turns > 0) pchips.push('🟣 poisoned');
+  if (B.pStatus.dread && B.pStatus.dread.turns > 0) pchips.push(`😰 dread ×${B.pStatus.dread.turns}`);
   if (B.unicorn) pchips.push(`🦄 ×${B.unicorn.turns}`);
   document.getElementById('bPlayerChips').textContent = pchips.join('  ');
 

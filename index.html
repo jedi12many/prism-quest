@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#25203a">
-<title>Prism Quest 💎🌈</title>
+<title>Prism Quest: Rainyday 💎🌈</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -19,6 +19,7 @@
     <div class="bar xp"><div class="fill" id="xpFill"></div><span id="lvlText"></span></div>
   </div>
   <div id="hudBtns">
+    <button id="btnBase" title="Camp">🏰</button>
     <button id="btnBag" title="Bag">🎒</button>
     <button id="btnSpells" title="Spellbook">✨</button>
     <button id="btnSkills" title="Skills">🌳<span id="skillDot"></span></button>
@@ -32,7 +33,8 @@
 <div class="screen" id="classScreen">
   <div class="panel wide">
     <h1>💎 Prism Quest 🌈</h1>
-    <p class="sub">Mine rare minerals · polish them to a shine · craft dazzling spells · drive back the gloom!</p>
+    <p class="sub">The world of <b>Rainyday</b> has spent a hundred years beneath one endless storm. Deep in the gloom squirms <b>Sog'naroth, the Endless Drizzle</b> — an ancient thing that can only exist where the sun never shines.</p>
+    <p class="sub">Mine minerals · polish gems · craft dazzling spells · build up your camp · <b>bring back the sunshine!</b></p>
     <div id="classCards"></div>
   </div>
 </div>
@@ -110,6 +112,16 @@
   </div>
 </div>
 
+<!-- Camp / base building -->
+<div class="screen" id="baseScreen">
+  <div class="panel">
+    <h2>🏰 Your Camp</h2>
+    <p class="sub" id="baseSub"></p>
+    <div id="baseList"></div>
+    <button class="closeBtn bigBtn" data-close="baseScreen">Close</button>
+  </div>
+</div>
+
 <!-- Menu -->
 <div class="screen" id="menuScreen">
   <div class="panel">
@@ -120,8 +132,9 @@
       <p>🪞 <b>Polish</b> raw minerals in your Bag — stop the slider in the bright center for Brilliant quality.</p>
       <p>✨ <b>Craft spells</b> from polished gems in the Spellbook. Each craft gives limited charges.</p>
       <p>⚔️ <b>Walk into monsters</b> to battle. Defeat them for XP and gem drops.</p>
-      <p>🌳 <b>Spend skill points</b> in your Power Tree each time you level up.</p>
-      <p>🐉 A <b>Gloom Dragon</b> lurks in the dark corner of the map. Level up before you visit…</p>
+      <p>🏰 <b>Your camp is a sunny safe zone</b> — gloom-things cannot step into sunshine, and resting there heals you. Build the Kitchen, Unicorn Stalls, Training Grounds and more with raw minerals to grow your power.</p>
+      <p>🌳✨ Studying takes peace and quiet: the <b>Power Tree and Spellbook only open at camp</b>.</p>
+      <p>🐉 The <b>Rainwyrm</b> guards the Sunken Gate in the dark corner. Beyond it waits <b>Sog'naroth, the Endless Drizzle</b> — defeat it to bring back the sun. Sunlight spells burn it; its whispers bring Dread.</p>
     </div>
     <p class="sub">Progress saves automatically on this device.</p>
     <button id="btnNewGame" class="bigBtn danger">🔄 New Game</button>
@@ -132,9 +145,9 @@
 <!-- Victory banner -->
 <div class="screen" id="winBanner">
   <div class="panel">
-    <h1>🌈🎉🦄</h1>
-    <h2>The Gloom Dragon is defeated!</h2>
-    <p class="sub">Color floods back into the valley. You are a true Prism Hero! Keep exploring, keep polishing — legends never really end.</p>
+    <h1>🌞🌈🦄</h1>
+    <h2>The sun returns to Rainyday!</h2>
+    <p class="sub">Sog'naroth unravels into harmless drizzle and blows away on a warm breeze. The last raincloud breaks, color floods the valley, and for the first time in a hundred years — morning. Every gloom-thing melts into dew. You are the Hero of Rainyday!</p>
     <button id="btnWinClose" class="bigBtn">Keep adventuring ➜</button>
   </div>
 </div>

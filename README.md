@@ -1,8 +1,12 @@
-# 💎 Prism Quest 🌈
+# 💎 Prism Quest: Rainyday 🌈
 
 A mobile-friendly adventure RPG that runs in any browser — no install, no build step.
-Mine rare minerals, polish them to a shine, craft dazzling spells (rainbows! unicorns!),
-and drive the gloom out of the valley.
+
+The world of **Rainyday** has spent a hundred years beneath one endless storm. Deep
+in the gloom squirms **Sog'naroth, the Endless Drizzle** — a lovecraftian thing that
+can only exist where the sun never shines. Mine rare minerals, polish them to a shine,
+craft dazzling spells (rainbows! unicorns!), build up your camp, defeat the Rainwyrm
+at the Sunken Gate, and destroy Sog'naroth to **bring back the sunshine**.
 
 ## Play it
 
@@ -26,9 +30,16 @@ then open http://localhost:8123 — on your phone, use your computer's LAN IP
   Glitter Bomb 🎆, Stardust Storm 🌟 and more. Charges are consumed when cast,
   so keep mining and crafting.
 - **Walk into monsters** to fight (turn-based). Win XP and gem drops.
+- **Your camp is a sunny safe zone** — gloom-things cannot step into sunshine, and
+  resting there heals you. Build and upgrade six structures with raw minerals
+  (House, Kitchen, Polishing Factory, Unicorn Stalls, Training Grounds, Castle
+  Walls) — every level grows your power. The Power Tree and Spellbook only open
+  in the peace of camp.
 - **Level up → spend skill points** in your class Power Tree (3 branches × 3 tiers).
-- A **Gloom Dragon 🐉** guards the dark corner of the map, where legendary
-  **Prismatite** grows. Level up first.
+- The **Rainwyrm 🐉** guards the Sunken Gate in the dark corner, where legendary
+  **Prismatite** grows. Beyond it waits **Sog'naroth 🐙**: its whispers inflict
+  Dread, the rain heals it every turn — but sunlight spells (Sunflare, Rainbow
+  Beam, Stardust Storm) sear it. Defeat it to restore the sun and win.
 
 ## Classes
 

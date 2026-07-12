@@ -210,7 +210,14 @@ function countPolished(mineralId) {
   return p ? (p.rough + p.fine + p.brilliant) : 0;
 }
 
+function requireCamp(what) {
+  if (atBase()) return true;
+  toast(`🌧️ Too dangerous out here! Return to camp to ${what}.`);
+  return false;
+}
+
 function openSpells() {
+  if (!requireCamp('craft spells')) return;
   renderSpells();
   openScreen('spellScreen');
 }
@@ -279,8 +286,83 @@ function craftSpell(id) {
 // ---------- skill tree ----------
 
 function openSkills() {
+  if (!requireCamp('train your powers')) return;
   renderSkills();
   openScreen('skillScreen');
+}
+
+// ---------- camp / base building ----------
+
+function openBase() {
+  renderBase();
+  openScreen('baseScreen');
+}
+
+function renderBase() {
+  const s = G.state;
+  const here = atBase();
+  document.getElementById('baseSub').textContent = here
+    ? 'Your sunny sanctuary. Build with raw minerals to grow your power.'
+    : '🌧️ You are away from camp — walk home to build and upgrade.';
+  const list = document.getElementById('baseList');
+  list.innerHTML = '';
+  for (const [id, b] of Object.entries(BUILDINGS)) {
+    const lvl = s.base[id] || 0;
+    const maxed = lvl >= b.max;
+    const reqOk = !b.requires || (s.base[b.requires[0]] || 0) >= b.requires[1];
+    const cost = maxed ? null : b.costs[lvl];
+    let can = here && reqOk && !maxed && !!cost;
+    let costHtml = '';
+    if (cost) {
+      costHtml = Object.entries(cost).map(([m, n]) => {
+        const have = s.raw[m] || 0;
+        if (have < n) can = false;
+        return `<span class="ing ${have >= n ? 'ok' : 'missing'}" style="--c:${MINERALS[m].color}">${gemSVG(m, 14)}${MINERALS[m].name} ${have}/${n}</span>`;
+      }).join('');
+    }
+    const card = document.createElement('div');
+    card.className = 'spellCard' + (lvl > 0 ? ' owned' : '');
+    card.innerHTML = `
+      <div class="spellHead">
+        <span class="spellEmoji">${b.emoji}</span>
+        <span class="spellName">${lvl > 0 ? b.levels[lvl - 1] : b.name}</span>
+        <span class="spellCharges">${maxed ? 'MAX' : lvl > 0 ? 'Lv ' + lvl : ''}</span>
+      </div>
+      <div class="spellDesc">${b.desc}${lvl > 0 ? ` <b style="color:#7bf59b">(now: ${b.bonus(lvl)})</b>` : ''}</div>
+      ${!reqOk ? `<div class="spellDesc" style="color:#ffd24a">🔒 Requires ${BUILDINGS[b.requires[0]].name} Lv ${b.requires[1]}</div>` : ''}
+      <div class="spellRecipe">${costHtml}</div>`;
+    if (!maxed) {
+      const btn = document.createElement('button');
+      btn.className = 'craftBtn';
+      btn.textContent = !here ? 'Return to camp' : !reqOk ? 'Locked' : lvl > 0 ? `Upgrade to Lv ${lvl + 1}` : 'Build';
+      btn.disabled = !can;
+      btn.onclick = () => upgradeBuilding(id);
+      card.appendChild(btn);
+    }
+    list.appendChild(card);
+  }
+}
+
+function upgradeBuilding(id) {
+  const s = G.state, b = BUILDINGS[id];
+  const lvl = s.base[id] || 0;
+  if (!atBase() || lvl >= b.max) return;
+  if (b.requires && (s.base[b.requires[0]] || 0) < b.requires[1]) return;
+  const cost = b.costs[lvl];
+  if (!cost) return;
+  for (const [m, n] of Object.entries(cost)) if ((s.raw[m] || 0) < n) return;
+  for (const [m, n] of Object.entries(cost)) {
+    s.raw[m] -= n;
+    if (s.raw[m] <= 0) delete s.raw[m];
+  }
+  s.base[id] = lvl + 1;
+  calcStats();
+  save();
+  const pr = document.querySelector('#baseScreen .panel').getBoundingClientRect();
+  fxConfetti(pr.left + pr.width / 2, pr.top + 100, 30);
+  toast(`${b.emoji} ${lvl === 0 ? 'Built' : 'Upgraded'} ${b.levels[lvl]}! ${b.bonus(lvl + 1)}`);
+  renderBase();
+  renderHUD();
 }
 
 function renderSkills() {
@@ -328,6 +410,7 @@ function buySkill(nodeId, branch, tier) {
 // ---------- bindings ----------
 
 function bindUI() {
+  document.getElementById('btnBase').onclick = openBase;
   document.getElementById('btnBag').onclick = openBag;
   document.getElementById('btnSpells').onclick = openSpells;
   document.getElementById('btnSkills').onclick = openSkills;

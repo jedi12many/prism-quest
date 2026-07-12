@@ -3,6 +3,8 @@
 const TILE = 44;
 const MAP_W = 48, MAP_H = 36;
 const SPAWN = { x: 6, y: 6 };
+const BASE_RECT = { x0: 2, y0: 2, x1: 11, y1: 11 }; // your camp — the sunny safe plot
+const GATE_TILES = [[6, 11], [7, 11]];              // opening in the castle walls
 const SAVE_KEY = 'prismquest_save_v1';
 
 // Global game object
@@ -46,7 +48,38 @@ function eff(key) {
       if (G.state.skills[node.id] && node.eff[key]) v += node.eff[key];
     }
   }
+  for (const [bid, lvl] of Object.entries(G.state.base || {})) {
+    const bd = BUILDINGS[bid];
+    if (lvl > 0 && bd && bd.eff && bd.eff[key]) v += bd.eff[key] * lvl;
+  }
   return v;
+}
+
+function atBase() {
+  const p = playerTile();
+  return p.x >= BASE_RECT.x0 && p.x <= BASE_RECT.x1 && p.y >= BASE_RECT.y0 && p.y <= BASE_RECT.y1;
+}
+
+// Sunshine: the meadow around camp (all of Rainyday once the sun is restored).
+// Gloom-things cannot exist in it.
+function inSun(x, y) {
+  if (G.state && G.state.sunRestored) return true;
+  const dx = (x - SPAWN.x) / 12, dy = (y - SPAWN.y) / 10;
+  return dx * dx + dy * dy < 1 && !inDark(x, y);
+}
+
+function isWallTile(x, y) {
+  const R = BASE_RECT;
+  if (x < R.x0 || x > R.x1 || y < R.y0 || y > R.y1) return false;
+  if (x !== R.x0 && x !== R.x1 && y !== R.y0 && y !== R.y1) return false;
+  return !GATE_TILES.some(([gx, gy]) => gx === x && gy === y);
+}
+
+function buildingAt(x, y) {
+  for (const [id, b] of Object.entries(BUILDINGS)) {
+    if (b.tile && b.tile.x === x && b.tile.y === y) return id;
+  }
+  return null;
 }
 
 function calcStats() {
@@ -108,6 +141,10 @@ function buildWorld() {
   // keep the boss tile and spawn clear
   G.map[31][43] = 'dark';
   G.map[SPAWN.y][SPAWN.x] = 'grass';
+  // the camp plot is always clear ground
+  for (let y = BASE_RECT.y0; y <= BASE_RECT.y1; y++)
+    for (let x = BASE_RECT.x0; x <= BASE_RECT.x1; x++)
+      G.map[y][x] = 'grass';
 
   // mineral nodes by zone
   G.nodes = [];
@@ -119,6 +156,7 @@ function buildWorld() {
       if (!zone(x, y)) continue;
       if (G.map[y][x] !== 'grass' && G.map[y][x] !== 'dark') continue;
       if (cheb(x, y, SPAWN.x, SPAWN.y) < 2) continue;
+      if (x >= BASE_RECT.x0 && x <= BASE_RECT.x1 && y >= BASE_RECT.y0 && y <= BASE_RECT.y1) continue;
       if (G.nodes.some(n => cheb(n.x, n.y, x, y) < 2)) continue;
       G.nodes.push({ x, y, mineral: pick(rng()), respawnAt: 0 });
       placed++;
@@ -142,6 +180,7 @@ function buildWorld() {
       const y = 2 + Math.floor(rng() * (MAP_H - 4));
       if (!zone(x, y) || !walkable(x, y)) continue;
       if (cheb(x, y, SPAWN.x, SPAWN.y) < 5) continue;
+      if (inSun(x, y)) continue; // gloom-things cannot exist in sunshine
       if (G.monsters.some(m => cheb(m.x, m.y, x, y) < 3)) continue;
       if (G.nodes.some(n => n.x === x && n.y === y)) continue;
       G.monsters.push({ x, y, type, alive: true, respawnAt: 0, home: { x, y }, moveAt: 1 + rng() * 2 });
@@ -153,14 +192,32 @@ function buildWorld() {
   placeMonsters(4, 'shroom',(x, y) => (x >= 16 || y >= 14) && !inDark(x, y));
   placeMonsters(4, 'fox',   (x, y) => (x >= 24 || y >= 20) && !inDark(x, y));
   placeMonsters(3, 'golem', (x, y) => x >= 28 && y >= 16 && !inDark(x, y));
-  // the boss, stationary in the dark corner
-  G.monsters.push({ x: 43, y: 31, type: 'dragon', alive: true, respawnAt: 0, home: { x: 43, y: 31 }, moveAt: Infinity });
+  placeMonsters(2, 'gazer', (x, y) => inDark(x, y));
+  // the Sunken Gate in the dark corner: Rainwyrm guards it, Sog'naroth waits beyond
+  if (G.state && G.state.sunRestored) {
+    G.monsters = []; // gloom-things cannot exist under the sun
+  } else if (G.state && G.state.bossDefeated) {
+    G.monsters.push({ x: 43, y: 31, type: 'sognaroth', alive: true, respawnAt: 0, home: { x: 43, y: 31 }, moveAt: Infinity });
+  } else {
+    G.monsters.push({ x: 43, y: 31, type: 'dragon', alive: true, respawnAt: 0, home: { x: 43, y: 31 }, moveAt: Infinity });
+  }
+}
+
+function spawnSognaroth() {
+  if (G.monsters.some(m => m.type === 'sognaroth')) return;
+  G.monsters.push({ x: 43, y: 31, type: 'sognaroth', alive: true, respawnAt: 0, home: { x: 43, y: 31 }, moveAt: Infinity });
 }
 
 function walkable(x, y) {
   if (x < 0 || y < 0 || x >= MAP_W || y >= MAP_H) return false;
   const t = G.map[y][x];
-  return t === 'grass' || t === 'dark';
+  if (t !== 'grass' && t !== 'dark') return false;
+  if (G.state && G.state.base) {
+    const bid = buildingAt(x, y);
+    if (bid && G.state.base[bid] > 0) return false;      // built structures block
+    if (G.state.base.walls > 0 && isWallTile(x, y)) return false;
+  }
+  return true;
 }
 
 // ---------- save / load ----------
@@ -172,7 +229,7 @@ function save() {
     classId: s.classId, level: s.level, xp: s.xp, skillPoints: s.skillPoints,
     hp: s.hp, x: Math.round(G.px / TILE - 0.5), y: Math.round(G.py / TILE - 0.5),
     raw: s.raw, polished: s.polished, spells: s.spells, skills: s.skills,
-    kills: s.kills, bossDefeated: s.bossDefeated,
+    kills: s.kills, bossDefeated: s.bossDefeated, sunRestored: s.sunRestored, base: s.base,
   }));
 }
 
@@ -199,7 +256,8 @@ function newGameWithClass(classId) {
     polished: {},            // {mineralId: {rough,fine,brilliant}}
     spells: Object.assign({ glitterbomb: 4 }, cls.perkSpells || {}), // {spellId: charges}
     skills: {},              // {nodeId: true}
-    kills: 0, bossDefeated: false,
+    kills: 0, bossDefeated: false, sunRestored: false,
+    base: { house: 1, kitchen: 0, factory: 0, stalls: 0, training: 0, walls: 0 },
     x: SPAWN.x, y: SPAWN.y,
   };
   calcStats();
@@ -209,6 +267,10 @@ function newGameWithClass(classId) {
 
 function startGame() {
   buildWorld();
+  G.wallTiles = [];
+  for (let x = BASE_RECT.x0; x <= BASE_RECT.x1; x++)
+    for (let y = BASE_RECT.y0; y <= BASE_RECT.y1; y++)
+      if (isWallTile(x, y)) G.wallTiles.push([x, y]);
   const s = G.state;
   if (!walkable(s.x, s.y)) { s.x = SPAWN.x; s.y = SPAWN.y; }
   G.px = (s.x + 0.5) * TILE;
@@ -226,6 +288,7 @@ function boot() {
   G.ctx = G.canvas.getContext('2d');
   resizeCanvas();
   fxInit();
+  seedRain();
   window.addEventListener('resize', resizeCanvas);
   G.canvas.addEventListener('pointerdown', onTap);
   window.addEventListener('keydown', onKey);
@@ -234,7 +297,8 @@ function boot() {
   const saved = loadSave();
   if (saved && CLASSES[saved.classId]) {
     G.state = Object.assign({
-      raw: {}, polished: {}, spells: {}, skills: {}, kills: 0, bossDefeated: false,
+      raw: {}, polished: {}, spells: {}, skills: {}, kills: 0, bossDefeated: false, sunRestored: false,
+      base: { house: 1, kitchen: 0, factory: 0, stalls: 0, training: 0, walls: 0 },
     }, saved);
     calcStats();
     if (G.state.hp <= 0) G.state.hp = G.state.hpMax;
@@ -267,6 +331,8 @@ function onTap(e) {
   if (tx < 0 || ty < 0 || tx >= MAP_W || ty >= MAP_H) return;
 
   const p = playerTile();
+  // tapping a camp building (or its blueprint) while at camp opens the build menu
+  if (buildingAt(tx, ty) && atBase()) { openBase(); return; }
   const node = G.nodes.find(n => n.x === tx && n.y === ty && n.respawnAt <= G.time);
   if (node) {
     if (cheb(p.x, p.y, tx, ty) <= 1) { mineNode(node); G.path = []; G.pendingMine = null; return; }
@@ -355,9 +421,40 @@ function addFloater(tx, ty, text, color) {
 
 const WALK_SPEED = 5.2; // tiles per second
 
+function seedRain() {
+  G.rain = [];
+  for (let i = 0; i < 90; i++) {
+    G.rain.push({
+      x: Math.random() * window.innerWidth, y: Math.random() * window.innerHeight,
+      v: 360 + Math.random() * 260, l: 12 + Math.random() * 10,
+    });
+  }
+}
+
+function updateRain(dt) {
+  if (!G.rain) return;
+  for (const d of G.rain) {
+    d.y += d.v * dt;
+    d.x += d.v * 0.22 * dt;
+    if (d.y > window.innerHeight + 20) { d.y = -20; d.x = Math.random() * (window.innerWidth + 100) - 80; }
+    if (d.x > window.innerWidth + 20) d.x -= window.innerWidth + 40;
+  }
+}
+
 function update(dt) {
   G.time += dt;
+  updateRain(dt);
   if (!G.state || G.lock) return;
+
+  // resting at camp: the house patches you up (kitchen makes it heartier)
+  if (atBase() && G.state.hp < G.state.hpMax && G.time >= (G.healAt || 0)) {
+    G.healAt = G.time + 2;
+    const amt = 2 + (G.state.base.house || 0) + (G.state.base.kitchen || 0) * 2;
+    G.state.hp = Math.min(G.state.hpMax, G.state.hp + amt);
+    const p0 = playerTile();
+    addFloater(p0.x, p0.y, `+${amt} ❤️`, '#7bf59b');
+    renderHUD();
+  }
 
   // player follows path
   if (G.path.length) {
@@ -378,8 +475,8 @@ function update(dt) {
         const p = playerTile();
         if (n.respawnAt <= G.time && cheb(p.x, p.y, n.x, n.y) <= 1) mineNode(n);
       }
-      if (!G.path.length && inDark(target.x, target.y) && !G.state.bossDefeated && G.state.level < 5) {
-        toast('🌑 The air crackles here… something big lives in this dark corner.');
+      if (!G.path.length && inDark(target.x, target.y) && !G.state.sunRestored && G.state.level < 5) {
+        toast('🌑 The rain falls upward here. Beyond the Sunken Gate, something is listening…');
       }
     } else {
       G.px += (dx / dist) * step;
@@ -410,6 +507,7 @@ function update(dt) {
       [dx, dy] = [[0, -1], [0, 1], [-1, 0], [1, 0]][r];
     }
     const nx = m.x + dx, ny = m.y + dy;
+    if (inSun(nx, ny)) continue; // gloom-things hiss and stop at the sunlight's edge
     if (nx === p.x && ny === p.y) { startBattle(m, true); return; }
     if (walkable(nx, ny)
         && !G.monsters.some(o => o !== m && o.alive && o.x === nx && o.y === ny)
@@ -476,6 +574,46 @@ function draw() {
         const wob = Math.sin(G.time * 2 + x * 1.7 + y * 2.3) * 3;
         ctx.fillRect(sx + 6 + wob, sy + TILE / 2, TILE - 16, 3);
       }
+      // Rainyday weather: golden wash in sunshine, blue-grey gloom under the storm
+      if (inSun(x, y)) {
+        ctx.fillStyle = 'rgba(255,225,120,0.10)';
+        ctx.fillRect(sx, sy, TILE, TILE);
+      } else if (t !== 'dark' && t !== 'darktree') {
+        ctx.fillStyle = 'rgba(70,80,125,0.22)';
+        ctx.fillRect(sx, sy, TILE, TILE);
+      }
+    }
+  }
+
+  // the camp: buildings (or faded blueprints) and castle walls
+  for (const [id, b] of Object.entries(BUILDINGS)) {
+    if (!b.tile) continue;
+    const lvl = G.state.base[id] || 0;
+    const sx = b.tile.x * TILE - cam.x + TILE / 2, sy = b.tile.y * TILE - cam.y + TILE / 2;
+    if (sx < -TILE || sy < -TILE || sx > w + TILE || sy > h + TILE) continue;
+    ctx.font = `${TILE * 0.85}px "Segoe UI Emoji", serif`;
+    if (lvl > 0) {
+      ctx.fillText(b.emoji, sx, sy - 2);
+      ctx.fillStyle = '#ffd24a';
+      for (let i = 0; i < lvl; i++) {
+        ctx.beginPath();
+        ctx.arc(sx - (lvl - 1) * 5 + i * 10, sy + TILE * 0.36, 3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    } else {
+      ctx.globalAlpha = 0.3;
+      ctx.fillText(b.emoji, sx, sy - 2);
+      ctx.globalAlpha = 1;
+      ctx.font = `${TILE * 0.4}px "Segoe UI Emoji", serif`;
+      ctx.fillText('🔨', sx + TILE * 0.26, sy + TILE * 0.26);
+    }
+  }
+  if (G.state.base.walls > 0 && G.wallTiles) {
+    ctx.font = `${TILE * 0.78}px "Segoe UI Emoji", serif`;
+    for (const [wx, wy] of G.wallTiles) {
+      const sx = wx * TILE - cam.x + TILE / 2, sy = wy * TILE - cam.y + TILE / 2;
+      if (sx < -TILE || sy < -TILE || sx > w + TILE || sy > h + TILE) continue;
+      ctx.fillText('🧱', sx, sy);
     }
   }
 
@@ -544,6 +682,22 @@ function draw() {
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.arc(sx, sy, TILE * 0.3 + Math.sin(G.time * 6) * 3, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  // the endless storm — rain over every gloomy tile
+  if (!G.state.sunRestored && G.rain) {
+    ctx.strokeStyle = 'rgba(170,190,255,0.4)';
+    ctx.lineWidth = 1.5;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    for (const d of G.rain) {
+      const tx = Math.floor((d.x + cam.x) / TILE), ty = Math.floor((d.y + cam.y) / TILE);
+      if (tx < 0 || ty < 0 || tx >= MAP_W || ty >= MAP_H) continue;
+      if (inSun(tx, ty)) continue;
+      ctx.moveTo(d.x, d.y);
+      ctx.lineTo(d.x - d.l * 0.25, d.y - d.l);
+    }
     ctx.stroke();
   }
 
