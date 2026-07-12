@@ -542,6 +542,7 @@ function travelTo(mapId, x, y) {
   G.px = (x + 0.5) * TILE;
   G.py = (y + 0.5) * TILE;
   G.path = []; G.pendingMine = null; G.pendingNpc = null;
+  G.locatePulse = 1.6;
   setMusic(mapId);
   renderHUD();
   save();
@@ -559,6 +560,7 @@ function restoreZone() {
   G.dungeonSpawn = null;
   G.zoneReturn = null;
   G.state.dungeon = null;
+  G.locatePulse = 1.6;
   calcStats();
   setMusic(z.zone);
   renderHUD();
@@ -770,6 +772,7 @@ function startGame() {
   G.pendingMine = null; G.pendingNpc = null;
   closeAllScreens();
   document.getElementById('hud').style.display = 'flex';
+  G.locatePulse = 1.6;
   setMusic(G.mapId);
   renderHUD();
   save();
@@ -963,6 +966,7 @@ const WALK_SPEED = 5.2; // tiles per second
 function update(dt) {
   G.time += dt;
   updateRain(dt);
+  if (G.locatePulse > 0) G.locatePulse = Math.max(0, G.locatePulse - dt);
   if (!G.state || G.lock || G.riding) return;
 
   // resting in the village heals (house and kitchen make it heartier)
@@ -1410,11 +1414,38 @@ function draw() {
     psy = 1 + br * 0.03;
     psx = 1 - br * 0.02;
   }
+  // locate glow — always a gentle pulse, flaring bigger right after you arrive
+  const locate = G.locatePulse || 0;
+  const beat = 0.5 + 0.5 * Math.sin(G.time * 3.5);
+  const halo = ctx.createRadialGradient(pcx, pcy, 3, pcx, pcy, TILE * (0.95 + locate));
+  halo.addColorStop(0, `rgba(255,238,170,${0.14 + beat * 0.05 + locate * 0.22})`);
+  halo.addColorStop(1, 'rgba(255,238,170,0)');
+  ctx.fillStyle = halo;
+  ctx.fillRect(pcx - TILE * 2.2, pcy - TILE * 2.2, TILE * 4.4, TILE * 4.4);
+  ctx.strokeStyle = `rgba(255,236,150,${0.45 + locate * 0.45})`;
+  ctx.lineWidth = 2 + locate * 2;
+  ctx.beginPath();
+  ctx.ellipse(pcx, pcy + TILE * 0.4, TILE * (0.42 + beat * 0.1 + locate * 0.6), TILE * (0.17 + beat * 0.04 + locate * 0.24), 0, 0, Math.PI * 2);
+  ctx.stroke();
+
   drawShadow(ctx, pcx, pcy + TILE * 0.42, TILE * 0.5 * (walking ? 0.9 : 1));
   if (!drawSprite(ctx, playerSpriteKey(), pcx, pcy - 2, TILE * 1.05, { bob: pbob, flip: G.faceLeft, squashX: psx, squashY: psy })) {
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.font = `${TILE * 0.8}px "Segoe UI Emoji", serif`;
     ctx.fillText(cls.emoji, pcx, pcy - 2);
+  }
+
+  // a bobbing "here you are" marker, shown briefly after arriving on a map
+  if (locate > 0.04) {
+    const my = pcy - TILE * 0.92 + Math.sin(G.time * 6) * 3;
+    ctx.globalAlpha = Math.min(1, locate * 1.4);
+    ctx.fillStyle = '#ffec96';
+    ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(pcx - 8, my - 7); ctx.lineTo(pcx + 8, my - 7); ctx.lineTo(pcx, my + 6); ctx.closePath();
+    ctx.fill(); ctx.stroke();
+    ctx.globalAlpha = 1;
   }
 
   // tap-target marker
