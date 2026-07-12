@@ -547,14 +547,34 @@ function travelTo(mapId, x, y) {
   save();
 }
 
+// pop back out of a dungeon into the exact zone you left, beside the entrance
+function restoreZone() {
+  const z = G.zoneReturn;
+  G.state.mapId = z.zone; G.mapId = z.zone;
+  G.map = z.map; G.nodes = z.nodes; G.monsters = z.monsters; G.gates = z.gates;
+  G.wallTiles = z.wallTiles; G.mw = z.mw; G.mh = z.mh;
+  G.state.x = z.x; G.state.y = z.y;
+  G.px = (z.x + 0.5) * TILE; G.py = (z.y + 0.5) * TILE;
+  G.path = []; G.pendingMine = null; G.pendingNpc = null;
+  G.dungeonSpawn = null;
+  G.zoneReturn = null;
+  G.state.dungeon = null;
+  calcStats();
+  setMusic(z.zone);
+  renderHUD();
+  save();
+}
+
 function onGate(g) {
   if (g.kind === 'village') {
     G.state.activePact = null;
+    G.zoneReturn = null;
     travelTo('village', VILLAGE_ENTRY.x, VILLAGE_ENTRY.y);
     toast('🏘️ Home sweet Drizzlewick.');
   } else if (g.kind === 'zone') {
     const z = ZONES[g.zone];
     G.state.activePact = null;
+    G.zoneReturn = null;
     travelTo(g.zone, zoneSpawn(g.zone).x, zoneSpawn(g.zone).y);
     const cleared = G.state.zonesCleared[g.zone];
     toast(`${z.dir} — ${z.name}: ${z.blurb}.${cleared ? ' ☀️ The light has returned here.' : ''}`);
@@ -562,11 +582,19 @@ function onGate(g) {
   } else if (g.kind === 'dungeon') {
     const dcfg = DUNGEONS[g.dtype];
     const tier = ZONE_IDS.includes(g.fromZone) ? ZONES[g.fromZone].tier : 1;
+    // remember the zone exactly so we pop back out beside the entrance, not the far edge
+    const pt = playerTile();
+    G.zoneReturn = {
+      zone: G.mapId, x: pt.x, y: pt.y,
+      map: G.map, nodes: G.nodes, monsters: G.monsters, gates: G.gates,
+      wallTiles: G.wallTiles, mw: G.mw, mh: G.mh,
+    };
     G.state.dungeon = { type: g.dtype, fromZone: g.fromZone, tier, floor: 1, maxFloor: 2 + (Math.random() < 0.5 ? 1 : 0), hasKey: false };
     travelTo('dungeon', 0, 0);
     toast(`${dcfg.emoji} You enter the ${dcfg.name} — ${G.state.dungeon.maxFloor} floors deep. Deadly, but rich.`);
   } else if (g.kind === 'zoneback') {
-    travelTo(g.zone, zoneSpawn(g.zone).x, zoneSpawn(g.zone).y); // keep your pact; the dive continues
+    if (G.zoneReturn && G.zoneReturn.zone === g.zone) restoreZone();
+    else travelTo(g.zone, zoneSpawn(g.zone).x, zoneSpawn(g.zone).y);
     toast('🪜 You climb back out into the open.');
   } else if (g.kind === 'stairsdown') {
     if (G.state.dungeon.hasKey) {
