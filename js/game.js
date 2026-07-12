@@ -16,7 +16,7 @@ const ZONE_LAYOUTS = {
   east:  { entry: { x: 4, y: 13 },  spawn: { x: 6, y: 13 },  lair: { x: 30, y: 13 } },
   west:  { entry: { x: 30, y: 13 }, spawn: { x: 28, y: 13 }, lair: { x: 4, y: 13 } },
 };
-function zoneSpawn(zoneId) { return ZONE_LAYOUTS[zoneId].spawn; }
+function zoneSpawn(zoneId) { return ZONE_LAYOUTS[zoneId].entry; } // spawn on the way-home gate
 const BASE_RECT = { x0: 2, y0: 2, x1: 11, y1: 11 };  // the buildable camp plot
 const GATE_TILES = [[6, 11], [7, 11]];               // opening in the castle walls
 const LEVEL_CAP = 12;                                 // caps skill points so you can't get everything
@@ -134,6 +134,8 @@ function npcAt(x, y) {
   const n = G.npcs.find(n => n.x === x && n.y === y);
   return n ? n.id : null;
 }
+
+function gateAt(x, y) { return G.gates.some(g => g.x === x && g.y === y); }
 
 function calcStats() {
   const s = G.state, cls = classDef();
@@ -433,7 +435,7 @@ function buildDungeon() {
     const nx = entry.x + dx, ny = entry.y + dy;
     if (G.map[ny] && FLOOR_TILES.has(G.map[ny][nx])) { spawn = { x: nx, y: ny }; break; }
   }
-  G.dungeonSpawn = spawn;
+  G.dungeonSpawn = entry; // spawn on the exit ladder so a stray tap won't leave
   G.gates = [{ x: entry.x, y: entry.y, kind: 'zoneback', zone: d.fromZone }];
 
   const floors = [];
@@ -542,6 +544,7 @@ function travelTo(mapId, x, y) {
   G.px = (x + 0.5) * TILE;
   G.py = (y + 0.5) * TILE;
   G.path = []; G.pendingMine = null; G.pendingNpc = null;
+  G.gateArmed = !gateAt(x, y); // spawned on a gate? don't let it fire until you step off
   G.locatePulse = 1.6;
   setMusic(mapId);
   renderHUD();
@@ -560,6 +563,7 @@ function restoreZone() {
   G.dungeonSpawn = null;
   G.zoneReturn = null;
   G.state.dungeon = null;
+  G.gateArmed = !gateAt(z.x, z.y); // returned onto the dungeon entrance? don't re-enter instantly
   G.locatePulse = 1.6;
   calcStats();
   setMusic(z.zone);
@@ -770,6 +774,7 @@ function startGame() {
   G.py = (s.y + 0.5) * TILE;
   G.path = [];
   G.pendingMine = null; G.pendingNpc = null;
+  G.gateArmed = !gateAt(s.x, s.y);
   closeAllScreens();
   document.getElementById('hud').style.display = 'flex';
   G.locatePulse = 1.6;
@@ -990,10 +995,13 @@ function update(dt) {
       G.px = txp; G.py = typ;
       G.path.shift();
       G.state.x = target.x; G.state.y = target.y;
+      // gates only work once you've stepped onto the map proper — so you don't
+      // accidentally walk straight back out of the gate you spawned on
+      if (!gateAt(target.x, target.y)) G.gateArmed = true;
       const mon = G.monsters.find(m => m.alive && m.x === target.x && m.y === target.y);
       if (mon) { G.path = []; G.pendingMine = null; G.pendingNpc = null; startBattle(mon, false); return; }
       const gate = G.gates.find(g => g.x === target.x && g.y === target.y);
-      if (gate) { G.path = []; G.pendingMine = null; G.pendingNpc = null; onGate(gate); return; }
+      if (gate && G.gateArmed) { G.path = []; G.pendingMine = null; G.pendingNpc = null; onGate(gate); return; }
       if (!G.path.length && G.pendingMine) {
         const n = G.pendingMine; G.pendingMine = null;
         const p = playerTile();
