@@ -244,6 +244,82 @@ const SPRITES = {
       '.orrrrrr', '.orrrrrr', '.oHHHHHH', '..orrrrr', '..oo....',
     ],
   },
+
+  // ---------- environment ----------
+  tree: {
+    mirror: true,
+    pal: { '.': null, o: '#2a5a24', g: '#4e9c3a', G: '#6ec254', d: '#357229', t: '#7a4a24', T: '#5a3418' },
+    rows: [
+      '....oooo', '..oggggg', '.ogggggg', 'oggggggg', 'oggGGggg', 'oggggggg',
+      'oggggggg', '.oggggGg', '.odggggg', '..oddggg', '...odddg',
+      '......tt', '......tt', '.....oTt', '.....oTt', '........',
+    ],
+  },
+  cottage: {
+    mirror: true,
+    pal: { '.': null, o: '#3a2a30', w: '#e8d0a8', W: '#c8a878', r: '#c05545', R: '#9a3f38', d: '#6a4028', g: '#9fd0e8' },
+    rows: [
+      '......oo', '.....orr', '....orrr', '...orrrr', '..orrRrr', '.orrrrrr',
+      'orrrrrrr', 'owwwwwww', 'owgggwww', 'owgggwww', 'owwwwwww',
+      'owwwwwdd', 'owwWwwdd', 'owwwwwdd', 'owwwwwdd', 'oooooooo',
+    ],
+  },
+  wall: {
+    mirror: true,
+    pal: { '.': null, o: '#3a3648', s: '#8a8496', S: '#615c70', l: '#a8a2b4' },
+    rows: [
+      'oooooooo', 'ollsssss', 'osssssss', 'ossSSsss', 'oSSSSSSS', 'osssssss',
+      'osssslss', 'osssssss', 'ossSSsss', 'oSSSSSSS', 'osslssss',
+      'osssssss', 'ossSSsss', 'oSSSSSSS', 'osssssss', 'oooooooo',
+    ],
+  },
+
+  // ---------- camp buildings ----------
+  bld_house: {
+    mirror: true,
+    pal: { '.': null, o: '#2a1f28', r: '#b5533f', R: '#8a3d30', w: '#b98a56', W: '#966a3e', d: '#5a3a22', g: '#9fd0e8' },
+    rows: [
+      '......oo', '.....orr', '....orrr', '...orrrr', '..orrRrr', '.orrrrrr',
+      'orrrrrrr', 'owwwwwww', 'owgwwwww', 'owgwwwww', 'owwwwwww',
+      'owwwwwdd', 'owwWwwdd', 'owwwwwdd', 'owwwwwdd', 'oooooooo',
+    ],
+  },
+  bld_kitchen: {
+    mirror: true,
+    pal: { '.': null, o: '#2a1f28', r: '#e0873c', R: '#b3652a', w: '#d8c8a8', W: '#b8a888', d: '#6a4028', f: '#ff8a4a' },
+    rows: [
+      '......oo', '.....orr', '....orrr', '...orrrr', '..orrRrr', '.orrrrrr',
+      'orrrrrrr', 'owwwwwww', 'owwwffff', 'owwwffff', 'owwwffff',
+      'owwwwwww', 'owwwwwdd', 'owwwwwdd', 'owwwwwdd', 'oooooooo',
+    ],
+  },
+  bld_factory: {
+    mirror: true,
+    pal: { '.': null, o: '#242028', r: '#7a7a88', R: '#5a5a66', w: '#9a9aa6', W: '#78788a', d: '#3a3a48', c: '#5a5a66', s: '#c0c0cc', f: '#c86bff' },
+    rows: [
+      '......ss', '......cc', '......cc', 'oorrrrcc', 'orrrrrrr', 'owwwwwww',
+      'owwwwwww', 'owfwwwww', 'owfwwwww', 'owwwwwww', 'owwwffff',
+      'owwwffff', 'owwwwwww', 'owwwwwdd', 'owwwwwdd', 'oooooooo',
+    ],
+  },
+  bld_stalls: {
+    mirror: true,
+    pal: { '.': null, o: '#2a1f28', r: '#5a8a3a', R: '#437029', w: '#c99a6a', W: '#a87a4a', d: '#3a2418', h: '#e0c86a' },
+    rows: [
+      '......oo', '.....orr', '....orrr', '...orrrr', '..orrRrr', '.orrrrrr',
+      'orrrrrrr', 'owwwwwww', 'owwwwwww', 'owwwwwdd', 'owwwwddd',
+      'owwwdddd', 'owwwdhdd', 'owwwdddd', 'owwwdddd', 'oooooooo',
+    ],
+  },
+  bld_training: {
+    mirror: true,
+    pal: { '.': null, o: '#2a1f28', r: '#b58a4a', R: '#8a6636', w: '#c9b088', W: '#a89068', d: '#5a3a22', t: '#c94f5c', T: '#ffffff' },
+    rows: [
+      '......oo', '.....orr', '....orrr', '...orrrr', '..orrRrr', '.orrrrrr',
+      'orrrrrrr', 'owwwwwww', 'owwwwttt', 'owwwtTTT', 'owwwtTtt',
+      'owwwwttt', 'owwwwwww', 'owwwwwdd', 'owwwwwdd', 'oooooooo',
+    ],
+  },
 };
 
 // debug: draw a labelled contact sheet of every sprite (toggle window.__spriteSheet)

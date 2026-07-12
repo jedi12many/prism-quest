@@ -757,6 +757,40 @@ const TILE_COLORS = {
 
 const GATE_EMOJI = { village: '🏘️', world: '🗺️', cloudgate: '🌈', portal: '🌀' };
 
+function tileHash(x, y) {
+  let h = (x * 374761393 + y * 668265263) | 0;
+  h = (h ^ (h >>> 13)) * 1274126177;
+  return (h >>> 0);
+}
+
+// deterministic per-tile specks so ground reads as textured, not flat
+const TILE_SPECKS = {
+  grass: ['#5fa83c', '#93d861', '#5fa83c'],
+  cloud: ['#f2f5ff', '#c6cee6'],
+  gloomstone: ['#40365c', '#28203e'],
+  keep: ['#e6ebf7', '#b8c0d8'],
+};
+function tileTexture(ctx, t, sx, sy, x, y) {
+  const specks = TILE_SPECKS[t];
+  if (!specks) return;
+  const h = tileHash(x, y);
+  const n = 3 + (h & 1);
+  for (let i = 0; i < n; i++) {
+    const hi = (h >>> (i * 5)) & 0x3ff;
+    const px = sx + 4 + (hi & 7) * (TILE - 10) / 7;
+    const py = sy + 4 + ((hi >> 3) & 7) * (TILE - 10) / 7;
+    ctx.fillStyle = specks[(hi >> 6) % specks.length];
+    const sz = 2 + ((hi >> 8) & 1);
+    if (t === 'grass' && (hi & 1)) { ctx.fillRect(px, py, 1, sz + 1); } // blades
+    else ctx.fillRect(px, py, sz, sz);
+  }
+  // occasional flower on grass
+  if (t === 'grass' && (h & 0x1f) === 0) {
+    ctx.fillStyle = ['#ff9ecb', '#ffe27a', '#c9a8ff'][(h >> 8) % 3];
+    ctx.fillRect(sx + 6 + (h & 15), sy + 8 + ((h >> 4) & 15), 2, 2);
+  }
+}
+
 function draw() {
   const ctx = G.ctx;
   const w = window.innerWidth, h = window.innerHeight;
@@ -773,37 +807,46 @@ function draw() {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
+  // pass 1: ground — base colour, texture, water/void detail, weather wash
   for (let y = Math.max(0, y0); y <= y1; y++) {
     for (let x = Math.max(0, x0); x <= x1; x++) {
       const t = G.map[y][x];
       const sx = x * TILE - cam.x, sy = y * TILE - cam.y;
-      const colors = TILE_COLORS[t];
-      ctx.fillStyle = colors[(x + y) % 2];
+      const base = t === 'tree' || t === 'cottage' ? TILE_COLORS.grass : TILE_COLORS[t];
+      ctx.fillStyle = base[(x + y) % 2];
       ctx.fillRect(sx, sy, TILE, TILE);
-      if (t === 'tree') {
-        ctx.font = `${TILE * 0.75}px "Segoe UI Emoji", serif`;
-        ctx.fillText('🌲', sx + TILE / 2, sy + TILE / 2 + 2);
-      } else if (t === 'cottage') {
-        ctx.font = `${TILE * 0.8}px "Segoe UI Emoji", serif`;
-        ctx.fillText('🏡', sx + TILE / 2, sy + TILE / 2);
-      } else if (t === 'water') {
+      tileTexture(ctx, t === 'tree' || t === 'cottage' ? 'grass' : t, sx, sy, x, y);
+      if (t === 'water') {
         ctx.fillStyle = 'rgba(255,255,255,0.15)';
         const wob = Math.sin(G.time * 2 + x * 1.7 + y * 2.3) * 3;
         ctx.fillRect(sx + 6 + wob, sy + TILE / 2, TILE - 16, 3);
+        ctx.fillRect(sx + 10 - wob, sy + TILE * 0.28, TILE - 24, 2);
       } else if (t === 'voidt') {
         ctx.fillStyle = 'rgba(180,92,255,0.12)';
         const pulse = Math.sin(G.time * 1.5 + x * 2.1 + y * 1.3) * 2;
         ctx.fillRect(sx + 10, sy + 10 + pulse, TILE - 20, TILE - 20);
       }
-      // weather wash (the sunny gold / the gloomy blue)
       if (G.mapId === 'village' || G.mapId === 'world') {
-        if (inSun(x, y)) {
-          ctx.fillStyle = 'rgba(255,225,120,0.10)';
-          ctx.fillRect(sx, sy, TILE, TILE);
-        } else {
-          ctx.fillStyle = 'rgba(70,80,125,0.22)';
-          ctx.fillRect(sx, sy, TILE, TILE);
-        }
+        ctx.fillStyle = inSun(x, y) ? 'rgba(255,225,120,0.10)' : 'rgba(70,80,125,0.22)';
+        ctx.fillRect(sx, sy, TILE, TILE);
+      }
+    }
+  }
+
+  // pass 2: static objects — trees & cottages as pixel sprites (with variation)
+  for (let y = Math.max(0, y0); y <= y1; y++) {
+    for (let x = Math.max(0, x0); x <= x1; x++) {
+      const t = G.map[y][x];
+      if (t !== 'tree' && t !== 'cottage') continue;
+      const cx = x * TILE - cam.x + TILE / 2, cy = y * TILE - cam.y + TILE / 2;
+      const hsh = tileHash(x, y);
+      if (t === 'tree') {
+        const sway = Math.sin(G.time * 1.6 + x * 1.3) * 1.5;
+        drawShadow(ctx, cx, cy + TILE * 0.4, TILE * 0.44);
+        drawSprite(ctx, 'tree', cx + sway, cy - TILE * 0.22, TILE * (1.28 + (hsh & 3) * 0.04), { flip: hsh & 4 });
+      } else {
+        drawShadow(ctx, cx, cy + TILE * 0.4, TILE * 0.5);
+        drawSprite(ctx, 'cottage', cx, cy - TILE * 0.14, TILE * 1.18, { flip: hsh & 4 });
       }
     }
   }
@@ -815,29 +858,35 @@ function draw() {
       const lvl = G.state.base[id] || 0;
       const sx = b.tile.x * TILE - cam.x + TILE / 2, sy = b.tile.y * TILE - cam.y + TILE / 2;
       if (sx < -TILE || sy < -TILE || sx > w + TILE || sy > h + TILE) continue;
-      ctx.font = `${TILE * 0.85}px "Segoe UI Emoji", serif`;
+      const bkey = 'bld_' + id;
       if (lvl > 0) {
-        ctx.fillText(b.emoji, sx, sy - 2);
+        drawShadow(ctx, sx, sy + TILE * 0.42, TILE * 0.5);
+        if (!drawSprite(ctx, bkey, sx, sy - TILE * 0.16, TILE * 1.2)) {
+          ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.font = `${TILE * 0.85}px "Segoe UI Emoji", serif`;
+          ctx.fillText(b.emoji, sx, sy - 2);
+        }
         ctx.fillStyle = '#ffd24a';
         for (let i = 0; i < lvl; i++) {
           ctx.beginPath();
-          ctx.arc(sx - (lvl - 1) * 5 + i * 10, sy + TILE * 0.36, 3, 0, Math.PI * 2);
+          ctx.arc(sx - (lvl - 1) * 5 + i * 10, sy + TILE * 0.46, 3, 0, Math.PI * 2);
           ctx.fill();
         }
       } else {
-        ctx.globalAlpha = 0.3;
-        ctx.fillText(b.emoji, sx, sy - 2);
-        ctx.globalAlpha = 1;
-        ctx.font = `${TILE * 0.4}px "Segoe UI Emoji", serif`;
-        ctx.fillText('🔨', sx + TILE * 0.26, sy + TILE * 0.26);
+        drawSprite(ctx, bkey, sx, sy - TILE * 0.16, TILE * 1.2, { alpha: 0.32 });
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.font = `${TILE * 0.42}px "Segoe UI Emoji", serif`;
+        ctx.fillText('🔨', sx + TILE * 0.28, sy + TILE * 0.2);
       }
     }
     if (G.state.base.walls > 0) {
-      ctx.font = `${TILE * 0.78}px "Segoe UI Emoji", serif`;
       for (const [wx, wy] of G.wallTiles) {
         const sx = wx * TILE - cam.x + TILE / 2, sy = wy * TILE - cam.y + TILE / 2;
         if (sx < -TILE || sy < -TILE || sx > w + TILE || sy > h + TILE) continue;
-        ctx.fillText('🧱', sx, sy);
+        if (!drawSprite(ctx, 'wall', sx, sy, TILE + 1)) {
+          ctx.font = `${TILE * 0.78}px "Segoe UI Emoji", serif`;
+          ctx.fillText('🧱', sx, sy);
+        }
       }
     }
   }

@@ -80,9 +80,13 @@ common monsters, the four gloom champions, the Rainwyrm, Sog'naroth, and the
 three villagers — defined as pixel grids in code (`js/sprites.js`) and baked to
 offscreen canvases at load, no external image files. Sprites have idle-bob,
 facing-flip, and drop shadows on the map, and render in battles and NPC dialogue
-too. Faceted gems are drawn procedurally; spell effects use a particle layer.
-(Toggle `window.__spriteSheet = true` in the console to see a contact sheet of
-every sprite.)
+too. The **environment** is pixel art as well: textured ground (per-tile specks,
+grass blades, occasional flowers), swaying trees, cottages, castle walls, and
+five distinct camp buildings (house, kitchen with an oven glow, factory with a
+prism smokestack, unicorn stalls, training target). Faceted gems are drawn
+procedurally; spell effects use a particle layer. (Toggle
+`window.__spriteSheet = true` in the console to see a contact sheet of every
+sprite.)
 
 ## Tech
 
