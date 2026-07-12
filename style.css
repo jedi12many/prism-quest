@@ -19,6 +19,20 @@ html, body {
   display: block;
 }
 
+#fx {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  pointer-events: none;
+}
+
+.gem {
+  display: inline-block;
+  vertical-align: middle;
+  flex-shrink: 0;
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.4));
+}
+
 /* ---------- HUD ---------- */
 #hud {
   position: fixed;
@@ -182,6 +196,25 @@ button.closeBtn:not(.bigBtn) {
 .empty { opacity: 0.65; font-size: 13.5px; padding: 10px 4px; }
 
 /* ---------- polish ---------- */
+#pGem {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 128px;
+  margin-top: 8px;
+}
+#pGem .gem {
+  filter: drop-shadow(0 0 10px rgba(255,255,255,0.25));
+  transition: filter 0.3s;
+}
+#pGem.glowing .gem {
+  filter: drop-shadow(0 0 16px #fff) drop-shadow(0 0 42px rgba(255,255,255,0.55));
+  animation: gemPulse 1.2s ease-in-out infinite;
+}
+@keyframes gemPulse {
+  50% { transform: scale(1.07); }
+}
+
 #pBar {
   position: relative;
   height: 46px;
@@ -233,6 +266,7 @@ button.closeBtn:not(.bigBtn) {
 .spellDesc { font-size: 13px; opacity: 0.8; margin: 6px 0; }
 .spellRecipe { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
 .ing {
+  display: inline-flex; align-items: center; gap: 4px;
   font-size: 12px; font-weight: 700;
   padding: 3px 9px;
   border-radius: 999px;
@@ -281,7 +315,21 @@ button.closeBtn:not(.bigBtn) {
 .panel.battle { display: flex; flex-direction: column; gap: 10px; }
 .combatant { display: flex; align-items: center; gap: 12px; }
 .combatant.you { flex-direction: row; }
-.bigEmoji { font-size: 54px; line-height: 1; }
+.bigEmoji { font-size: 54px; line-height: 1; display: inline-block; }
+
+@keyframes hitAnim {
+  0%, 100% { transform: none; filter: none; }
+  20% { transform: translateX(-7px); filter: brightness(2.2) saturate(2); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(3px); }
+}
+.hit { animation: hitAnim 0.45s; }
+
+@keyframes poofOut {
+  to { transform: scale(0.15) rotate(70deg); opacity: 0; }
+}
+.dying { animation: poofOut 0.8s forwards; }
 .combatInfo { flex: 1; }
 .combatName { font-weight: 800; margin-bottom: 4px; }
 .chips { font-size: 12px; color: #ffd24a; min-height: 16px; margin-top: 3px; }

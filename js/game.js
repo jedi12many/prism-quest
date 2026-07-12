@@ -76,6 +76,7 @@ function gainXp(n) {
     calcStats();
     G.state.hp = G.state.hpMax;
     toast(`⭐ Level ${s.level}! Fully healed. +1 skill point`);
+    fxConfetti(window.innerWidth / 2, window.innerHeight - 140, 30);
   }
   renderHUD();
   return gained;
@@ -224,6 +225,7 @@ function boot() {
   G.canvas = document.getElementById('game');
   G.ctx = G.canvas.getContext('2d');
   resizeCanvas();
+  fxInit();
   window.addEventListener('resize', resizeCanvas);
   G.canvas.addEventListener('pointerdown', onTap);
   window.addEventListener('keydown', onKey);
@@ -334,6 +336,9 @@ function mineNode(node) {
   s.raw[node.mineral] = (s.raw[node.mineral] || 0) + amount;
   node.respawnAt = G.time + 60;
   addFloater(node.x, node.y, `+${amount} ${m.name}`, m.color);
+  const cam = camera();
+  fxBurst(node.x * TILE - cam.x + TILE / 2, node.y * TILE - cam.y + TILE / 2,
+    { colors: [m.color, '#ffffff'], star: true, count: 16, speed: 230, life: 0.8, g: 260 });
   if (eff('rareLuck') > 0 && Math.random() < eff('rareLuck')) {
     const bonus = ['aquamarine', 'emerald', 'roseopal'][Math.floor(Math.random() * 3)];
     s.raw[bonus] = (s.raw[bonus] || 0) + 1;
@@ -480,31 +485,31 @@ function draw() {
     if (sx < -TILE || sy < -TILE || sx > w + TILE || sy > h + TILE) continue;
     const min = MINERALS[n.mineral];
     const alive = n.respawnAt <= G.time;
-    const r = alive ? TILE * 0.32 : TILE * 0.16;
-    const pulse = alive ? 1 + Math.sin(G.time * 3 + n.x) * 0.08 : 1;
     ctx.save();
     ctx.translate(sx, sy);
-    ctx.scale(pulse, pulse);
-    if (alive && min.rainbow) {
-      const grad = ctx.createLinearGradient(-r, -r, r, r);
-      ['#ff5c8a', '#ffb84a', '#ffe94a', '#5cff8a', '#5cc9ff', '#b45cff'].forEach((c, i, arr) =>
-        grad.addColorStop(i / (arr.length - 1), c));
-      ctx.fillStyle = grad;
-    } else {
-      ctx.fillStyle = alive ? min.color : '#6b6b78';
-    }
-    ctx.beginPath();
-    ctx.moveTo(0, -r); ctx.lineTo(r * 0.8, 0); ctx.lineTo(0, r); ctx.lineTo(-r * 0.8, 0);
-    ctx.closePath();
-    ctx.fill();
     if (alive) {
-      ctx.strokeStyle = 'rgba(255,255,255,0.8)';
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-      ctx.fillStyle = 'rgba(255,255,255,0.9)';
-      ctx.beginPath();
-      ctx.arc(-r * 0.25, -r * 0.35, r * 0.12, 0, Math.PI * 2);
-      ctx.fill();
+      // soft glow halo
+      const grad = ctx.createRadialGradient(0, 0, 2, 0, 0, TILE * 0.9);
+      grad.addColorStop(0, min.glow + '77');
+      grad.addColorStop(1, min.glow + '00');
+      ctx.fillStyle = grad;
+      ctx.fillRect(-TILE, -TILE, TILE * 2, TILE * 2);
+      const pulse = 1 + Math.sin(G.time * 3 + n.x) * 0.07;
+      ctx.scale(pulse, pulse);
+      drawGemCanvas(ctx, 0, 0, TILE * 0.36, n.mineral, G.time);
+      // orbiting twinkles
+      for (let k = 0; k < 2; k++) {
+        const ang = G.time * (1.3 + k * 0.4) + n.x * 2 + k * 2.6;
+        const spx = Math.cos(ang) * TILE * 0.42;
+        const spy = Math.sin(ang * 1.4) * TILE * 0.36 - 4;
+        ctx.globalAlpha = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(G.time * 5 + k * 3 + n.y));
+        drawStar(ctx, spx, spy, 4.5, '#ffffff', ang);
+        ctx.globalAlpha = 1;
+      }
+    } else {
+      ctx.globalAlpha = 0.45;
+      drawGemCanvas(ctx, 0, 0, TILE * 0.16, n.mineral, 0);
+      ctx.globalAlpha = 1;
     }
     ctx.restore();
   }

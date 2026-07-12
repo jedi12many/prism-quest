@@ -83,7 +83,7 @@ function renderBag() {
     const row = document.createElement('button');
     row.className = 'itemRow';
     row.innerHTML = `
-      <span class="gemDot" style="background:${min.rainbow ? 'linear-gradient(45deg,#ff5c8a,#ffe94a,#5cff8a,#5cc9ff,#b45cff)' : min.color}"></span>
+      ${gemSVG(id, 32)}
       <span class="itemName">${min.name}</span>
       <span class="itemCount">×${count}</span>
       <span class="itemAction">Polish ➜</span>`;
@@ -107,7 +107,7 @@ function renderBag() {
     const row = document.createElement('div');
     row.className = 'itemRow static';
     row.innerHTML = `
-      <span class="gemDot" style="background:${min.rainbow ? 'linear-gradient(45deg,#ff5c8a,#ffe94a,#5cff8a,#5cc9ff,#b45cff)' : min.color}"></span>
+      ${gemSVG(id, 32)}
       <span class="itemName">${min.name}</span>
       <span class="itemCount">${parts.join(' · ')}</span>`;
     polList.appendChild(row);
@@ -129,6 +129,9 @@ function startPolish(mineralId) {
   const min = MINERALS[mineralId];
   document.getElementById('polishTitle').innerHTML =
     `Polishing <b style="color:${min.color}">${min.name}</b> — tap STOP in the bright center!`;
+  const pGem = document.getElementById('pGem');
+  pGem.classList.remove('glowing');
+  pGem.innerHTML = gemSVG(mineralId, 120);
   document.getElementById('pResult').innerHTML = '';
   document.getElementById('pStop').style.display = 'inline-block';
   // sweet-zone widths (fraction of bar), widened by Steady Hands
@@ -172,6 +175,17 @@ function stopPolish() {
 
   const qd = QUALITIES[quality];
   const min = MINERALS[id];
+  const gr = document.getElementById('pGem').getBoundingClientRect();
+  const gx = gr.left + gr.width / 2, gy = gr.top + gr.height / 2;
+  if (quality === 'brilliant') {
+    document.getElementById('pGem').classList.add('glowing');
+    fxRing(gx, gy, '#ffffff', 110);
+    fxBurst(gx, gy, { count: 40, colors: [min.color, '#ffffff', '#ffe94a'], star: true, speed: 320, life: 1 });
+  } else if (quality === 'fine') {
+    fxBurst(gx, gy, { count: 18, colors: [min.color, '#ffffff'], star: true, speed: 220 });
+  } else {
+    fxBurst(gx, gy, { count: 6, colors: ['#9a93b5'], speed: 120, life: 0.6 });
+  }
   const cheer = { rough: 'A little scuffed, but it\'ll do.', fine: 'Nice and shiny!', brilliant: 'PERFECT! It gleams like a star!' }[quality];
   const result = document.getElementById('pResult');
   result.innerHTML = `<div class="pQuality q-${quality}">${qd.icon} ${qd.name} ${min.name}</div><div class="pCheer">${cheer}</div>`;
@@ -211,7 +225,7 @@ function renderSpells() {
     const recipeHtml = Object.entries(sp.recipe).map(([m, n]) => {
       const have = countPolished(m);
       const ok = have >= n;
-      return `<span class="ing ${ok ? 'ok' : 'missing'}" style="--c:${MINERALS[m].color}">${MINERALS[m].name} ${have}/${n}</span>`;
+      return `<span class="ing ${ok ? 'ok' : 'missing'}" style="--c:${MINERALS[m].color}">${gemSVG(m, 16)}${MINERALS[m].name} ${have}/${n}</span>`;
     }).join(' ');
     const card = document.createElement('div');
     card.className = 'spellCard' + (owned > 0 ? ' owned' : '');
@@ -256,6 +270,8 @@ function craftSpell(id) {
   const charges = sp.base + bonus + eff('charges');
   s.spells[id] = (s.spells[id] || 0) + charges;
   save();
+  const pr = document.querySelector('#spellScreen .panel').getBoundingClientRect();
+  fxBurst(pr.left + pr.width / 2, pr.top + 80, { count: 22, colors: RAINBOW, star: true, speed: 240 });
   toast(`${sp.emoji} Crafted ${sp.name}! +${charges} charges${bonus > 0 ? ' (quality bonus!)' : ''}`);
   renderSpells();
 }

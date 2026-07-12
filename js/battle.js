@@ -2,6 +2,19 @@
 
 let B = null; // active battle state
 
+// screen-center of a battle element, for aiming particle effects
+function bPos(id) {
+  const r = document.getElementById(id).getBoundingClientRect();
+  return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+}
+
+function shakeEl(id) {
+  const el = document.getElementById(id);
+  el.classList.remove('hit');
+  void el.offsetWidth; // restart the animation
+  el.classList.add('hit');
+}
+
 function startBattle(monster, ambush) {
   const def = MONSTERS[monster.type];
   B = {
@@ -15,6 +28,8 @@ function startBattle(monster, ambush) {
     log: [],
   };
   openScreen('battleScreen');
+  document.getElementById('bMonEmoji').classList.remove('dying', 'hit');
+  document.getElementById('bPlayerEmoji').classList.remove('hit');
   blog(`${def.emoji} A wild ${def.name} appears!`);
   if (def.boss) blog('🌑 The Gloom Dragon! The source of all this gloom!');
   if (ambush && !eff('fleeSure')) {
@@ -22,6 +37,8 @@ function startBattle(monster, ambush) {
     monsterHit();
   }
   renderBattle();
+  const mp = bPos('bMonEmoji');
+  fxBurst(mp.x, mp.y, { count: 16, colors: ['#b45cff', '#ffffff'], star: true, speed: 200, life: 0.7 });
 }
 
 function blog(msg) {
@@ -51,8 +68,11 @@ function hitMonster(dmg, label) {
 function playerAction(action, spellId) {
   if (!B || B.over) return;
   const s = G.state;
+  const fxFrom = bPos('bPlayerEmoji'), fxTo = bPos('bMonEmoji');
 
   if (action === 'bonk') {
+    fxBurst(fxTo.x, fxTo.y, { count: 10, colors: ['#ffffff', '#ffd24a'], star: true, speed: 220, life: 0.5 });
+    shakeEl('bMonEmoji');
     const crit = isCrit();
     let dmg = s.atk * 2 * (1 + eff('basicDmg')) * variance();
     if (crit) dmg *= 1.7;
@@ -61,6 +81,7 @@ function playerAction(action, spellId) {
 
   } else if (action === 'flee') {
     if (eff('fleeSure') || Math.random() < 0.6) {
+      fxBurst(fxFrom.x, fxFrom.y, { count: 18, colors: ['#ffffff', '#c9b8ff'], star: true, speed: 200, life: 0.6 });
       blog('💨 You slip away in a puff of glitter!');
       endBattle('flee');
       return;
@@ -73,6 +94,8 @@ function playerAction(action, spellId) {
     const free = Math.random() < eff('chargeSave');
     if (!free) s.spells[spellId]--;
     else blog('⛓️ Chain Light — the charge is refunded!');
+    spellFX(spellId, fxFrom, fxTo);
+    if (sp.power > 0 && spellId !== 'unicorn') shakeEl('bMonEmoji');
 
     if (spellId === 'prismshield') {
       const reduce = Math.min(0.9, 0.6 * (1 + eff('shieldPower')));
@@ -102,6 +125,10 @@ function playerAction(action, spellId) {
     if (st && st.turns > 0) {
       st.turns--;
       B.mhp -= st.dmg;
+      fxBurst(fxTo.x, fxTo.y, {
+        count: 7, colors: k === 'burn' ? ['#ff8a5c', '#ffd24a'] : ['#b06ee8', '#d9b3ff'],
+        speed: 110, g: -90, life: 0.6,
+      });
       blog(`${k === 'burn' ? '🔥' : '💜'} ${B.def.name} takes ${st.dmg} ${k} damage.`);
       if (B.mhp <= 0) { victory(); return; }
     }
@@ -111,6 +138,7 @@ function playerAction(action, spellId) {
   // unicorn acts
   if (B.unicorn && B.unicorn.turns > 0) {
     B.unicorn.turns--;
+    setTimeout(() => { if (B && !B.over) fxUnicornStrike(fxFrom, fxTo); }, 320);
     const udmg = Math.max(1, Math.round(8 * B.unicorn.power * (1 + s.mag * 0.04) * variance()));
     const uheal = Math.round(6 * B.unicorn.power * (1 + eff('healPower')));
     s.hp = Math.min(s.hpMax, s.hp + uheal);
@@ -138,12 +166,18 @@ function monsterHit() {
   let atk = B.def.atk;
   if (B.mStatus.weaken && B.mStatus.weaken.turns >= 0 && B.mStatus.weaken.mult) atk *= B.mStatus.weaken.mult;
   let dmg = Math.max(1, Math.round(atk * variance() * 1.6 - s.def * 0.6));
+  const ppos = bPos('bPlayerEmoji');
   if (B.pStatus.shield && B.pStatus.shield.turns > 0) {
     dmg = Math.max(1, Math.round(dmg * (1 - B.pStatus.shield.reduce)));
     B.pStatus.shield.turns--;
     blog(`🛡️ Shield absorbs the blow — only ${dmg} gets through!`);
+    setTimeout(() => fxRing(ppos.x, ppos.y, '#8fb7ff', 70), 350);
   } else {
     blog(`${B.def.emoji} ${B.def.name} hits you for ${dmg}!`);
+    setTimeout(() => {
+      shakeEl('bPlayerEmoji');
+      fxBurst(ppos.x, ppos.y, { count: 9, colors: ['#ff5c7a', '#ffffff'], speed: 190, life: 0.5, star: true });
+    }, 380);
   }
   applyPlayerDamage(dmg);
   if (B.over) return;
@@ -182,6 +216,10 @@ function victory() {
   const s = G.state;
   const def = B.def;
   s.kills++;
+  const mpos = bPos('bMonEmoji');
+  document.getElementById('bMonEmoji').classList.add('dying');
+  setTimeout(() => fxBurst(mpos.x, mpos.y, { count: 26, colors: ['#cbb6ff', '#ffffff'], star: true, speed: 260 }), 200);
+  setTimeout(() => fxConfetti(mpos.x, mpos.y + 60, 40), 420);
   blog(`🎉 ${def.name} is defeated!`);
   const gained = gainXp(def.xp);
   blog(`⭐ +${gained} XP`);
@@ -213,7 +251,12 @@ function victory() {
 
   if (def.boss && !s.bossDefeated) {
     s.bossDefeated = true;
-    setTimeout(() => { closeScreen('battleScreen'); openScreen('winBanner'); }, 900);
+    setTimeout(() => {
+      closeScreen('battleScreen');
+      openScreen('winBanner');
+      fxConfetti(window.innerWidth / 2, 160, 80);
+      setTimeout(() => fxConfetti(window.innerWidth / 2, window.innerHeight / 2, 60), 500);
+    }, 900);
   }
   renderBattle(true);
   renderHUD();
@@ -222,6 +265,9 @@ function victory() {
 
 function defeat() {
   B.over = true;
+  const pp = bPos('bPlayerEmoji');
+  fxBurst(pp.x, pp.y, { count: 16, colors: ['#9a93b5', '#d8d3ea'], speed: 160, life: 0.9 });
+  fxBurst(pp.x, pp.y, { count: 3, emoji: ['💫'], speed: 100, size: 20, life: 1.2, g: -40 });
   blog('💫 You are knocked out…');
   renderBattle(false, true);
 }
