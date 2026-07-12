@@ -380,6 +380,7 @@ function renderBattle(won, lost) {
   for (const [id, charges] of Object.entries(s.spells)) {
     if (charges <= 0) continue;
     const sp = SPELLS[id];
+    if (sp.utility) continue; // dwarves polish, they don't fight
     const btn = document.createElement('button');
     btn.className = 'act spell';
     btn.innerHTML = `${sp.emoji} ${sp.name}<small>×${charges}</small>`;

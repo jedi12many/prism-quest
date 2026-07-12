@@ -200,60 +200,8 @@ button.closeBtn:not(.bigBtn) {
 .itemAction { color: #ffd24a; font-weight: 700; font-size: 13px; }
 .empty { opacity: 0.65; font-size: 13.5px; padding: 10px 4px; }
 
-/* ---------- polish ---------- */
-#pGem {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 128px;
-  margin-top: 8px;
-}
-#pGem .gem {
-  filter: drop-shadow(0 0 10px rgba(255,255,255,0.25));
-  transition: filter 0.3s;
-}
-#pGem.glowing .gem {
-  filter: drop-shadow(0 0 16px #fff) drop-shadow(0 0 42px rgba(255,255,255,0.55));
-  animation: gemPulse 1.2s ease-in-out infinite;
-}
-@keyframes gemPulse {
-  50% { transform: scale(1.07); }
-}
-
-#pBar {
-  position: relative;
-  height: 46px;
-  margin: 22px 0 16px;
-  border-radius: 23px;
-  background: linear-gradient(90deg, #443a6b, #665aa0 50%, #443a6b);
-  border: 2px solid rgba(255,255,255,0.25);
-  overflow: hidden;
-}
-#pZoneFine, #pZoneBril {
-  position: absolute; top: 0; bottom: 0;
-  left: 50%; transform: translateX(-50%);
-  border-radius: 8px;
-}
-#pZoneFine { background: rgba(255,210,74,0.4); }
-#pZoneBril { background: rgba(255,255,255,0.75); box-shadow: 0 0 14px #fff; }
-#pMarker {
-  position: absolute; top: 2px; bottom: 2px;
-  width: 8px;
-  margin-left: -4px;
-  border-radius: 4px;
-  background: #ff5c8a;
-  box-shadow: 0 0 8px #ff5c8a;
-}
-.bigBtn.stop { background: linear-gradient(90deg, #ff8a5c, #ffd24a); color: #33240a; font-size: 20px; padding: 16px; }
-#pResult { text-align: center; margin-top: 14px; }
-.pQuality { font-size: 22px; font-weight: 800; margin-bottom: 4px; }
-.q-rough { color: #cfcfda; }
-.q-fine { color: #ffd24a; }
-.q-brilliant {
-  background: linear-gradient(90deg, #ff5c8a, #ffd24a, #5cff8a, #5cc9ff, #b45cff);
-  -webkit-background-clip: text; background-clip: text; color: transparent;
-}
-.pCheer { font-size: 14px; opacity: 0.85; }
+/* ---------- dwarf crew ---------- */
+.bigBtn.dwarf { background: linear-gradient(90deg, #a06a2c, #d99a4e); }
 
 /* ---------- spellbook ---------- */
 .spellCard {

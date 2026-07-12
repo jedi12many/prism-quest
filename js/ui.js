@@ -87,10 +87,18 @@ function renderBag() {
       <span class="itemName">${min.name}</span>
       <span class="itemCount">×${count}</span>
       <span class="itemAction">Polish ➜</span>`;
-    row.onclick = () => startPolish(id);
+    row.onclick = () => polishOne(id);
     rawList.appendChild(row);
   }
   if (!anyRaw) rawList.innerHTML = '<div class="empty">No raw minerals yet — tap the sparkling gem nodes on the map to mine!</div>';
+  const dwarfCharges = s.spells.dwarves || 0;
+  if (anyRaw && dwarfCharges > 0) {
+    const btn = document.createElement('button');
+    btn.className = 'bigBtn dwarf';
+    btn.textContent = `⛏️ Summon Dwarves — polish everything! (×${dwarfCharges})`;
+    btn.onclick = summonDwarves;
+    rawList.appendChild(btn);
+  }
 
   const polList = document.getElementById('polList');
   polList.innerHTML = '';
@@ -115,92 +123,64 @@ function renderBag() {
   if (!anyPol) polList.innerHTML = '<div class="empty">Nothing polished yet. Polished gems are what spells are made of!</div>';
 }
 
-// ---------- polish minigame ----------
+// ---------- polishing (luck-based) ----------
 
-const POLISH = { active: false, mineral: null, pos: 0, dir: 1, raf: 0 };
-
-function startPolish(mineralId) {
-  const s = G.state;
-  if (!s.raw[mineralId]) return;
-  POLISH.active = true;
-  POLISH.mineral = mineralId;
-  POLISH.pos = 0;
-  POLISH.dir = 1;
-  const min = MINERALS[mineralId];
-  document.getElementById('polishTitle').innerHTML =
-    `Polishing <b style="color:${min.color}">${min.name}</b> — tap STOP in the bright center!`;
-  const pGem = document.getElementById('pGem');
-  pGem.classList.remove('glowing');
-  pGem.innerHTML = gemSVG(mineralId, 120);
-  document.getElementById('pResult').innerHTML = '';
-  document.getElementById('pStop').style.display = 'inline-block';
-  // sweet-zone widths (fraction of bar), widened by Steady Hands
-  const zoneBoost = 1 + eff('polishZone');
-  POLISH.brilliant = 0.055 * zoneBoost;
-  POLISH.fine = 0.16 * zoneBoost;
-  document.getElementById('pZoneFine').style.width = (POLISH.fine * 2 * 100) + '%';
-  document.getElementById('pZoneBril').style.width = (POLISH.brilliant * 2 * 100) + '%';
-  closeScreen('bagScreen');
-  openScreen('polishScreen');
-  let last = performance.now();
-  const tick = (now) => {
-    if (!POLISH.active) return;
-    const dt = (now - last) / 1000;
-    last = now;
-    POLISH.pos += POLISH.dir * dt * 0.9; // full sweeps per second
-    if (POLISH.pos > 1) { POLISH.pos = 1; POLISH.dir = -1; }
-    if (POLISH.pos < 0) { POLISH.pos = 0; POLISH.dir = 1; }
-    document.getElementById('pMarker').style.left = (POLISH.pos * 100) + '%';
-    POLISH.raf = requestAnimationFrame(tick);
-  };
-  POLISH.raf = requestAnimationFrame(tick);
+// Quality is luck: the Factory, Steady Hands, and dwarf crews raise the odds.
+function rollQuality(bonus = 0) {
+  const luck = eff('polishZone') + bonus;
+  const pBrilliant = Math.min(0.75, 0.12 + 0.18 * luck);
+  const pFine = Math.min(0.9 - pBrilliant, 0.33 + 0.15 * luck);
+  const r = Math.random();
+  if (r < pBrilliant) return 'brilliant';
+  if (r < pBrilliant + pFine) return 'fine';
+  return 'rough';
 }
 
-function stopPolish() {
-  if (!POLISH.active) return;
-  POLISH.active = false;
-  cancelAnimationFrame(POLISH.raf);
-  const dist = Math.abs(POLISH.pos - 0.5);
-  let quality = 'rough';
-  if (dist <= POLISH.brilliant) quality = 'brilliant';
-  else if (dist <= POLISH.fine) quality = 'fine';
-
+function polishOne(mineralId) {
   const s = G.state;
-  const id = POLISH.mineral;
-  s.raw[id]--;
-  if (s.raw[id] <= 0) delete s.raw[id];
-  if (!s.polished[id]) s.polished[id] = { rough: 0, fine: 0, brilliant: 0 };
-  s.polished[id][quality]++;
+  if (!s.raw[mineralId]) return;
+  const quality = rollQuality();
+  s.raw[mineralId]--;
+  if (s.raw[mineralId] <= 0) delete s.raw[mineralId];
+  if (!s.polished[mineralId]) s.polished[mineralId] = { rough: 0, fine: 0, brilliant: 0 };
+  s.polished[mineralId][quality]++;
   save();
-
+  const min = MINERALS[mineralId];
   const qd = QUALITIES[quality];
-  const min = MINERALS[id];
-  const gr = document.getElementById('pGem').getBoundingClientRect();
-  const gx = gr.left + gr.width / 2, gy = gr.top + gr.height / 2;
-  if (quality === 'brilliant') {
-    document.getElementById('pGem').classList.add('glowing');
-    fxRing(gx, gy, '#ffffff', 110);
-    fxBurst(gx, gy, { count: 40, colors: [min.color, '#ffffff', '#ffe94a'], star: true, speed: 320, life: 1 });
-  } else if (quality === 'fine') {
-    fxBurst(gx, gy, { count: 18, colors: [min.color, '#ffffff'], star: true, speed: 220 });
-  } else {
-    fxBurst(gx, gy, { count: 6, colors: ['#9a93b5'], speed: 120, life: 0.6 });
-  }
-  const cheer = { rough: 'A little scuffed, but it\'ll do.', fine: 'Nice and shiny!', brilliant: 'PERFECT! It gleams like a star!' }[quality];
-  const result = document.getElementById('pResult');
-  result.innerHTML = `<div class="pQuality q-${quality}">${qd.icon} ${qd.name} ${min.name}</div><div class="pCheer">${cheer}</div>`;
-  document.getElementById('pStop').style.display = 'none';
+  const cheer = { rough: '', fine: ' Nice and shiny!', brilliant: ' ✨ A perfect cut!' }[quality];
+  toast(`${qd.icon} ${qd.name} ${min.name}!${cheer}`);
+  const pr = document.querySelector('#bagScreen .panel').getBoundingClientRect();
+  fxBurst(pr.left + pr.width / 2, pr.top + 90, {
+    count: quality === 'brilliant' ? 30 : quality === 'fine' ? 14 : 6,
+    colors: [min.color, '#ffffff'], star: true,
+    speed: quality === 'brilliant' ? 300 : 180,
+  });
+  if (quality === 'brilliant') fxRing(pr.left + pr.width / 2, pr.top + 90, '#ffffff', 90);
+  renderBag();
+}
 
-  const again = document.createElement('button');
-  again.className = 'bigBtn';
-  const remaining = s.raw[id] || 0;
-  again.textContent = remaining > 0 ? `Polish another (${remaining} left)` : 'Back to bag';
-  again.onclick = () => {
-    closeScreen('polishScreen');
-    if (remaining > 0) startPolish(id);
-    else openBag();
-  };
-  result.appendChild(again);
+function summonDwarves() {
+  const s = G.state;
+  if (!s.spells.dwarves || s.spells.dwarves <= 0) return;
+  const total = Object.values(s.raw).reduce((a, b) => a + b, 0);
+  if (!total) { toast('⛏️ The dwarves peer into your empty bag and shrug.'); return; }
+  s.spells.dwarves--;
+  const counts = { rough: 0, fine: 0, brilliant: 0 };
+  for (const [m, n] of Object.entries({ ...s.raw })) {
+    if (!s.polished[m]) s.polished[m] = { rough: 0, fine: 0, brilliant: 0 };
+    for (let i = 0; i < n; i++) {
+      const q = rollQuality(1.5); // master craftsdwarves: a nice big bonus
+      s.polished[m][q]++;
+      counts[q]++;
+    }
+    delete s.raw[m];
+  }
+  save();
+  const pr = document.querySelector('#bagScreen .panel').getBoundingClientRect();
+  fxBurst(pr.left + pr.width / 2, pr.top + 120, { count: 10, emoji: ['🧔', '⛏️', '🔨'], speed: 220, size: 24, life: 1.6, g: 250 });
+  fxConfetti(pr.left + pr.width / 2, pr.top + 120, 40);
+  toast(`⛏️ Hi-ho! The dwarf crew polished ${total} gems: 💠×${counts.brilliant} 🔹×${counts.fine} ◽×${counts.rough}!`);
+  renderBag();
 }
 
 // ---------- spellbook / crafting ----------
@@ -415,7 +395,6 @@ function bindUI() {
   document.getElementById('btnSpells').onclick = openSpells;
   document.getElementById('btnSkills').onclick = openSkills;
   document.getElementById('btnMenu').onclick = () => openScreen('menuScreen');
-  document.getElementById('pStop').onclick = stopPolish;
   document.getElementById('btnNewGame').onclick = () => {
     if (confirm('Start over? Your current hero will be lost.')) resetSave();
   };

@@ -48,6 +48,11 @@ const SPELLS = {
     recipe: { amethyst: 1, emerald: 1 },
     desc: 'Glittering butterflies nip and poison the enemy for 4 turns.',
   },
+  dwarves: {
+    name: 'Summon Dwarves', emoji: '⛏️', base: 2, power: 0, utility: true,
+    recipe: { sunstone: 1, emerald: 1 },
+    desc: 'A cheerful dwarf crew polishes your ENTIRE bag of raw minerals with a big bonus to Brilliant cuts. Cast from your Bag.',
+  },
   rainbowbeam: {
     name: 'Rainbow Beam', emoji: '🌈', base: 3, power: 18,
     recipe: { quartz: 1, amethyst: 1, sunstone: 1 },
@@ -78,7 +83,7 @@ const CLASSES = {
         { id: 'mg_r3', name: 'Supernova Heart', icon: '💥', desc: '+25% spell damage',  eff: { spellDmg: 0.25 } },
       ]},
       { branch: 'Flow', color: '#4fd8e0', nodes: [
-        { id: 'mg_f1', name: 'Steady Hands', icon: '🤲', desc: 'Much bigger polishing sweet spot',      eff: { polishZone: 0.35 } },
+        { id: 'mg_f1', name: 'Steady Hands', icon: '🤲', desc: 'Big boost to polish quality odds',      eff: { polishZone: 0.35 } },
         { id: 'mg_f2', name: 'Echo Casting', icon: '🔁', desc: '+1 charge every time you craft a spell', eff: { charges: 1 } },
         { id: 'mg_f3', name: 'Chain Light',  icon: '⛓️', desc: '25% chance casting is free',            eff: { chargeSave: 0.25 } },
       ]},
@@ -179,8 +184,8 @@ const BUILDINGS = {
   factory: {
     name: 'Polishing Factory', emoji: '🏭', tile: { x: 4, y: 5 }, max: 3,
     levels: ['Polishing Bench', 'Gem Workshop', 'Prism Factory'],
-    desc: 'Precision tools widen the polishing sweet spot with every level.',
-    bonus: l => `+${20 * l}% sweet spot`,
+    desc: 'Precision tools raise polish quality odds with every level.',
+    bonus: l => `+${20 * l}% quality luck`,
     eff: { polishZone: 0.2 },
     costs: [{ quartz: 3, amethyst: 2 }, { aquamarine: 4, emerald: 2 }, { roseopal: 3, prismatite: 1 }],
   },
