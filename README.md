@@ -73,6 +73,16 @@ then open http://localhost:8123 — on your phone, use your computer's LAN IP
 | 🛡️ Crystal Knight | Tanky, +50% basic attack; trees for defense, crits, and survival |
 | 🦄 Unicorn Whisperer | Starts with Summon Unicorn; trees for summons, healing, and utility |
 
+## Graphics
+
+Hand-authored **pixel-art sprites** for the player classes and common monsters,
+defined as pixel grids in code (`js/sprites.js`) and baked to offscreen canvases
+at load — no external image files. Sprites have idle-bob, facing-flip, and drop
+shadows on the map, and render in battles too. Bosses and NPCs currently fall
+back to emoji. Faceted gems are drawn procedurally; spell effects use a particle
+layer. (Toggle `window.__spriteSheet = true` in the console to see a contact
+sheet of every sprite.)
+
 ## Tech
 
 Plain HTML5 Canvas + vanilla JavaScript. No dependencies, no build.

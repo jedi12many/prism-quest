@@ -692,6 +692,7 @@ function update(dt) {
       G.px += (dx / dist) * step;
       G.py += (dy / dist) * step;
     }
+    if (Math.abs(dx) > 0.5) G.faceLeft = dx < 0;
   }
 
   // monsters wander / chase / respawn
@@ -759,6 +760,7 @@ const GATE_EMOJI = { village: '🏘️', world: '🗺️', cloudgate: '🌈', po
 function draw() {
   const ctx = G.ctx;
   const w = window.innerWidth, h = window.innerHeight;
+  if (window.__spriteSheet && typeof drawSpriteSheet === 'function') { drawSpriteSheet(); return; }
   ctx.fillStyle = '#25203a';
   ctx.fillRect(0, 0, w, h);
   if (!G.state || !G.map) return;
@@ -912,27 +914,37 @@ function draw() {
     }
   }
 
-  // monsters
-  ctx.font = `${TILE * 0.72}px "Segoe UI Emoji", serif`;
+  // monsters — pixel sprite where we have one, emoji fallback otherwise
+  const pt = playerTile();
   for (const m of G.monsters) {
     if (!m.alive) continue;
     const sx = m.x * TILE - cam.x + TILE / 2, sy = m.y * TILE - cam.y + TILE / 2;
     if (sx < -TILE || sy < -TILE || sx > w + TILE || sy > h + TILE) continue;
     const bob = Math.sin(G.time * 4 + m.home.x) * 2;
     const def = MONSTERS[m.type];
-    if (def.boss) {
-      ctx.font = `${TILE * 1.15}px "Segoe UI Emoji", serif`;
-      ctx.fillText(def.emoji, sx, sy + bob);
-      ctx.font = `${TILE * 0.72}px "Segoe UI Emoji", serif`;
+    const key = MONSTER_SPRITE[m.type];
+    if (key && hasSprite(key)) {
+      const size = def.boss ? TILE * 1.5 : TILE * 1.02;
+      drawShadow(ctx, sx, sy + TILE * 0.42, size * 0.5);
+      drawSprite(ctx, key, sx, sy - 2, size, { bob, flip: m.x > pt.x });
     } else {
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = `${def.boss ? TILE * 1.15 : TILE * 0.72}px "Segoe UI Emoji", serif`;
+      drawShadow(ctx, sx, sy + TILE * 0.4, TILE * 0.5);
       ctx.fillText(def.emoji, sx, sy + bob);
     }
   }
 
-  // player
+  // player — pixel sprite with idle bob, facing flip, shadow
   const cls = classDef();
-  ctx.font = `${TILE * 0.8}px "Segoe UI Emoji", serif`;
-  ctx.fillText(cls.emoji, G.px - cam.x, G.py - cam.y - 2);
+  const pcx = G.px - cam.x, pcy = G.py - cam.y;
+  const pbob = G.path.length ? Math.sin(G.time * 12) * 2 : Math.sin(G.time * 3) * 1.2;
+  drawShadow(ctx, pcx, pcy + TILE * 0.42, TILE * 0.5);
+  if (!drawSprite(ctx, playerSpriteKey(), pcx, pcy - 2, TILE * 1.05, { bob: pbob, flip: G.faceLeft })) {
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = `${TILE * 0.8}px "Segoe UI Emoji", serif`;
+    ctx.fillText(cls.emoji, pcx, pcy - 2);
+  }
 
   // tap-target marker
   if (G.path.length) {

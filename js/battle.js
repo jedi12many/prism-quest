@@ -373,7 +373,7 @@ function renderBattle(won, lost) {
   const s = G.state;
   const cls = classDef();
 
-  document.getElementById('bMonEmoji').textContent = B.def.emoji;
+  document.getElementById('bMonEmoji').innerHTML = actorHTML(MONSTER_SPRITE[B.monster.type], B.def.emoji, 76);
   document.getElementById('bMonName').textContent = B.def.name;
   const mpct = Math.max(0, B.mhp / B.mhpMax * 100);
   document.getElementById('bMonHpFill').style.width = mpct + '%';
@@ -385,7 +385,7 @@ function renderBattle(won, lost) {
   if (B.mStatus.weaken && B.mStatus.weaken.turns > 0) chips.push('💧 weakened');
   document.getElementById('bMonChips').textContent = chips.join('  ');
 
-  document.getElementById('bPlayerEmoji').textContent = cls.emoji;
+  document.getElementById('bPlayerEmoji').innerHTML = actorHTML(playerSpriteKey(), cls.emoji, 68);
   const ppct = Math.max(0, s.hp / s.hpMax * 100);
   document.getElementById('bPlayerHpFill').style.width = ppct + '%';
   document.getElementById('bPlayerHpText').textContent = `${s.hp} / ${s.hpMax}`;
