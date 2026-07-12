@@ -8,9 +8,15 @@ const VILLAGE_ENTRY = { x: 14, y: 13 };              // where travel drops you a
 const ZONE_IDS = ['north', 'east', 'west', 'south'];
 const FLOOR_TILES = new Set(['grass', 'cloud', 'gloomstone', 'cavefloor', 'ruinfloor', 'housefloor']);
 const ZONE_W = 34, ZONE_H = 26;                      // each zone map's size
-const ZONE_ENTRY = { x: 17, y: 22 };                 // the way-home gate block in a zone
-const ZONE_SPAWN = { x: 17, y: 23 };                 // where you arrive in a zone
-const ZONE_LAIR = { x: 17, y: 4 };                   // the champion, far from the entry
+// You enter each zone on the edge nearest the village and cross to the far side:
+// go South → arrive North; North → South; East → West; West → East.
+const ZONE_LAYOUTS = {
+  south: { entry: { x: 17, y: 4 },  spawn: { x: 17, y: 6 },  lair: { x: 17, y: 22 } },
+  north: { entry: { x: 17, y: 21 }, spawn: { x: 17, y: 19 }, lair: { x: 17, y: 3 } },
+  east:  { entry: { x: 4, y: 13 },  spawn: { x: 6, y: 13 },  lair: { x: 30, y: 13 } },
+  west:  { entry: { x: 30, y: 13 }, spawn: { x: 28, y: 13 }, lair: { x: 4, y: 13 } },
+};
+function zoneSpawn(zoneId) { return ZONE_LAYOUTS[zoneId].spawn; }
 const BASE_RECT = { x0: 2, y0: 2, x1: 11, y1: 11 };  // the buildable camp plot
 const GATE_TILES = [[6, 11], [7, 11]];               // opening in the castle walls
 const LEVEL_CAP = 12;                                 // caps skill points so you can't get everything
@@ -254,7 +260,8 @@ function buildZone(zoneId) {
   for (let y = 2; y < H - 2; y++) for (let x = 2; x < W - 2; x++) {
     if (G.map[y][x] === 'grass' && rng() < 0.09) G.map[y][x] = 'tree';
   }
-  const entry = ZONE_ENTRY, lair = ZONE_LAIR;
+  const L = ZONE_LAYOUTS[zoneId];
+  const entry = L.entry, lair = L.lair;
   const clear = (cx, cy, r) => {
     for (let y = Math.max(2, cy - r); y <= Math.min(H - 3, cy + r); y++)
       for (let x = Math.max(2, cx - r); x <= Math.min(W - 3, cx + r); x++)
@@ -262,12 +269,20 @@ function buildZone(zoneId) {
   };
   clear(entry.x, entry.y, 2);
   clear(lair.x, lair.y, 2);
-  // carve a wandering path from entry up to the lair so the level is traversable
-  let px = entry.x;
-  for (let y = entry.y; y >= lair.y; y--) {
-    G.map[y][clamp(px, 3, W - 4)] = 'grass';
-    if (rng() < 0.55) px = clamp(px + (rng() < 0.5 ? -1 : 1), 3, W - 4);
-    G.map[y][clamp(px, 3, W - 4)] = 'grass';
+  // carve a wandering path from entry to lair (any direction) so it's traversable
+  let cx = entry.x, cy = entry.y;
+  let pguard = 0;
+  while ((cx !== lair.x || cy !== lair.y) && pguard++ < 800) {
+    const dxs = Math.sign(lair.x - cx), dys = Math.sign(lair.y - cy);
+    if (Math.abs(lair.x - cx) > Math.abs(lair.y - cy)) {
+      cx = clamp(cx + dxs, 3, W - 4);
+      if (dys && rng() < 0.4) cy = clamp(cy + dys, 3, H - 4);
+    } else {
+      cy = clamp(cy + dys, 3, H - 4);
+      if (dxs && rng() < 0.4) cx = clamp(cx + dxs, 3, W - 4);
+    }
+    G.map[cy][cx] = 'grass';
+    if (cx + 1 < W - 2 && G.map[cy][cx + 1] !== 'water') G.map[cy][cx + 1] = 'grass'; // widen
   }
   // way-home 2x2 gate at the entry
   G.gates = [];
@@ -540,7 +555,7 @@ function onGate(g) {
   } else if (g.kind === 'zone') {
     const z = ZONES[g.zone];
     G.state.activePact = null;
-    travelTo(g.zone, ZONE_SPAWN.x, ZONE_SPAWN.y);
+    travelTo(g.zone, zoneSpawn(g.zone).x, zoneSpawn(g.zone).y);
     const cleared = G.state.zonesCleared[g.zone];
     toast(`${z.dir} — ${z.name}: ${z.blurb}.${cleared ? ' ☀️ The light has returned here.' : ''}`);
     if (!cleared && !G.state.sunRestored) offerPact(g.zone);
@@ -551,7 +566,7 @@ function onGate(g) {
     travelTo('dungeon', 0, 0);
     toast(`${dcfg.emoji} You enter the ${dcfg.name} — ${G.state.dungeon.maxFloor} floors deep. Deadly, but rich.`);
   } else if (g.kind === 'zoneback') {
-    travelTo(g.zone, ZONE_SPAWN.x, ZONE_SPAWN.y); // keep your pact; the dive continues
+    travelTo(g.zone, zoneSpawn(g.zone).x, zoneSpawn(g.zone).y); // keep your pact; the dive continues
     toast('🪜 You climb back out into the open.');
   } else if (g.kind === 'stairsdown') {
     if (G.state.dungeon.hasKey) {
@@ -717,7 +732,7 @@ function startGame() {
   const s = G.state;
   buildMap(s.mapId || 'village');
   if (!walkable(s.x, s.y)) {
-    const home = G.mapId === 'village' ? SPAWN : inZone() ? ZONE_SPAWN
+    const home = G.mapId === 'village' ? SPAWN : inZone() ? zoneSpawn(G.mapId)
       : G.mapId === 'clouds' ? { x: 4, y: 8 } : { x: 3, y: 12 };
     s.x = home.x; s.y = home.y;
   }
@@ -761,7 +776,7 @@ function boot() {
     // a saved dungeon is ephemeral: pop back out to its zone
     if (G.state.mapId === 'dungeon') G.state.mapId = (G.state.dungeon && G.state.dungeon.fromZone) || 'village';
     G.mapId = G.state.mapId;
-    if (ZONE_IDS.includes(G.state.mapId)) { G.state.x = ZONE_SPAWN.x; G.state.y = ZONE_SPAWN.y; }
+    if (ZONE_IDS.includes(G.state.mapId)) { const sp = zoneSpawn(G.state.mapId); G.state.x = sp.x; G.state.y = sp.y; }
     if (G.state.mapId === 'realm') { G.state.x = 3; G.state.y = 12; }
     startGame();
     toast('Welcome back! Your quest continues.');
