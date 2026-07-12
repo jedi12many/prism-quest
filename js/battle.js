@@ -17,9 +17,14 @@ function shakeEl(id) {
 
 function startBattle(monster, ambush) {
   const def = MONSTERS[monster.type];
+  // difficulty scaling: tougher in higher-tier zones and the finale maps
+  const tier = combatTier();
+  const hpMult = 1 + (tier - 1) * 0.4;
+  const atkScale = 1 + (tier - 1) * 0.22;
+  const hp = Math.round(def.hp * hpMult);
   B = {
-    monster, def,
-    mhp: def.hp, mhpMax: def.hp,
+    monster, def, tier, atkScale,
+    mhp: hp, mhpMax: hp,
     mStatus: {},          // burn:{turns,dmg}, poison:{turns,dmg}, weaken:{turns,mult}
     pStatus: {},          // shield:{turns,reduce}, poison:{turns,dmg}
     unicorn: null,        // {turns, power}
@@ -180,9 +185,9 @@ function monsterHit() {
     setTimeout(() => fxBurst(ppos.x, ppos.y, { count: 8, colors: ['#b8f4f8', '#ffffff'], speed: 150, life: 0.5, star: true }), 350);
     return;
   }
-  let atk = B.def.atk;
+  let atk = B.def.atk * (B.atkScale || 1);
   if (B.mStatus.weaken && B.mStatus.weaken.turns >= 0 && B.mStatus.weaken.mult) atk *= B.mStatus.weaken.mult;
-  let dmg = Math.max(1, Math.round(atk * variance() * 1.6 - s.def * 0.6));
+  let dmg = Math.max(1, Math.round(atk * variance() * 1.85 - s.def * 0.5));
   if (B.pStatus.shield && B.pStatus.shield.turns > 0) {
     dmg = Math.max(1, Math.round(dmg * (1 - B.pStatus.shield.reduce)));
     B.pStatus.shield.turns--;
@@ -221,17 +226,31 @@ function monsterHit() {
 }
 
 function applyPlayerDamage(dmg) {
+  if (!B || B.over) return; // already resolved (e.g. died on the first hit this turn)
   const s = G.state;
   s.hp -= dmg;
   if (s.hp <= 0) {
+    // 1) Last Stand — survive at 1 HP, once per battle
     if (eff('lastStand') && !B.lastStandUsed) {
       B.lastStandUsed = true;
       s.hp = 1;
       blog('🕯️ Last Stand! You refuse to fall!');
-    } else {
-      s.hp = 0;
-      defeat();
+      return;
     }
+    // 2) Revive capstone — cheat death once per LIFE, rebound to a fraction of HP
+    if (eff('reviveFrac') > 0 && !s.reviveUsed) {
+      s.reviveUsed = true;
+      s.hp = Math.max(1, Math.round(s.hpMax * eff('reviveFrac')));
+      blog(`💗 Death denied! You surge back to ${s.hp} HP — but only once.`);
+      const pp = bPos('bPlayerEmoji');
+      fxBurst(pp.x, pp.y, { count: 30, colors: ['#ff6ec7', '#ffffff', '#ffd24a'], star: true, speed: 300 });
+      fxRing(pp.x, pp.y, '#ff6ec7', 90);
+      save();
+      return;
+    }
+    // 3) no safety net left — the hero falls for good (rogue-like)
+    s.hp = 0;
+    defeat();
   }
 }
 
@@ -245,7 +264,7 @@ function victory() {
   setTimeout(() => fxBurst(mpos.x, mpos.y, { count: 26, colors: ['#cbb6ff', '#ffffff'], star: true, speed: 260 }), 200);
   setTimeout(() => fxConfetti(mpos.x, mpos.y + 60, 40), 420);
   blog(`🎉 ${def.name} is defeated!`);
-  const gained = gainXp(def.xp);
+  const gained = gainXp(Math.round(def.xp * (1 + ((B.tier || 1) - 1) * 0.3)));
   blog(`⭐ +${gained} XP`);
 
   // drops
@@ -326,27 +345,23 @@ function victory() {
   save();
 }
 
+// rogue-like death: the hero is lost for good
 function defeat() {
   B.over = true;
   const pp = bPos('bPlayerEmoji');
-  fxBurst(pp.x, pp.y, { count: 16, colors: ['#9a93b5', '#d8d3ea'], speed: 160, life: 0.9 });
-  fxBurst(pp.x, pp.y, { count: 3, emoji: ['💫'], speed: 100, size: 20, life: 1.2, g: -40 });
-  blog('💫 You are knocked out…');
+  fxBurst(pp.x, pp.y, { count: 22, colors: ['#9a93b5', '#d8d3ea', '#3a3450'], speed: 170, life: 1.1 });
+  fxBurst(pp.x, pp.y, { count: 3, emoji: ['💀'], speed: 90, size: 24, life: 1.4, g: -30 });
+  blog(`💀 ${classDef().name} has fallen. The gloom claims another hero…`);
+  const summary = recordDeath();
   renderBattle(false, true);
+  setTimeout(() => { closeScreen('battleScreen'); B = null; showGameOver(summary); }, 1400);
 }
 
 function endBattle(how) {
   B.over = true;
   closeScreen('battleScreen');
   const s = G.state;
-  if (how === 'dead') {
-    s.hp = s.hpMax;
-    const wasRealm = G.mapId === 'realm', wasClouds = G.mapId === 'clouds';
-    travelTo('village', VILLAGE_ENTRY.x, VILLAGE_ENTRY.y);
-    toast(wasRealm ? '💫 The gloom chews you up and spits you back into Drizzlewick. It can wait. Can you?'
-      : wasClouds ? '💫 You tumble from the clouds and land in a haystack back home.'
-      : '🏘️ You wake up back in Drizzlewick, patched up and ready to try again.');
-  } else if (how === 'flee') {
+  if (how === 'flee') {
     // hop one tile away from the monster if possible
     const p = playerTile();
     for (const [dx, dy] of [[0, 1], [0, -1], [1, 0], [-1, 0]]) {
@@ -398,15 +413,17 @@ function renderBattle(won, lost) {
   const acts = document.getElementById('bActs');
   acts.innerHTML = '';
   if (B.over) {
+    if (lost) {
+      const dead = document.createElement('div');
+      dead.className = 'deathNote';
+      dead.textContent = '💀 You have fallen…';
+      acts.appendChild(dead);
+      return;
+    }
     const btn = document.createElement('button');
     btn.className = 'act big';
-    if (lost) {
-      btn.textContent = '🏕️ Back to camp';
-      btn.onclick = () => endBattle('dead');
-    } else {
-      btn.textContent = '✨ Continue';
-      btn.onclick = () => endBattle('win');
-    }
+    btn.textContent = '✨ Continue';
+    btn.onclick = () => endBattle('win');
     acts.appendChild(btn);
     return;
   }

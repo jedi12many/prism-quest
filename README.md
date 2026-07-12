@@ -63,7 +63,14 @@ then open http://localhost:8123 — on your phone, use your computer's LAN IP
   (House, Kitchen, Polishing Factory, Unicorn Stalls, Training Grounds, Castle
   Walls) — every level grows your power. The Power Tree and Spellbook only open
   in the peace of camp.
-- **Level up → spend skill points** in your class Power Tree (3 branches × 3 tiers).
+- **One life (rogue-like).** If your hero falls, they're gone for good — you begin
+  a new one, and your best run is remembered. Enemies scale up the further out you
+  push (South is gentlest, North deadliest; the clouds and Sog'naroth's realm
+  hardest of all). Flee when outmatched, rest at camp, and consider a **revive
+  capstone** deep in your Power Tree to cheat death once per life (rebound to 50% HP).
+- **Level up → spend skill points** in your class Power Tree: 3 branches × 5 tiers
+  (15 skills), but a **level cap of 12** means you can't learn everything — you'll
+  only reach two of your three branch capstones, so builds matter.
 - The **Rainwyrm 🐉** guards the Sunken Gate in the dark corner, where legendary
   **Prismatite** grows. Beyond it waits **Sog'naroth 🐙**: its whispers inflict
   Dread, the rain heals it every turn — but sunlight spells (Sunflare, Rainbow

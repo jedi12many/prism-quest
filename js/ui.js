@@ -474,6 +474,16 @@ function npcDialog(id) {
   return { text: 'Upgrade the camp, hero — Kitchen for your health, Stalls for your unicorn, Walls for your hide. Raw minerals pay the bills.' };
 }
 
+// rogue-like game over — the run is done, offer a fresh hero
+function showGameOver(summary) {
+  closeAllScreens();
+  const b = summary.best;
+  document.getElementById('goStats').innerHTML = `
+    <div class="goRun">This hero: <b>Level ${summary.level}</b> · ${summary.zones}/4 lands freed · ${summary.kills} kills</div>
+    <div class="goBest">Best ever: Level ${b.bestLevel || 0} · ${b.bestZones || 0}/4 lands · run #${b.runs || 1}</div>`;
+  openScreen('gameOverScreen');
+}
+
 function openNpc(id) {
   const npc = NPCS[id];
   const d = npcDialog(id);
@@ -649,8 +659,11 @@ function upgradeBuilding(id) {
 function renderSkills() {
   const s = G.state;
   const cls = classDef();
-  document.getElementById('spLeft').textContent =
-    `${cls.emoji} ${cls.name} — ${s.skillPoints} skill point${s.skillPoints === 1 ? '' : 's'} to spend`;
+  const owned = Object.keys(s.skills).length;
+  const total = cls.tree.reduce((a, br) => a + br.nodes.length, 0);
+  document.getElementById('spLeft').innerHTML =
+    `${cls.emoji} ${cls.name} — <b>${s.skillPoints}</b> point${s.skillPoints === 1 ? '' : 's'} to spend · learned ${owned}/${total}` +
+    `<br><small>Level cap ${LEVEL_CAP} — you can't learn everything. Choose your build (you'll only reach 2 of the 3 capstones).</small>`;
   const cols = document.getElementById('skillCols');
   cols.innerHTML = '';
   for (const branch of cls.tree) {
@@ -699,6 +712,11 @@ function bindUI() {
   document.getElementById('btnMenu').onclick = () => openScreen('menuScreen');
   document.getElementById('btnNewGame').onclick = () => {
     if (confirm('Start over? Your current hero will be lost.')) resetSave();
+  };
+  document.getElementById('btnNewHero').onclick = () => {
+    closeScreen('gameOverScreen');
+    document.getElementById('hud').style.display = 'none';
+    showClassScreen();
   };
   document.getElementById('btnWinClose').onclick = () => {
     closeScreen('winBanner');

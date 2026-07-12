@@ -413,3 +413,15 @@ button.closeBtn:not(.bigBtn) {
 .act:active { transform: scale(0.96); }
 
 .howto p { font-size: 13.5px; margin-bottom: 8px; line-height: 1.45; }
+
+/* game over */
+#goStats { text-align: center; margin: 10px 0 4px; }
+.goRun { font-size: 15px; font-weight: 700; color: #ffe9a8; margin-bottom: 6px; }
+.goBest { font-size: 13px; opacity: 0.8; }
+.deathNote {
+  flex: 1 1 100%;
+  text-align: center;
+  font-size: 16px; font-weight: 800;
+  color: #ff8a9c;
+  padding: 12px;
+}

@@ -12,7 +12,9 @@ const ZONE_SPAWN = { x: 17, y: 23 };                 // where you arrive in a zo
 const ZONE_LAIR = { x: 17, y: 4 };                   // the champion, far from the entry
 const BASE_RECT = { x0: 2, y0: 2, x1: 11, y1: 11 };  // the buildable camp plot
 const GATE_TILES = [[6, 11], [7, 11]];               // opening in the castle walls
+const LEVEL_CAP = 12;                                 // caps skill points so you can't get everything
 const SAVE_KEY = 'prismquest_save_v3';
+const BEST_KEY = 'prismquest_best_v1';               // meta record, survives death
 
 const G = {
   state: null,
@@ -78,6 +80,14 @@ function atBase() { return G.mapId === 'village'; }
 
 function inZone() { return ZONE_IDS.includes(G.mapId); }
 
+// difficulty scaling by where you're fighting: zone tier 1-4, clouds/realm higher
+function combatTier() {
+  if (inZone()) return ZONES[G.mapId].tier;
+  if (G.mapId === 'clouds') return 5;
+  if (G.mapId === 'realm') return 6;
+  return 1;
+}
+
 // Sunshine per map. Gloom-things cannot exist in it. A zone is sunny once cleared.
 function inSun(x, y) {
   if (!G.state) return false;
@@ -128,12 +138,13 @@ function gainXp(n) {
   const gained = Math.round(n * (1 + eff('xpGain')));
   s.xp += gained;
   let leveled = false;
-  while (s.xp >= xpNext(s.level) && s.level < 30) {
+  while (s.xp >= xpNext(s.level) && s.level < LEVEL_CAP) {
     s.xp -= xpNext(s.level);
     s.level++;
     s.skillPoints++;
     leveled = true;
   }
+  if (s.level >= LEVEL_CAP) s.xp = 0;
   if (leveled) {
     calcStats();
     G.state.hp = G.state.hpMax;
@@ -409,7 +420,7 @@ function save() {
     raw: s.raw, polished: s.polished, spells: s.spells, skills: s.skills,
     kills: s.kills, bossDefeated: s.bossDefeated, sunRestored: s.sunRestored, base: s.base,
     mapId: G.mapId, mainQuest: s.mainQuest, zonesCleared: s.zonesCleared, npcFlags: s.npcFlags,
-    equip: s.equip, inventory: s.inventory,
+    equip: s.equip, inventory: s.inventory, reviveUsed: s.reviveUsed,
   }));
 }
 
@@ -425,6 +436,23 @@ function resetSave() {
   location.reload();
 }
 
+// rogue-like: on death the hero is gone. Record the run, then wipe the save.
+function loadBest() {
+  try { return JSON.parse(localStorage.getItem(BEST_KEY)) || {}; } catch (e) { return {}; }
+}
+function recordDeath() {
+  const s = G.state;
+  const best = loadBest();
+  const zones = ZONE_IDS.filter(z => s.zonesCleared[z]).length;
+  best.runs = (best.runs || 0) + 1;
+  best.bestLevel = Math.max(best.bestLevel || 0, s.level);
+  best.bestZones = Math.max(best.bestZones || 0, zones);
+  best.bestKills = Math.max(best.bestKills || 0, s.kills);
+  localStorage.setItem(BEST_KEY, JSON.stringify(best));
+  localStorage.removeItem(SAVE_KEY); // the hero is lost
+  return { level: s.level, zones, kills: s.kills, best };
+}
+
 // ---------- game start ----------
 
 function newGameWithClass(classId) {
@@ -435,7 +463,7 @@ function newGameWithClass(classId) {
     raw: {}, polished: {},
     spells: Object.assign({ glitterbomb: 4 }, cls.perkSpells || {}),
     skills: {},
-    kills: 0, bossDefeated: false, sunRestored: false,
+    kills: 0, bossDefeated: false, sunRestored: false, reviveUsed: false,
     base: { house: 1, kitchen: 0, factory: 0, stalls: 0, training: 0, walls: 0 },
     mapId: 'village', mainQuest: 0,
     zonesCleared: { north: false, east: false, west: false, south: false }, npcFlags: {},
@@ -481,6 +509,7 @@ function boot() {
   if (saved && CLASSES[saved.classId]) {
     G.state = Object.assign({
       raw: {}, polished: {}, spells: {}, skills: {}, kills: 0, bossDefeated: false, sunRestored: false,
+      reviveUsed: false,
       base: { house: 1, kitchen: 0, factory: 0, stalls: 0, training: 0, walls: 0 },
       mapId: 'village', mainQuest: 0,
       zonesCleared: { north: false, east: false, west: false, south: false }, npcFlags: {},
