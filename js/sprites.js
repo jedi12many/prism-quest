@@ -159,6 +159,91 @@ const SPRITES = {
       '........', '........', '........', '........', '........',
     ],
   },
+
+  // ---------- champions & bosses ----------
+  bogmaw: {
+    mirror: true,
+    pal: { '.': null, o: '#173a1c', g: '#6fae4a', d: '#437d2f', l: '#a6d873', e: '#ffffff', p: '#173a1c', m: '#243f1a' },
+    rows: [
+      '........', '..oo....', '.oeeo...', '.oepo...', '.oeeoggg', 'oggggggg',
+      'oggggggg', 'ogmmmmgg', 'ommmmmmg', 'oggggggg', 'oglllggg',
+      'oglllggg', '.oddgggg', '.oddddgg', 'ooddddog', '.oo...oo',
+    ],
+  },
+  voltra: {
+    mirror: true,
+    pal: { '.': null, o: '#153a2a', s: '#4bbf8a', S: '#2e8a63', h: '#6fd0a0', e: '#ffd24a', p: '#153a2a', y: '#fff07a' },
+    rows: [
+      '...oo...', '..ohho..', '.ohhhho.', 'ohhhhhho', 'oheppeho', 'ohhhhhho',
+      '.ohhhho.', '..osssss', '..osssss', '.ossssss', '.osSssss',
+      '.ossssss', '..osssss', '...ossss', '....osss', '....oSSy',
+    ],
+  },
+  mildew: {
+    mirror: true,
+    pal: { '.': null, o: '#2a3a1a', g: '#8fae3a', d: '#5a7d24', l: '#c0d86a', e: '#3a1a2a', s: '#e0f0a0' },
+    rows: [
+      '..oooo..', '.oggggog', 'ogggsggg', 'ogsggggg', 'oggggsgg', 'oggeeggg',
+      'oggggggg', 'ogsgggsg', 'oggggggg', 'ogglgggg', 'oggggsgg',
+      '.ogggggg', '.odggggg', '..oddggg', '...oddog', '..o..o..',
+    ],
+  },
+  umbrella: {
+    mirror: true,
+    pal: { '.': null, o: '#2a1a3a', u: '#4a6fd0', U: '#33509c', k: '#ffd24a', e: '#ffffff', p: '#2a1a3a' },
+    rows: [
+      '......kk', '.....ouu', '...oouuu', '.oouuuuu', 'ooueeuuu', 'oouppuuu',
+      'ouuuuuuu', 'oUuUuUuU', '.......u', '.......u', '.......u',
+      '.......u', '......uu', '.....uu.', '........', '........',
+    ],
+  },
+  dragon: {
+    mirror: true,
+    pal: { '.': null, o: '#1a2a3a', s: '#5a7db0', S: '#3a5a8a', b: '#8fb0d8', e: '#ffd24a', p: '#1a2a3a', t: '#e0556b', h: '#c0d8f0' },
+    rows: [
+      '.oo.....', '.ohh....', '..osssss', '.ossssss', 'osssssss', 'oseessss',
+      'osssssss', 'osttttss', '.ossssss', '.ossssss', '..osssss',
+      '..osssss', '...ossss', '...oSSss', '....ooss', '........',
+    ],
+  },
+  sognaroth: {
+    mirror: true,
+    pal: { '.': null, o: '#1a0f2a', v: '#6a2a9a', V: '#3f1a6a', e: '#ffffff', p: '#1a0f2a', t: '#4a1f7a', y: '#b45cff', g: '#7cff9c' },
+    rows: [
+      '...vvv..', '..ovvvv.', '.ovvvvvv', 'ovvvvvvv', 'ovvvvvee', 'ovvvvvpp',
+      'ovvvvvee', 'ovvvvvvv', 'ovvvvvvv', 'oVvvvvvv', 'ovtvtvtv',
+      'otvtvtvt', 'tv.tv.tv', 'v..v..v.', 't...t..t', '........',
+    ],
+  },
+
+  // ---------- villagers ----------
+  npc_mayor: {
+    mirror: true,
+    pal: { '.': null, o: '#241a30', s: P.sk, S: P.skS, e: P.o, h: '#2a2438', c: '#5a4a55', b: '#3a3450', w: '#eaeaf0' },
+    rows: [
+      '...hhhhh', '...hhhhh', '...hhhhh', '.hhhhhhh', '..osssss', '..osesss',
+      '..osssss', '..osccss', '.obbbbbb', '.obwbbbb', '.obwbbbb',
+      '.obbbbbb', '.obbbbbb', '.obbbbbb', '..obbbbb', '..oo....',
+    ],
+  },
+  npc_grandma: {
+    mirror: true,
+    pal: { '.': null, o: '#241a30', s: P.sk, S: P.skS, e: P.o, w: '#e8e8ee', g: '#c05a7a', G: '#9a3f5c' },
+    rows: [
+      '...wwwww', '..wwwwww', '.owwwwww', '.owsssss', '.owsesss', '.owsssss',
+      '..osssss', '..oggggg', '.ogggggg', '.ogGGggg', '.ogggggg',
+      '.ogggggg', '.ogggggg', '.ogggggg', '..oggggg', '..oo....',
+    ],
+  },
+  npc_foreman: {
+    mirror: true,
+    pal: { '.': null, o: '#241a30', s: P.sk, S: P.skS, e: P.o, h: '#ffcc33', H: '#8a5a2a', b: '#8a5a3a', B: '#5a3a1a', r: '#c8783a' },
+    rows: [
+      '..hhhhhh', '.ohhhhhh', '..osssss', '..oseSss', '..obbbbb', '.obbbbbb',
+      '.obbbbbb', '..obbbbb', '.orrrrrr', '.orBBrrr', '.orrrrrr',
+      '.orrrrrr', '.orrrrrr', '.oHHHHHH', '..orrrrr', '..oo....',
+    ],
+  },
 };
 
 // debug: draw a labelled contact sheet of every sprite (toggle window.__spriteSheet)
@@ -185,7 +270,10 @@ function drawSpriteSheet() {
 const MONSTER_SPRITE = {
   slime: 'slime', bat: 'bat', fox: 'fox', shroom: 'shroom', golem: 'golem',
   gazer: 'gazer', spawnling: 'spawnling',
+  bogmaw: 'bogmaw', voltra: 'voltra', mildew: 'mildew', umbrella: 'umbrella',
+  dragon: 'dragon', sognaroth: 'sognaroth',
 };
+const NPC_SPRITE = { mayor: 'npc_mayor', grandma: 'npc_grandma', foreman: 'npc_foreman' };
 function playerSpriteKey() {
   return 'player_' + (G.state ? G.state.classId : 'mage');
 }

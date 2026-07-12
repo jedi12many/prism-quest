@@ -476,7 +476,7 @@ function npcDialog(id) {
 function openNpc(id) {
   const npc = NPCS[id];
   const d = npcDialog(id);
-  document.getElementById('dEmoji').textContent = npc.emoji;
+  document.getElementById('dEmoji').innerHTML = actorHTML(NPC_SPRITE[id], npc.emoji, 60);
   document.getElementById('dName').textContent = npc.name;
   document.getElementById('dText').innerHTML = d.text;
   const acts = document.getElementById('dActs');

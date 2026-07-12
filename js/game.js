@@ -901,16 +901,21 @@ function draw() {
   }
 
   // villagers
-  ctx.font = `${TILE * 0.78}px "Segoe UI Emoji", serif`;
   for (const n of G.npcs) {
     const sx = n.x * TILE - cam.x + TILE / 2, sy = n.y * TILE - cam.y + TILE / 2;
     if (sx < -TILE || sy < -TILE || sx > w + TILE || sy > h + TILE) continue;
-    ctx.fillText(NPCS[n.id].emoji, sx, sy);
+    const nbob = Math.sin(G.time * 2.5 + n.x) * 1.2;
+    drawShadow(ctx, sx, sy + TILE * 0.42, TILE * 0.46);
+    if (!drawSprite(ctx, NPC_SPRITE[n.id], sx, sy - 2, TILE * 1.02, { bob: nbob })) {
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = `${TILE * 0.78}px "Segoe UI Emoji", serif`;
+      ctx.fillText(NPCS[n.id].emoji, sx, sy);
+    }
     if (npcHasNews(n.id)) {
       const bob = Math.sin(G.time * 5) * 3;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.font = `${TILE * 0.45}px "Segoe UI Emoji", serif`;
-      ctx.fillText('❗', sx, sy - TILE * 0.55 + bob);
-      ctx.font = `${TILE * 0.78}px "Segoe UI Emoji", serif`;
+      ctx.fillText('❗', sx, sy - TILE * 0.62 + bob);
     }
   }
 

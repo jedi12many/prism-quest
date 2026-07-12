@@ -75,13 +75,14 @@ then open http://localhost:8123 — on your phone, use your computer's LAN IP
 
 ## Graphics
 
-Hand-authored **pixel-art sprites** for the player classes and common monsters,
-defined as pixel grids in code (`js/sprites.js`) and baked to offscreen canvases
-at load — no external image files. Sprites have idle-bob, facing-flip, and drop
-shadows on the map, and render in battles too. Bosses and NPCs currently fall
-back to emoji. Faceted gems are drawn procedurally; spell effects use a particle
-layer. (Toggle `window.__spriteSheet = true` in the console to see a contact
-sheet of every sprite.)
+Hand-authored **pixel-art sprites** for the entire cast — three player classes,
+common monsters, the four gloom champions, the Rainwyrm, Sog'naroth, and the
+three villagers — defined as pixel grids in code (`js/sprites.js`) and baked to
+offscreen canvases at load, no external image files. Sprites have idle-bob,
+facing-flip, and drop shadows on the map, and render in battles and NPC dialogue
+too. Faceted gems are drawn procedurally; spell effects use a particle layer.
+(Toggle `window.__spriteSheet = true` in the console to see a contact sheet of
+every sprite.)
 
 ## Tech
 
