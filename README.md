@@ -70,6 +70,11 @@ then open http://localhost:8123 — on your phone, use your computer's LAN IP
   capstone** deep in your Power Tree to cheat death once per life (rebound to 50% HP).
 - **Elite monsters** with coloured auras — Vicious, Armored, Swift, Venomous,
   Cursed, or Radiant (guaranteed rare+ loot) — appear more often the deeper you go.
+- **Special dungeons** hidden in every zone: **Gloom Caves** (organic cave-ins),
+  **Sunken Ruins** (rooms and corridors), and **Haunted Houses** (a warren of
+  doored rooms) — each a real, procedurally-laid-out interior with a deadly
+  keeper boss (Gloomtroll, Stone Revenant, Poltergeist) guarding legendary loot.
+  Optional and dangerous; climb back out at the entrance any time.
 - **Gloom Pacts.** Diving into an uncleared zone offers three blessing-and-curse
   pacts (e.g. +35% spell damage but −18 max HP). Pick one for the dive, or refuse.
 - **The Sanctuary (meta-progression).** Every hero banks **Motes ✦** based on how

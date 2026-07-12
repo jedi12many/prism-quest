@@ -185,6 +185,13 @@ const MONSTERS = {
             drops: { emerald: 2, prismatite: 1 } },
   umbrella: { name: 'The Umbrella King',      emoji: '☂️', hp: 60, atk: 10, def: 4, xp: 75, boss: true, miniboss: 3, dread: true,
             drops: { roseopal: 2, prismatite: 1 } },
+  // dungeon bosses — deadly, with rich loot
+  gloomtroll:  { name: 'Gloomtroll',     emoji: '🧌', hp: 85, atk: 13, def: 3, xp: 110, boss: true, dungeonBoss: true, regen: 3,
+            drops: { emerald: 2, prismatite: 1 } },
+  revenant:    { name: 'Stone Revenant', emoji: '🗿', hp: 100, atk: 12, def: 5, xp: 120, boss: true, dungeonBoss: true, doubleHit: 0.3,
+            drops: { aquamarine: 2, prismatite: 1 } },
+  poltergeist: { name: 'Poltergeist',    emoji: '👻', hp: 78, atk: 14, def: 2, xp: 118, boss: true, dungeonBoss: true, dread: true, doubleHit: 0.4,
+            drops: { roseopal: 2, prismatite: 1 } },
   dragon: { name: 'Rainwyrm',     emoji: '🐉', hp: 110, atk: 12, def: 3, xp: 150, boss: true, doubleHit: 0.4,
             drops: { prismatite: 1 } },
   sognaroth: { name: "Sog'naroth, the Endless Drizzle", emoji: '🐙', hp: 170, atk: 14, def: 4, xp: 300,
@@ -216,6 +223,18 @@ const META_UPGRADES = {
   prospector: { name: 'Prospector', icon: '💎', max: 3, cost: r => 25 + r * 20, desc: 'Start with 2 Fine gems', start: { gems: 2 } },
   arsenal:    { name: 'Arsenal',    icon: '🗡️', max: 1, cost: () => 90,          desc: 'Start with a Magic weapon', start: { magicWeapon: true } },
 };
+
+// Special dungeons — optional sub-maps found inside the zones, each with a
+// distinct hand-laid-out interior, deadly boss, and boosted loot.
+const DUNGEONS = {
+  cave:  { name: 'Gloom Cave',    emoji: '⛰️', floor: 'cavefloor',  wall: 'caverock', boss: 'gloomtroll',
+           mobs: { bat: 5, golem: 2, gazer: 2 } },
+  ruins: { name: 'Sunken Ruins',  emoji: '🏛️', floor: 'ruinfloor',  wall: 'ruinwall',  boss: 'revenant',
+           mobs: { shroom: 3, golem: 3, gazer: 2 } },
+  house: { name: 'Haunted House', emoji: '🏚️', floor: 'housefloor', wall: 'housewall', boss: 'poltergeist',
+           mobs: { bat: 4, gazer: 4, spawnling: 2 } },
+};
+const DUNGEON_TYPES = ['cave', 'ruins', 'house'];
 
 // Gloom Pacts — a blessing paired with a curse, chosen when you dive into an
 // uncleared zone. Active only while you're in that zone (a fresh choice each dive).

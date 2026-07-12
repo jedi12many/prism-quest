@@ -6,6 +6,7 @@ const TILE = 44;
 const SPAWN = { x: 6, y: 6 };                        // new-hero spot in the village
 const VILLAGE_ENTRY = { x: 14, y: 13 };              // where travel drops you at home
 const ZONE_IDS = ['north', 'east', 'west', 'south'];
+const FLOOR_TILES = new Set(['grass', 'cloud', 'gloomstone', 'cavefloor', 'ruinfloor', 'housefloor']);
 const ZONE_W = 34, ZONE_H = 26;                      // each zone map's size
 const ZONE_ENTRY = { x: 17, y: 22 };                 // the way-home gate block in a zone
 const ZONE_SPAWN = { x: 17, y: 23 };                 // where you arrive in a zone
@@ -89,6 +90,7 @@ function inZone() { return ZONE_IDS.includes(G.mapId); }
 // difficulty scaling by where you're fighting: zone tier 1-4, clouds/realm higher
 function combatTier() {
   if (inZone()) return ZONES[G.mapId].tier;
+  if (G.mapId === 'dungeon') return (G.state.dungeon ? G.state.dungeon.tier : 1) + 1; // deadlier than its zone
   if (G.mapId === 'clouds') return 5;
   if (G.mapId === 'realm') return 6;
   return 1;
@@ -188,6 +190,7 @@ function buildMap(mapId) {
   G.nodes = []; G.monsters = []; G.npcs = []; G.gates = []; G.wallTiles = [];
   if (mapId === 'village') buildVillage();
   else if (ZONE_IDS.includes(mapId)) buildZone(mapId);
+  else if (mapId === 'dungeon') buildDungeon();
   else if (mapId === 'clouds') buildClouds();
   else buildRealm();
 }
@@ -304,6 +307,143 @@ function buildZone(zoneId) {
     }
     G.monsters.push({ x: lair.x, y: lair.y, type: z.champion, alive: true, respawnAt: 0, home: { ...lair }, moveAt: Infinity });
   }
+
+  // 1-2 special dungeon entrances hidden in the zone
+  const dCount = 1 + (rng() < 0.5 ? 1 : 0);
+  let dp = 0, dg = 0;
+  while (dp < dCount && dg++ < 3000) {
+    const x = 4 + ((rng() * (W - 8)) | 0), y = 4 + ((rng() * (H - 8)) | 0);
+    if (G.map[y][x] !== 'grass') continue;
+    if (cheb(x, y, entry.x, entry.y) < 4 || cheb(x, y, lair.x, lair.y) < 4) continue;
+    if (G.gates.some(g => cheb(g.x, g.y, x, y) < 3)) continue;
+    if (G.monsters.some(m => cheb(m.x, m.y, x, y) < 2) || G.nodes.some(n => n.x === x && n.y === y)) continue;
+    const dtype = DUNGEON_TYPES[(rng() * DUNGEON_TYPES.length) | 0];
+    G.gates.push({ x, y, kind: 'dungeon', dtype, fromZone: zoneId });
+    dp++;
+  }
+}
+
+// ---------- special dungeons ----------
+
+function fillMap(w, h, tile) {
+  G.mw = w; G.mh = h;
+  G.map = [];
+  for (let y = 0; y < h; y++) { const row = []; for (let x = 0; x < w; x++) row.push(tile); G.map.push(row); }
+}
+
+// cellular-automata cave
+function genCave(W, H, floor, wall, rng) {
+  fillMap(W, H, wall);
+  for (let y = 2; y < H - 2; y++) for (let x = 2; x < W - 2; x++) G.map[y][x] = rng() < 0.46 ? wall : floor;
+  for (let it = 0; it < 4; it++) {
+    const n = G.map.map(r => r.slice());
+    for (let y = 2; y < H - 2; y++) for (let x = 2; x < W - 2; x++) {
+      let w = 0;
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (G.map[y + dy][x + dx] === wall) w++;
+      n[y][x] = w >= 5 ? wall : floor;
+    }
+    G.map = n;
+  }
+  const entry = { x: W >> 1, y: H - 4 }, boss = { x: W >> 1, y: 3 };
+  const carve = (cx, cy, r) => {
+    for (let y = Math.max(2, cy - r); y <= Math.min(H - 3, cy + r); y++)
+      for (let x = Math.max(2, cx - r); x <= Math.min(W - 3, cx + r); x++) G.map[y][x] = floor;
+  };
+  carve(entry.x, entry.y, 2); carve(boss.x, boss.y, 2);
+  let px = entry.x, py = entry.y; // drunkard's path guarantees a route
+  while (py > boss.y) {
+    G.map[py][px] = floor;
+    if (rng() < 0.6) py--; else px = clamp(px + (rng() < 0.5 ? -1 : 1), 2, W - 3);
+    G.map[clamp(py, 2, H - 3)][px] = floor;
+  }
+  return { entry, boss };
+}
+
+// classic rooms + L-corridors
+function genRuins(W, H, floor, wall, rng) {
+  fillMap(W, H, wall);
+  const rooms = [];
+  for (let i = 0; i < 7; i++) {
+    const rw = 4 + ((rng() * 4) | 0), rh = 3 + ((rng() * 3) | 0);
+    const rx = 2 + ((rng() * (W - rw - 4)) | 0), ry = 2 + ((rng() * (H - rh - 4)) | 0);
+    for (let y = ry; y < ry + rh; y++) for (let x = rx; x < rx + rw; x++) G.map[y][x] = floor;
+    const room = { cx: rx + (rw >> 1), cy: ry + (rh >> 1) };
+    if (rooms.length) {
+      const p = rooms[rooms.length - 1];
+      for (let x = Math.min(p.cx, room.cx); x <= Math.max(p.cx, room.cx); x++) G.map[p.cy][x] = floor;
+      for (let y = Math.min(p.cy, room.cy); y <= Math.max(p.cy, room.cy); y++) G.map[y][room.cx] = floor;
+    }
+    rooms.push(room);
+  }
+  const entry = { x: rooms[0].cx, y: rooms[0].cy };
+  let bossRoom = rooms[0], md = -1;
+  for (const r of rooms) { const d = cheb(r.cx, r.cy, entry.x, entry.y); if (d > md) { md = d; bossRoom = r; } }
+  return { entry, boss: { x: bossRoom.cx, y: bossRoom.cy } };
+}
+
+// a grid of rooms joined by doors
+function genHouse(W, H, floor, wall, rng) {
+  fillMap(W, H, wall);
+  const cols = 3, rows = 3;
+  const cw = Math.floor((W - 2) / cols), ch = Math.floor((H - 2) / rows);
+  const cell = (gx, gy) => ({ x0: 2 + gx * cw, y0: 2 + gy * ch });
+  for (let gy = 0; gy < rows; gy++) for (let gx = 0; gx < cols; gx++) {
+    const c = cell(gx, gy);
+    for (let y = c.y0 + 1; y < c.y0 + ch - 1; y++) for (let x = c.x0 + 1; x < c.x0 + cw - 1; x++) G.map[y][x] = floor;
+  }
+  // doors between adjacent rooms
+  for (let gy = 0; gy < rows; gy++) for (let gx = 0; gx < cols; gx++) {
+    const c = cell(gx, gy);
+    const midx = c.x0 + (cw >> 1), midy = c.y0 + (ch >> 1);
+    if (gx < cols - 1) { const wx = c.x0 + cw; G.map[midy][wx] = floor; G.map[midy][wx - 1] = floor; G.map[midy][wx + 1] = floor; }
+    if (gy < rows - 1) { const wy = c.y0 + ch; G.map[wy][midx] = floor; G.map[wy - 1][midx] = floor; G.map[wy + 1][midx] = floor; }
+  }
+  const roomCenter = (gx, gy) => { const c = cell(gx, gy); return { x: c.x0 + (cw >> 1), y: c.y0 + (ch >> 1) }; };
+  return { entry: roomCenter(1, rows - 1), boss: roomCenter(1, 0) };
+}
+
+function buildDungeon() {
+  const d = G.state.dungeon;
+  const cfg = DUNGEONS[d.type];
+  const rng = mulberry32((Math.random() * 1e9) | 0);
+  const W = 32, H = 24;
+  const res = d.type === 'cave' ? genCave(W, H, cfg.floor, cfg.wall, rng)
+    : d.type === 'ruins' ? genRuins(W, H, cfg.floor, cfg.wall, rng)
+    : genHouse(W, H, cfg.floor, cfg.wall, rng);
+  const { entry, boss } = res;
+  // spawn on a floor tile beside the entry; the exit gate sits on the entry
+  let spawn = entry;
+  for (const [dx, dy] of [[0, 1], [1, 0], [-1, 0], [0, -1]]) {
+    const nx = entry.x + dx, ny = entry.y + dy;
+    if (G.map[ny] && FLOOR_TILES.has(G.map[ny][nx])) { spawn = { x: nx, y: ny }; break; }
+  }
+  G.dungeonSpawn = spawn;
+  G.gates = [{ x: entry.x, y: entry.y, kind: 'zoneback', zone: d.fromZone }];
+  G.monsters = [{ x: boss.x, y: boss.y, type: cfg.boss, alive: true, respawnAt: 0, home: { ...boss }, moveAt: Infinity }];
+
+  const floors = [];
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (FLOOR_TILES.has(G.map[y][x])) floors.push({ x, y });
+  for (const [type, count] of Object.entries(cfg.mobs)) {
+    let p = 0, g2 = 0;
+    while (p < count && g2++ < 3000) {
+      const f = floors[(rng() * floors.length) | 0];
+      if (cheb(f.x, f.y, spawn.x, spawn.y) < 4 || cheb(f.x, f.y, boss.x, boss.y) < 2) continue;
+      if (G.monsters.some(m => cheb(m.x, m.y, f.x, f.y) < 2)) continue;
+      const mob = { x: f.x, y: f.y, type, alive: true, respawnAt: 0, home: { x: f.x, y: f.y }, moveAt: 1 + rng() * 2 };
+      maybeElite(mob, d.tier + 1, rng); // dungeons crawl with elites
+      G.monsters.push(mob);
+      p++;
+    }
+  }
+  // reward gems, including prismatite by the boss
+  G.nodes = [];
+  const pool = ZONES[d.fromZone] ? ZONES[d.fromZone].minerals : ['quartz'];
+  for (let i = 0; i < 4; i++) {
+    const f = floors[(rng() * floors.length) | 0];
+    if (cheb(f.x, f.y, spawn.x, spawn.y) < 3) continue;
+    if (G.nodes.some(n => n.x === f.x && n.y === f.y)) continue;
+    G.nodes.push({ x: f.x, y: f.y, mineral: i === 0 ? 'prismatite' : pool[(rng() * pool.length) | 0], respawnAt: 0 });
+  }
 }
 
 // The Rainycastle, floating in the rainclouds
@@ -352,7 +492,7 @@ function buildRealm() {
 function walkable(x, y) {
   if (x < 0 || y < 0 || x >= G.mw || y >= G.mh) return false;
   const t = G.map[y][x];
-  if (t !== 'grass' && t !== 'cloud' && t !== 'gloomstone') return false;
+  if (!FLOOR_TILES.has(t)) return false;
   if (G.mapId === 'village' && G.state && G.state.base) {
     const bid = buildingAt(x, y);
     if (bid && G.state.base[bid] > 0) return false;
@@ -366,10 +506,10 @@ function walkable(x, y) {
 
 function travelTo(mapId, x, y) {
   G.state.mapId = mapId;
-  G.state.x = x; G.state.y = y;
-  G.state.activePact = null; // pacts last only for one zone dive
-  calcStats();
   buildMap(mapId);
+  if (mapId === 'dungeon' && G.dungeonSpawn) { x = G.dungeonSpawn.x; y = G.dungeonSpawn.y; }
+  G.state.x = x; G.state.y = y;
+  calcStats(); // pacts/meta may have changed max HP etc.
   G.px = (x + 0.5) * TILE;
   G.py = (y + 0.5) * TILE;
   G.path = []; G.pendingMine = null; G.pendingNpc = null;
@@ -379,14 +519,25 @@ function travelTo(mapId, x, y) {
 
 function onGate(g) {
   if (g.kind === 'village') {
+    G.state.activePact = null;
     travelTo('village', VILLAGE_ENTRY.x, VILLAGE_ENTRY.y);
     toast('🏘️ Home sweet Drizzlewick.');
   } else if (g.kind === 'zone') {
     const z = ZONES[g.zone];
+    G.state.activePact = null;
     travelTo(g.zone, ZONE_SPAWN.x, ZONE_SPAWN.y);
     const cleared = G.state.zonesCleared[g.zone];
     toast(`${z.dir} — ${z.name}: ${z.blurb}.${cleared ? ' ☀️ The light has returned here.' : ''}`);
     if (!cleared && !G.state.sunRestored) offerPact(g.zone);
+  } else if (g.kind === 'dungeon') {
+    const dcfg = DUNGEONS[g.dtype];
+    const tier = ZONE_IDS.includes(g.fromZone) ? ZONES[g.fromZone].tier : 1;
+    G.state.dungeon = { type: g.dtype, fromZone: g.fromZone, tier };
+    travelTo('dungeon', 0, 0);
+    toast(`${dcfg.emoji} You descend into the ${dcfg.name}. Deadly, but rich — turn back at any exit.`);
+  } else if (g.kind === 'zoneback') {
+    travelTo(g.zone, ZONE_SPAWN.x, ZONE_SPAWN.y); // keep your pact; the dive continues
+    toast('🪜 You climb back out into the open.');
   } else if (g.kind === 'cloudgate') {
     if (G.state.mainQuest >= 3) rideRainbow();
     else toast('🌈 A faint shimmer in the stones… the Mayor might know what it means.');
@@ -403,6 +554,7 @@ function rideRainbow() {
   FX.parts.push({ x: 60, y: h - 100, tx: w - 80, ty: 80, speed: 520, emoji: '🦄', size: 46, life: 6, t: 0, trail: true });
   toast('🌈 You cast the rainbow — your unicorn leaps skyward!');
   setQuest(4);
+  G.state.activePact = null;
   setTimeout(() => {
     travelTo('clouds', 4, 8);
     G.riding = false;
@@ -424,6 +576,7 @@ function enterPortal() {
     return;
   }
   setQuest(6);
+  G.state.activePact = null;
   travelTo('realm', 3, 12);
   toast('🌀 The portal seals behind you. The rain here falls in colors that have no names.');
 }
@@ -439,7 +592,7 @@ function save() {
     raw: s.raw, polished: s.polished, spells: s.spells, skills: s.skills,
     kills: s.kills, bossDefeated: s.bossDefeated, sunRestored: s.sunRestored, base: s.base,
     mapId: G.mapId, mainQuest: s.mainQuest, zonesCleared: s.zonesCleared, npcFlags: s.npcFlags,
-    equip: s.equip, inventory: s.inventory, reviveUsed: s.reviveUsed, activePact: s.activePact,
+    equip: s.equip, inventory: s.inventory, reviveUsed: s.reviveUsed, activePact: s.activePact, dungeon: s.dungeon,
   }));
 }
 
@@ -513,7 +666,7 @@ function newGameWithClass(classId) {
     mapId: 'village', mainQuest: 0,
     zonesCleared: { north: false, east: false, west: false, south: false }, npcFlags: {},
     equip: { weapon: rollItem(1, 'common', 'weapon'), helm: null, armor: null, boots: null, charm: null },
-    inventory: [], activePact: null,
+    inventory: [], activePact: null, dungeon: null,
     x: SPAWN.x, y: SPAWN.y,
   };
   // apply Sanctuary starting grants
@@ -565,11 +718,13 @@ function boot() {
       mapId: 'village', mainQuest: 0,
       zonesCleared: { north: false, east: false, west: false, south: false }, npcFlags: {},
       equip: { weapon: null, helm: null, armor: null, boots: null, charm: null },
-      inventory: [], activePact: null,
+      inventory: [], activePact: null, dungeon: null,
     }, saved);
     calcStats();
     if (G.state.hp <= 0) G.state.hp = G.state.hpMax;
     // procedural maps are rebuilt fresh — re-enter them at their entry
+    // a saved dungeon is ephemeral: pop back out to its zone
+    if (G.state.mapId === 'dungeon') G.state.mapId = (G.state.dungeon && G.state.dungeon.fromZone) || 'village';
     G.mapId = G.state.mapId;
     if (ZONE_IDS.includes(G.state.mapId)) { G.state.x = ZONE_SPAWN.x; G.state.y = ZONE_SPAWN.y; }
     if (G.state.mapId === 'realm') { G.state.x = 3; G.state.y = 12; }
@@ -830,9 +985,12 @@ const TILE_COLORS = {
   keep: ['#cfd6ea', '#cfd6ea'],
   gloomstone: ['#332a4a', '#3a3054'],
   voidt: ['#171126', '#181229'],
+  cavefloor: ['#4a4048', '#443a44'], caverock: ['#241f2c', '#2a2434'],
+  ruinfloor: ['#6a6558', '#736e60'], ruinwall: ['#3f3c33', '#48453a'],
+  housefloor: ['#7a5a3a', '#845f3c'], housewall: ['#33241a', '#3a2a20'],
 };
 
-const GATE_EMOJI = { village: '🏘️', world: '🗺️', cloudgate: '🌈', portal: '🌀' };
+const GATE_EMOJI = { village: '🏘️', world: '🗺️', cloudgate: '🌈', portal: '🌀', zoneback: '🪜' };
 
 function tileHash(x, y) {
   let h = (x * 374761393 + y * 668265263) | 0;
@@ -846,6 +1004,9 @@ const TILE_SPECKS = {
   cloud: ['#f2f5ff', '#c6cee6'],
   gloomstone: ['#40365c', '#28203e'],
   keep: ['#e6ebf7', '#b8c0d8'],
+  cavefloor: ['#5a5058', '#38303c'],
+  ruinfloor: ['#7c8a5c', '#565042'],
+  housefloor: ['#8a6a44', '#5f4326'],
 };
 function tileTexture(ctx, t, sx, sy, x, y) {
   const specks = TILE_SPECKS[t];
@@ -916,6 +1077,9 @@ function draw() {
       }
       if (G.mapId === 'village' || inZone()) {
         ctx.fillStyle = inSun(x, y) ? 'rgba(255,225,120,0.10)' : 'rgba(70,80,125,0.22)';
+        ctx.fillRect(sx, sy, TILE, TILE);
+      } else if (G.mapId === 'dungeon') {
+        ctx.fillStyle = 'rgba(8,5,18,0.30)'; // torch-lit gloom
         ctx.fillRect(sx, sy, TILE, TILE);
       }
     }
@@ -1008,9 +1172,25 @@ function draw() {
     }
   }
 
-  // other gates (cloudgate / portal)
+  // dungeon entrances (in zones) — a labelled structure marker
   for (const g of G.gates) {
-    if (g.kind === 'village' || g.kind === 'zone') continue;
+    if (g.kind !== 'dungeon') continue;
+    const dcfg = DUNGEONS[g.dtype];
+    const sx = g.x * TILE - cam.x + TILE / 2, sy = g.y * TILE - cam.y + TILE / 2;
+    if (sx < -TILE || sy < -TILE || sx > w + TILE || sy > h + TILE) continue;
+    drawShadow(ctx, sx, sy + TILE * 0.4, TILE * 0.55);
+    ctx.font = `${TILE * 1.05}px "Segoe UI Emoji", serif`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(dcfg.emoji, sx, sy - TILE * 0.12 + Math.sin(G.time * 2 + g.x) * 1.5);
+    ctx.font = 'bold 10px system-ui, sans-serif';
+    ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.75)'; ctx.fillStyle = '#e0c6ff';
+    ctx.strokeText(dcfg.name, sx, sy + TILE * 0.5);
+    ctx.fillText(dcfg.name, sx, sy + TILE * 0.5);
+  }
+
+  // other gates (cloudgate / portal / dungeon exit)
+  for (const g of G.gates) {
+    if (g.kind === 'village' || g.kind === 'zone' || g.kind === 'dungeon') continue;
     if (g.kind === 'cloudgate' && G.state.mainQuest < 3) continue;
     const sx = g.x * TILE - cam.x + TILE / 2, sy = g.y * TILE - cam.y + TILE / 2;
     if (sx < -TILE || sy < -TILE || sx > w + TILE || sy > h + TILE) continue;

@@ -40,6 +40,7 @@ function startBattle(monster, ambush) {
   blog(def.boss ? `${def.emoji} ${def.name} bars your way!` : `${def.emoji} A wild ${def.name} appears!`);
   if (def.finalBoss) blog('🌑 SOG\'NAROTH RISES. The rain bends toward it. The gloom has a heartbeat.');
   else if (monster.type === 'dragon') blog('🌧️ The storm-fattened serpent coils around its cloud throne!');
+  else if (def.dungeonBoss) blog('💀 The keeper of this place stirs — deadly, but its hoard is legendary!');
   else if (def.miniboss !== undefined) blog('⚡ A champion of the gloom! Defeat it and the light returns to this land!');
   if (ambush && !eff('fleeSure')) {
     blog('😱 Ambush! It strikes first!');
