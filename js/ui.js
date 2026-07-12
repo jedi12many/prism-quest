@@ -34,6 +34,7 @@ function toast(msg) {
 function renderHUD() {
   if (!G.state) return;
   const s = G.state;
+  document.getElementById('questLine').textContent = '📜 ' + questText();
   document.getElementById('hpFill').style.width = Math.max(0, s.hp / s.hpMax * 100) + '%';
   document.getElementById('hpText').textContent = `❤️ ${s.hp}/${s.hpMax}`;
   const need = xpNext(s.level);
@@ -195,8 +196,94 @@ function countPolished(mineralId) {
 
 function requireCamp(what) {
   if (atBase()) return true;
-  toast(`🌧️ Too dangerous out here! Return to camp to ${what}.`);
+  toast(`🌧️ Too dangerous out here! Return to Drizzlewick to ${what}.`);
   return false;
+}
+
+// ---------- villagers ----------
+
+function npcHasNews(id) {
+  const s = G.state;
+  if (!s) return false;
+  if (id === 'mayor') return s.mainQuest === 0 || s.mainQuest === 2;
+  if (id === 'grandma') return !s.npcFlags.grandma;
+  if (id === 'foreman') return !s.npcFlags.foreman;
+  return false;
+}
+
+function npcDialog(id) {
+  const s = G.state;
+  const q = s.mainQuest;
+  if (id === 'mayor') {
+    if (q === 0) return {
+      text: `Ah, a hero at last! Welcome to <b>Drizzlewick</b> — the last sunny speck in all of Rainyday.<br><br>
+        Out in the wilds, four <b>gloom champions</b> hold the storm over the land: a damp toad, a storm serpent,
+        a creeping mold, and… a very haunted umbrella. Strike each one down and the sunlight will flood back, region by region!`,
+      action: { label: "⚔️ I'll bring back the light!", fn: () => setQuest(1) },
+    };
+    if (q === 1) {
+      const done = s.regionsRestored.filter(Boolean).length;
+      const left = REGION_NAMES.filter((_, i) => !s.regionsRestored[i]).join(', ');
+      return { text: `${done}/4 regions shine again. The remaining champions lurk to the <b>${left}</b> of the old gate. The south gate of the village leads out — go get 'em!` };
+    }
+    if (q === 2) return {
+      text: `You DID it! The whole land glitters — but do you feel that drizzle? The <b>RAINYCASTLE</b> has risen
+        in the rainclouds, and the Rainwyrm means to soak us all over again.<br><br>
+        There's only one road up: a rainbow. I've unsealed the old <b>Cloudgate</b> in the plaza. Ride well, hero.`,
+      action: { label: '🌈 Open the Cloudgate!', fn: () => setQuest(3) },
+    };
+    if (q === 3) return { text: 'The <b>Cloudgate</b> 🌈 glows in the plaza, east of the fountain. Step onto it, cast your rainbow, and ride!' };
+    if (q === 4) return { text: 'The Rainwyrm coils atop the Rainycastle. Sun spells burn brightest up there, they say.' };
+    if (q === 5 || q === 6) return { text: "So the wyrm was only the doorman… <b>Sog'naroth</b> waits beyond that portal, and the portal only opens ONE way. Craft every spell you can carry before you step through, hero. Drizzlewick believes in you." };
+    return { text: '🌞 The HERO OF RAINYDAY stands before me! Statues shall be raised. Pies shall be baked. Welcome home.' };
+  }
+  if (id === 'grandma') {
+    if (!s.npcFlags.grandma) {
+      s.npcFlags.grandma = true;
+      s.raw.quartz = (s.raw.quartz || 0) + 4;
+      save();
+      toast('🎁 Grandma Nimbus gave you 4 raw Quartz!');
+      return { text: `Oh, sweetheart, you'll catch your death out there. Here — some quartz from my rock garden, for practice.<br><br>
+        Mind the rain: the gloom-things <b>cannot step into sunshine</b>. If they gang up on you, run for the light.` };
+    }
+    if (q <= 1) return { text: 'The champions? Nasty things. The toad spits poison, the serpent strikes twice, the mold <i>regrows</i>, and the umbrella… whispers. Bring healing blooms, dearie.' };
+    if (q <= 4) return { text: 'The Rainwyrm hates sunlight — Sunflare, Rainbow Beam, Stardust. My knees ache just thinking about that climb.' };
+    if (q <= 6) return { text: "Beyond the portal there are <b>no gems to mine, no way home</b> until it's done. Pack every spell charge you can, dearie, and come back to me in one piece." };
+    return { text: 'Sunshine on my rocking chair at last. You wonderful child.' };
+  }
+  // foreman
+  if (!s.npcFlags.foreman) {
+    s.npcFlags.foreman = true;
+    s.spells.dwarves = (s.spells.dwarves || 0) + 1;
+    save();
+    toast('🎁 Foreman Flint taught you Summon Dwarves! (+1 charge)');
+    return { text: `Flint's the name — stone, gems, and honest work. The crew owes me a favor, so here: one <b>dwarf crew summons</b>, on the house.
+      They'll polish your whole bag, and they don't do sloppy work.<br><br>Build up that <b>Polishing Factory</b> and even your own hands get luckier.` };
+  }
+  return { text: 'Upgrade the camp, hero — Kitchen for your health, Stalls for your unicorn, Walls for your hide. Raw minerals pay the bills.' };
+}
+
+function openNpc(id) {
+  const npc = NPCS[id];
+  const d = npcDialog(id);
+  document.getElementById('dEmoji').textContent = npc.emoji;
+  document.getElementById('dName').textContent = npc.name;
+  document.getElementById('dText').innerHTML = d.text;
+  const acts = document.getElementById('dActs');
+  acts.innerHTML = '';
+  if (d.action) {
+    const btn = document.createElement('button');
+    btn.className = 'bigBtn';
+    btn.textContent = d.action.label;
+    btn.onclick = () => { closeScreen('dialogScreen'); d.action.fn(); };
+    acts.appendChild(btn);
+  }
+  const close = document.createElement('button');
+  close.className = 'closeBtn plain';
+  close.textContent = d.action ? 'Maybe later' : 'Farewell!';
+  close.onclick = () => closeScreen('dialogScreen');
+  acts.appendChild(close);
+  openScreen('dialogScreen');
 }
 
 function openSpells() {
@@ -401,7 +488,13 @@ function bindUI() {
   document.getElementById('btnNewGame').onclick = () => {
     if (confirm('Start over? Your current hero will be lost.')) resetSave();
   };
-  document.getElementById('btnWinClose').onclick = () => closeScreen('winBanner');
+  document.getElementById('btnWinClose').onclick = () => {
+    closeScreen('winBanner');
+    if (G.state && G.state.sunRestored && G.mapId === 'realm') {
+      travelTo('village', VILLAGE_ENTRY.x, VILLAGE_ENTRY.y);
+      toast('🌞 Drizzlewick throws you the biggest festival Rainyday has ever seen!');
+    }
+  };
   document.querySelectorAll('.closeBtn').forEach(btn => {
     btn.onclick = () => closeScreen(btn.dataset.close);
   });

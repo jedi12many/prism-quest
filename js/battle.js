@@ -32,7 +32,8 @@ function startBattle(monster, ambush) {
   document.getElementById('bPlayerEmoji').classList.remove('hit');
   blog(def.boss ? `${def.emoji} ${def.name} bars your way!` : `${def.emoji} A wild ${def.name} appears!`);
   if (def.finalBoss) blog('🌑 SOG\'NAROTH RISES. The rain bends toward it. The gloom has a heartbeat.');
-  else if (def.boss) blog('🌧️ The storm-fattened serpent coils around the Sunken Gate!');
+  else if (monster.type === 'dragon') blog('🌧️ The storm-fattened serpent coils around its cloud throne!');
+  else if (def.miniboss !== undefined) blog('⚡ A champion of the gloom! Defeat it and the light returns to this land!');
   if (ambush && !eff('fleeSure')) {
     blog('😱 Ambush! It strikes first!');
     monsterHit();
@@ -269,6 +270,7 @@ function victory() {
   if (def.finalBoss && !s.sunRestored) {
     // the sun returns to Rainyday — gloom-things cannot exist beneath it
     s.sunRestored = true;
+    s.mainQuest = 7;
     for (const m of G.monsters) { m.alive = false; m.respawnAt = Infinity; }
     setTimeout(() => {
       closeScreen('battleScreen');
@@ -276,11 +278,34 @@ function victory() {
       fxConfetti(window.innerWidth / 2, 160, 80);
       setTimeout(() => fxConfetti(window.innerWidth / 2, window.innerHeight / 2, 60), 500);
     }, 900);
+  } else if (def.miniboss !== undefined && !s.regionsRestored[def.miniboss]) {
+    // a champion falls — its whole region floods with light
+    s.regionsRestored[def.miniboss] = true;
+    for (const m of G.monsters) {
+      if (m.alive && G.mapId === 'world' && regionOf(m.x, m.y) === def.miniboss) {
+        m.alive = false; m.respawnAt = Infinity;
+      }
+    }
+    setTimeout(() => {
+      toast(`🌞 Sunlight floods the ${REGION_NAMES[def.miniboss]} of Rainyday! The gloom-things melt into dew.`);
+      fxConfetti(window.innerWidth / 2, 200, 50);
+    }, 800);
+    if (s.regionsRestored.every(Boolean)) {
+      setTimeout(() => {
+        setQuest(2);
+        toast('🏰 Far above, thunder rolls… the RAINYCASTLE has risen in the rainclouds!');
+      }, 3000);
+    } else {
+      renderHUD();
+    }
   } else if (B.monster.type === 'dragon' && !s.bossDefeated) {
     s.bossDefeated = true;
-    spawnSognaroth();
-    setTimeout(() => toast('🌊 The Rainwyrm bursts into mist — and the Sunken Gate groans open…'), 900);
-    setTimeout(() => toast("🐙 Something VAST uncoils in the dark corner. Sog'naroth waits."), 3800);
+    G.gates.push({ x: 16, y: 9, kind: 'portal' });
+    setTimeout(() => toast('🌊 The Rainwyrm bursts into mist — and the sky itself tears open…'), 900);
+    setTimeout(() => {
+      setQuest(5);
+      toast("🐙 Beyond the tear: SOG'NAROTH, the Endless Drizzle. A portal swirls beside the castle.");
+    }, 3600);
   }
   renderBattle(true);
   renderHUD();
@@ -302,11 +327,11 @@ function endBattle(how) {
   const s = G.state;
   if (how === 'dead') {
     s.hp = s.hpMax;
-    G.px = (SPAWN.x + 0.5) * TILE;
-    G.py = (SPAWN.y + 0.5) * TILE;
-    s.x = SPAWN.x; s.y = SPAWN.y;
-    G.path = [];
-    toast('🏕️ You wake up back at camp, patched up and ready to try again.');
+    const wasRealm = G.mapId === 'realm', wasClouds = G.mapId === 'clouds';
+    travelTo('village', VILLAGE_ENTRY.x, VILLAGE_ENTRY.y);
+    toast(wasRealm ? '💫 The gloom chews you up and spits you back into Drizzlewick. It can wait. Can you?'
+      : wasClouds ? '💫 You tumble from the clouds and land in a haystack back home.'
+      : '🏘️ You wake up back in Drizzlewick, patched up and ready to try again.');
   } else if (how === 'flee') {
     // hop one tile away from the monster if possible
     const p = playerTile();

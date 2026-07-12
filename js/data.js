@@ -156,12 +156,42 @@ const MONSTERS = {
             drops: { emerald: 2, aquamarine: 2, roseopal: 1 } },
   gazer:  { name: 'Drowned Gazer', emoji: '👁️', hp: 26, atk: 9, def: 1, xp: 30, dread: true,
             drops: { roseopal: 2, prismatite: 1 } },
+  spawnling: { name: 'Spawn of Sog', emoji: '🦑', hp: 24, atk: 10, def: 1, xp: 26,
+            drops: { roseopal: 1 } },
+  // the four gloom champions — beat one and its region floods with light
+  bogmaw:   { name: 'Bogmaw the Damp',        emoji: '🐸', hp: 50, atk: 9,  def: 2, xp: 60, boss: true, miniboss: 0, poison: true,
+            drops: { aquamarine: 2, prismatite: 1 } },
+  voltra:   { name: 'Voltra the Storm Serpent', emoji: '🐍', hp: 55, atk: 11, def: 2, xp: 70, boss: true, miniboss: 1, doubleHit: 0.35,
+            drops: { sunstone: 2, prismatite: 1 } },
+  mildew:   { name: 'Mildew Prime',           emoji: '🦠', hp: 65, atk: 10, def: 3, xp: 80, boss: true, miniboss: 2, regen: 2,
+            drops: { emerald: 2, prismatite: 1 } },
+  umbrella: { name: 'The Umbrella King',      emoji: '☂️', hp: 60, atk: 10, def: 4, xp: 75, boss: true, miniboss: 3, dread: true,
+            drops: { roseopal: 2, prismatite: 1 } },
   dragon: { name: 'Rainwyrm',     emoji: '🐉', hp: 110, atk: 12, def: 3, xp: 150, boss: true, doubleHit: 0.4,
             drops: { prismatite: 1 } },
   sognaroth: { name: "Sog'naroth, the Endless Drizzle", emoji: '🐙', hp: 170, atk: 14, def: 4, xp: 300,
             boss: true, finalBoss: true, doubleHit: 0.45, dread: true, regen: 4,
             drops: { prismatite: 1 } },
 };
+
+// Drizzlewick villagers
+const NPCS = {
+  mayor:   { name: 'Mayor Puddle',   emoji: '🎩', x: 14, y: 6 },
+  grandma: { name: 'Grandma Nimbus', emoji: '🧓', x: 17, y: 9 },
+  foreman: { name: 'Foreman Flint',  emoji: '🧔', x: 10, y: 12 },
+};
+
+// Main quest stages (index = state.mainQuest)
+const QUEST_TEXT = [
+  'Talk to Mayor Puddle in Drizzlewick.',
+  'Defeat the four gloom champions out in Rainyday.',
+  'The land shines! Report to Mayor Puddle.',
+  'Step onto the Cloudgate 🌈 in the plaza and ride to the Rainycastle.',
+  'Defeat the Rainwyrm in the Rainycastle!',
+  'A portal has opened in the Rainycastle. Prepare, then enter — there is no way back.',
+  "Destroy Sog'naroth. No retreat, no resupply.",
+  'Rainyday is saved! Bask in the sunshine.',
+];
 
 // Camp buildings. costs[L] = raw minerals to go from level L to L+1 (null = prebuilt).
 const BUILDINGS = {

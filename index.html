@@ -17,6 +17,7 @@
   <div id="hudBars">
     <div class="bar hp"><div class="fill" id="hpFill"></div><span id="hpText"></span></div>
     <div class="bar xp"><div class="fill" id="xpFill"></div><span id="lvlText"></span></div>
+    <div id="questLine"></div>
   </div>
   <div id="hudBtns">
     <button id="btnBase" title="Camp">🏰</button>
@@ -34,7 +35,7 @@
   <div class="panel wide">
     <h1>💎 Prism Quest 🌈</h1>
     <p class="sub">The world of <b>Rainyday</b> has spent a hundred years beneath one endless storm. Deep in the gloom squirms <b>Sog'naroth, the Endless Drizzle</b> — an ancient thing that can only exist where the sun never shines.</p>
-    <p class="sub">Mine minerals · polish gems · craft dazzling spells · build up your camp · <b>bring back the sunshine!</b></p>
+    <p class="sub">From the village of <b>Drizzlewick</b>: quest into the wilds, defeat the gloom champions, ride a rainbow to the Rainycastle, and <b>bring back the sunshine!</b></p>
     <div id="classCards"></div>
   </div>
 </div>
@@ -95,6 +96,18 @@
   </div>
 </div>
 
+<!-- Villager dialogue -->
+<div class="screen" id="dialogScreen">
+  <div class="panel">
+    <div class="dHead">
+      <span id="dEmoji" class="bigEmoji"></span>
+      <h2 id="dName"></h2>
+    </div>
+    <div id="dText"></div>
+    <div id="dActs"></div>
+  </div>
+</div>
+
 <!-- Camp / base building -->
 <div class="screen" id="baseScreen">
   <div class="panel">
@@ -110,14 +123,12 @@
   <div class="panel">
     <h2>⚙️ Menu</h2>
     <div class="howto">
-      <p>🚶 <b>Tap the ground</b> to walk (or WASD/arrows on desktop).</p>
-      <p>⛏️ <b>Tap a sparkling gem node</b> to walk over and mine it. Nodes regrow after a minute.</p>
-      <p>🪞 Hit <b>Polish all</b> in your Bag — quality is down to luck. The Polishing Factory and steady hands raise the odds, and a summoned <b>dwarf crew ⛏️</b> does the same job with a big Brilliant bonus.</p>
-      <p>✨ <b>Craft spells</b> from polished gems in the Spellbook. Each craft gives limited charges.</p>
-      <p>⚔️ <b>Walk into monsters</b> to battle. Defeat them for XP and gem drops.</p>
-      <p>🏰 <b>Your camp is a sunny safe zone</b> — gloom-things cannot step into sunshine, and resting there heals you. Build the Kitchen, Unicorn Stalls, Training Grounds and more with raw minerals to grow your power.</p>
-      <p>🌳✨ Studying takes peace and quiet: the <b>Power Tree and Spellbook only open at camp</b>.</p>
-      <p>🐉 The <b>Rainwyrm</b> guards the Sunken Gate in the dark corner. Beyond it waits <b>Sog'naroth, the Endless Drizzle</b> — defeat it to bring back the sun. Sunlight spells burn it; its whispers bring Dread.</p>
+      <p>🚶 <b>Tap the ground</b> to walk (or WASD/arrows on desktop). Tap villagers to talk — they drive the story.</p>
+      <p>🏘️ <b>Drizzlewick</b> is your home: always sunny, always safe. Rest to heal, build up your camp, and open the <b>Power Tree and Spellbook</b> here. The south gate leads to the wilds.</p>
+      <p>🌧️ The <b>wilds of Rainyday</b> redraw themselves every trip. Four <b>gloom champions</b> rule its regions — defeat one and sunlight floods that region for good.</p>
+      <p>⛏️ <b>Tap gem nodes</b> to mine. <b>Polish all</b> in your Bag turns raw minerals into gems (luck-based — the Factory and dwarf crews ⛏️ raise the odds). Craft spells from gems; each craft gives limited charges.</p>
+      <p>🌈 Restore all four regions and the <b>Rainycastle</b> rises in the rainclouds. Step onto the plaza <b>Cloudgate</b> to ride your unicorn up and face the <b>Rainwyrm</b>.</p>
+      <p>🌀 Beyond the wyrm, a portal leads to <b>Sog'naroth's realm — one way only</b>: no village, no gems, just the skills and charges you carry. Win, and the sun returns forever.</p>
     </div>
     <p class="sub">Progress saves automatically on this device.</p>
     <button id="btnNewGame" class="bigBtn danger">🔄 New Game</button>

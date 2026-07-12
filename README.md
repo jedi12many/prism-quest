@@ -4,9 +4,21 @@ A mobile-friendly adventure RPG that runs in any browser — no install, no buil
 
 The world of **Rainyday** has spent a hundred years beneath one endless storm. Deep
 in the gloom squirms **Sog'naroth, the Endless Drizzle** — a lovecraftian thing that
-can only exist where the sun never shines. Mine rare minerals, polish them to a shine,
-craft dazzling spells (rainbows! unicorns!), build up your camp, defeat the Rainwyrm
-at the Sunken Gate, and destroy Sog'naroth to **bring back the sunshine**.
+can only exist where the sun never shines.
+
+A Diablo-style campaign from the village hub of **Drizzlewick**:
+
+1. **Drizzlewick** — quest NPCs (Mayor Puddle, Grandma Nimbus, Foreman Flint),
+   your upgradeable camp, always sunny, always safe.
+2. **The wilds of Rainyday** — procedurally redrawn every trip. Defeat the four
+   **gloom champions** (Bogmaw 🐸, Voltra 🐍, Mildew Prime 🦠, the Umbrella King ☂️)
+   and each region floods with permanent sunlight.
+3. **The Rainycastle** rises in the rainclouds once the land shines — step onto
+   the plaza **Cloudgate**, cast a rainbow, and ride your unicorn up to slay the
+   **Rainwyrm**.
+4. The sky tears open: a portal to **Sog'naroth's realm** — one way only. No
+   village, no gems, just the skills and spell charges you carry. Win, and the
+   sun returns forever.
 
 ## Play it
 
