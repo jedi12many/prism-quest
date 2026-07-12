@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#25203a">
+<title>Prism Quest 💎🌈</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<canvas id="game"></canvas>
+
+<!-- HUD -->
+<div id="hud">
+  <div id="hudBars">
+    <div class="bar hp"><div class="fill" id="hpFill"></div><span id="hpText"></span></div>
+    <div class="bar xp"><div class="fill" id="xpFill"></div><span id="lvlText"></span></div>
+  </div>
+  <div id="hudBtns">
+    <button id="btnBag" title="Bag">🎒</button>
+    <button id="btnSpells" title="Spellbook">✨</button>
+    <button id="btnSkills" title="Skills">🌳<span id="skillDot"></span></button>
+    <button id="btnMenu" title="Menu">⚙️</button>
+  </div>
+</div>
+
+<div id="toastWrap"></div>
+
+<!-- Class select -->
+<div class="screen" id="classScreen">
+  <div class="panel wide">
+    <h1>💎 Prism Quest 🌈</h1>
+    <p class="sub">Mine rare minerals · polish them to a shine · craft dazzling spells · drive back the gloom!</p>
+    <div id="classCards"></div>
+  </div>
+</div>
+
+<!-- Bag -->
+<div class="screen" id="bagScreen">
+  <div class="panel">
+    <h2>🎒 Your Bag</h2>
+    <h3>⛏️ Raw minerals <small>(tap to polish)</small></h3>
+    <div id="rawList"></div>
+    <h3>💎 Polished gems</h3>
+    <div id="polList"></div>
+    <button class="closeBtn bigBtn" data-close="bagScreen">Close</button>
+  </div>
+</div>
+
+<!-- Polish minigame -->
+<div class="screen" id="polishScreen">
+  <div class="panel">
+    <h2>🪞 Polishing Wheel</h2>
+    <p id="polishTitle"></p>
+    <div id="pBar">
+      <div id="pZoneFine"></div>
+      <div id="pZoneBril"></div>
+      <div id="pMarker"></div>
+    </div>
+    <button id="pStop" class="bigBtn stop">STOP ✋</button>
+    <div id="pResult"></div>
+    <button class="closeBtn" data-close="polishScreen">Back</button>
+  </div>
+</div>
+
+<!-- Spellbook -->
+<div class="screen" id="spellScreen">
+  <div class="panel">
+    <h2>✨ Spellbook</h2>
+    <p class="sub">Craft spells from polished gems. Better polish = more charges!</p>
+    <div id="spellList"></div>
+    <button class="closeBtn bigBtn" data-close="spellScreen">Close</button>
+  </div>
+</div>
+
+<!-- Skill tree -->
+<div class="screen" id="skillScreen">
+  <div class="panel wide">
+    <h2>🌳 Power Tree</h2>
+    <p class="sub" id="spLeft"></p>
+    <div id="skillCols"></div>
+    <button class="closeBtn bigBtn" data-close="skillScreen">Close</button>
+  </div>
+</div>
+
+<!-- Battle -->
+<div class="screen" id="battleScreen">
+  <div class="panel battle">
+    <div class="combatant">
+      <span id="bMonEmoji" class="bigEmoji"></span>
+      <div class="combatInfo">
+        <div id="bMonName" class="combatName"></div>
+        <div class="bar hp small"><div class="fill" id="bMonHpFill"></div><span id="bMonHpText"></span></div>
+        <div class="chips" id="bMonChips"></div>
+      </div>
+    </div>
+    <div id="bLog"></div>
+    <div class="combatant you">
+      <span id="bPlayerEmoji" class="bigEmoji"></span>
+      <div class="combatInfo">
+        <div class="combatName">You</div>
+        <div class="bar hp small"><div class="fill" id="bPlayerHpFill"></div><span id="bPlayerHpText"></span></div>
+        <div class="chips" id="bPlayerChips"></div>
+      </div>
+    </div>
+    <div id="bActs"></div>
+  </div>
+</div>
+
+<!-- Menu -->
+<div class="screen" id="menuScreen">
+  <div class="panel">
+    <h2>⚙️ Menu</h2>
+    <div class="howto">
+      <p>🚶 <b>Tap the ground</b> to walk (or WASD/arrows on desktop).</p>
+      <p>⛏️ <b>Tap a sparkling gem node</b> to walk over and mine it. Nodes regrow after a minute.</p>
+      <p>🪞 <b>Polish</b> raw minerals in your Bag — stop the slider in the bright center for Brilliant quality.</p>
+      <p>✨ <b>Craft spells</b> from polished gems in the Spellbook. Each craft gives limited charges.</p>
+      <p>⚔️ <b>Walk into monsters</b> to battle. Defeat them for XP and gem drops.</p>
+      <p>🌳 <b>Spend skill points</b> in your Power Tree each time you level up.</p>
+      <p>🐉 A <b>Gloom Dragon</b> lurks in the dark corner of the map. Level up before you visit…</p>
+    </div>
+    <p class="sub">Progress saves automatically on this device.</p>
+    <button id="btnNewGame" class="bigBtn danger">🔄 New Game</button>
+    <button class="closeBtn bigBtn" data-close="menuScreen">Close</button>
+  </div>
+</div>
+
+<!-- Victory banner -->
+<div class="screen" id="winBanner">
+  <div class="panel">
+    <h1>🌈🎉🦄</h1>
+    <h2>The Gloom Dragon is defeated!</h2>
+    <p class="sub">Color floods back into the valley. You are a true Prism Hero! Keep exploring, keep polishing — legends never really end.</p>
+    <button id="btnWinClose" class="bigBtn">Keep adventuring ➜</button>
+  </div>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/game.js"></script>
+<script src="js/battle.js"></script>
+<script src="js/ui.js"></script>
+<script>window.addEventListener('load', boot);</script>
+</body>
+</html>
