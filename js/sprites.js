@@ -31,7 +31,8 @@ function bakeSprite(key) {
 
 function hasSprite(key) { return !!SPRITES[key]; }
 
-// draw a baked sprite centred at (cx, cy), sized to sizePx, optional h-flip + bob
+// draw a baked sprite centred at (cx, cy), sized to sizePx.
+// opts: flip, bob, alpha, squashX/squashY (scale, anchored near the feet)
 function drawSprite(ctx, key, cx, cy, sizePx, opts = {}) {
   const c = bakeSprite(key);
   if (!c) return false;
@@ -40,6 +41,13 @@ function drawSprite(ctx, key, cx, cy, sizePx, opts = {}) {
   ctx.save();
   ctx.translate(cx, cy + (opts.bob || 0));
   if (opts.flip) ctx.scale(-1, 1);
+  const kx = opts.squashX || 1, ky = opts.squashY || 1;
+  if (kx !== 1 || ky !== 1) {
+    // scale around the feet so a squash keeps the sprite grounded
+    ctx.translate(0, sizePx * 0.5);
+    ctx.scale(kx, ky);
+    ctx.translate(0, -sizePx * 0.5);
+  }
   if (opts.alpha != null) ctx.globalAlpha = opts.alpha;
   ctx.drawImage(c, -sizePx / 2, -sizePx / 2, sizePx, sizePx);
   ctx.restore();

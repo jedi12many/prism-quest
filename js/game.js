@@ -821,6 +821,15 @@ function draw() {
         const wob = Math.sin(G.time * 2 + x * 1.7 + y * 2.3) * 3;
         ctx.fillRect(sx + 6 + wob, sy + TILE / 2, TILE - 16, 3);
         ctx.fillRect(sx + 10 - wob, sy + TILE * 0.28, TILE - 24, 2);
+        // foam shoreline on every edge that touches land
+        const isWater = (xx, yy) => G.map[yy] && G.map[yy][xx] === 'water';
+        const foam = Math.sin(G.time * 3 + x * 2 + y) * 0.12;
+        ctx.fillStyle = `rgba(210,244,255,${0.5 + foam})`;
+        const th = 4;
+        if (!isWater(x, y - 1)) ctx.fillRect(sx, sy, TILE, th);
+        if (!isWater(x, y + 1)) ctx.fillRect(sx, sy + TILE - th, TILE, th);
+        if (!isWater(x - 1, y)) ctx.fillRect(sx, sy, th, TILE);
+        if (!isWater(x + 1, y)) ctx.fillRect(sx + TILE - th, sy, th, TILE);
       } else if (t === 'voidt') {
         ctx.fillStyle = 'rgba(180,92,255,0.12)';
         const pulse = Math.sin(G.time * 1.5 + x * 2.1 + y * 1.3) * 2;
@@ -953,9 +962,10 @@ function draw() {
   for (const n of G.npcs) {
     const sx = n.x * TILE - cam.x + TILE / 2, sy = n.y * TILE - cam.y + TILE / 2;
     if (sx < -TILE || sy < -TILE || sx > w + TILE || sy > h + TILE) continue;
-    const nbob = Math.sin(G.time * 2.5 + n.x) * 1.2;
+    const nbr = Math.sin(G.time * 2.5 + n.x);
+    const nbob = nbr * 1.2;
     drawShadow(ctx, sx, sy + TILE * 0.42, TILE * 0.46);
-    if (!drawSprite(ctx, NPC_SPRITE[n.id], sx, sy - 2, TILE * 1.02, { bob: nbob })) {
+    if (!drawSprite(ctx, NPC_SPRITE[n.id], sx, sy - 2, TILE * 1.02, { bob: nbob, squashY: 1 + nbr * 0.02, squashX: 1 - nbr * 0.015 })) {
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.font = `${TILE * 0.78}px "Segoe UI Emoji", serif`;
       ctx.fillText(NPCS[n.id].emoji, sx, sy);
@@ -979,8 +989,9 @@ function draw() {
     const key = MONSTER_SPRITE[m.type];
     if (key && hasSprite(key)) {
       const size = def.boss ? TILE * 1.5 : TILE * 1.02;
+      const breathe = Math.sin(G.time * 3 + m.home.x) * 0.035;
       drawShadow(ctx, sx, sy + TILE * 0.42, size * 0.5);
-      drawSprite(ctx, key, sx, sy - 2, size, { bob, flip: m.x > pt.x });
+      drawSprite(ctx, key, sx, sy - 2, size, { bob, flip: m.x > pt.x, squashY: 1 + breathe, squashX: 1 - breathe });
     } else {
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.font = `${def.boss ? TILE * 1.15 : TILE * 0.72}px "Segoe UI Emoji", serif`;
@@ -989,12 +1000,24 @@ function draw() {
     }
   }
 
-  // player — pixel sprite with idle bob, facing flip, shadow
+  // player — bouncy squash-stretch walk, idle breathe, facing flip, shadow
   const cls = classDef();
   const pcx = G.px - cam.x, pcy = G.py - cam.y;
-  const pbob = G.path.length ? Math.sin(G.time * 12) * 2 : Math.sin(G.time * 3) * 1.2;
-  drawShadow(ctx, pcx, pcy + TILE * 0.42, TILE * 0.5);
-  if (!drawSprite(ctx, playerSpriteKey(), pcx, pcy - 2, TILE * 1.05, { bob: pbob, flip: G.faceLeft })) {
+  const walking = G.path.length > 0;
+  let pbob, psx, psy;
+  if (walking) {
+    const bounce = Math.abs(Math.sin(G.time * 13));
+    pbob = -bounce * 3.5;
+    psy = 1 + bounce * 0.09;
+    psx = 1 - bounce * 0.07;
+  } else {
+    const br = Math.sin(G.time * 3) * 0.5;
+    pbob = br;
+    psy = 1 + br * 0.03;
+    psx = 1 - br * 0.02;
+  }
+  drawShadow(ctx, pcx, pcy + TILE * 0.42, TILE * 0.5 * (walking ? 0.9 : 1));
+  if (!drawSprite(ctx, playerSpriteKey(), pcx, pcy - 2, TILE * 1.05, { bob: pbob, flip: G.faceLeft, squashX: psx, squashY: psy })) {
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.font = `${TILE * 0.8}px "Segoe UI Emoji", serif`;
     ctx.fillText(cls.emoji, pcx, pcy - 2);
