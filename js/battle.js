@@ -295,19 +295,16 @@ function victory() {
       fxConfetti(window.innerWidth / 2, 160, 80);
       setTimeout(() => fxConfetti(window.innerWidth / 2, window.innerHeight / 2, 60), 500);
     }, 900);
-  } else if (def.miniboss !== undefined && !s.regionsRestored[def.miniboss]) {
-    // a champion falls — its whole region floods with light
-    s.regionsRestored[def.miniboss] = true;
-    for (const m of G.monsters) {
-      if (m.alive && G.mapId === 'world' && regionOf(m.x, m.y) === def.miniboss) {
-        m.alive = false; m.respawnAt = Infinity;
-      }
-    }
+  } else if (def.miniboss !== undefined && ZONE_IDS.includes(G.mapId) && !s.zonesCleared[G.mapId]) {
+    // a champion falls — its whole zone floods with light
+    const zid = G.mapId;
+    s.zonesCleared[zid] = true;
+    for (const m of G.monsters) { if (m.alive) { m.alive = false; m.respawnAt = Infinity; } }
     setTimeout(() => {
-      toast(`🌞 Sunlight floods the ${REGION_NAMES[def.miniboss]} of Rainyday! The gloom-things melt into dew.`);
+      toast(`🌞 Sunlight floods ${ZONES[zid].name}! The gloom-things melt into dew.`);
       fxConfetti(window.innerWidth / 2, 200, 50);
     }, 800);
-    if (s.regionsRestored.every(Boolean)) {
+    if (ZONE_IDS.every(z => s.zonesCleared[z])) {
       setTimeout(() => {
         setQuest(2);
         toast('🏰 Far above, thunder rolls… the RAINYCASTLE has risen in the rainclouds!');

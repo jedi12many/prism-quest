@@ -427,14 +427,15 @@ function npcDialog(id) {
   if (id === 'mayor') {
     if (q === 0) return {
       text: `Ah, a hero at last! Welcome to <b>Drizzlewick</b> — the last sunny speck in all of Rainyday.<br><br>
-        Out in the wilds, four <b>gloom champions</b> hold the storm over the land: a damp toad, a storm serpent,
-        a creeping mold, and… a very haunted umbrella. Strike each one down and the sunlight will flood back, region by region!`,
+        A gate leads out of the village in each direction, and each way lies a land held by a <b>gloom champion</b>:
+        <b>South</b> to Bogmire's damp toad, <b>East</b> to the Thunderfen's serpent, <b>West</b> to the Moldwood's creeping rot,
+        and <b>North</b> to the haunted heights. Strike each champion down and the sun returns to that land!`,
       action: { label: "⚔️ I'll bring back the light!", fn: () => setQuest(1) },
     };
     if (q === 1) {
-      const done = s.regionsRestored.filter(Boolean).length;
-      const left = REGION_NAMES.filter((_, i) => !s.regionsRestored[i]).join(', ');
-      return { text: `${done}/4 regions shine again. The remaining champions lurk to the <b>${left}</b> of the old gate. The south gate of the village leads out — go get 'em!` };
+      const done = ZONE_IDS.filter(z => s.zonesCleared[z]).length;
+      const left = ZONE_IDS.filter(z => !s.zonesCleared[z]).map(z => `${ZONES[z].dir} (${ZONES[z].name})`).join(', ');
+      return { text: `${done}/4 lands shine again. Still under the storm: <b>${left}</b>. Take the matching gate out of the village — the signposts point the way. Start with the South if you're fresh; it's the gentlest.` };
     }
     if (q === 2) return {
       text: `You DID it! The whole land glitters — but do you feel that drizzle? The <b>RAINYCASTLE</b> has risen

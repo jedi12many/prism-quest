@@ -10,9 +10,13 @@ A Diablo-style campaign from the village hub of **Drizzlewick**:
 
 1. **Drizzlewick** — quest NPCs (Mayor Puddle, Grandma Nimbus, Foreman Flint),
    your upgradeable camp, always sunny, always safe.
-2. **The wilds of Rainyday** — procedurally redrawn every trip. Defeat the four
-   **gloom champions** (Bogmaw 🐸, Voltra 🐍, Mildew Prime 🦠, the Umbrella King ☂️)
-   and each region floods with permanent sunlight.
+2. **Four directional zones** — a gate leads out of the village to the North,
+   East, West, and South, each into its own procedurally-generated, themed level
+   with a **gloom champion** waiting at the far end: South → Bogmire (Bogmaw 🐸),
+   East → the Thunderfen (Voltra 🐍), West → the Moldwood (Mildew Prime 🦠), North
+   → the Weeping Heights (the Umbrella King ☂️). Signposts in the village point
+   the way and track which lands you've cleared. Beat a champion and that whole
+   zone floods with permanent sunlight.
 3. **The Rainycastle** rises in the rainclouds once the land shines — step onto
    the plaza **Cloudgate**, cast a rainbow, and ride your unicorn up to slay the
    **Rainwyrm**.

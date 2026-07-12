@@ -181,10 +181,47 @@ const NPCS = {
   foreman: { name: 'Foreman Flint',  emoji: '🧔', x: 10, y: 12 },
 };
 
+// The four directional zones out of Drizzlewick — one champion boss each.
+// Ordered easy→hard; each is its own procedural level with a themed look.
+const ZONES = {
+  south: {
+    dir: 'South', name: 'Bogmire', champion: 'bogmaw', tier: 1,
+    ground: ['#6f9c4a', '#79a854'],
+    packs: { slime: 5, bat: 3, shroom: 2 },
+    minerals: ['quartz', 'quartz', 'amethyst', 'sunstone'],
+    gate: [[13, 15], [14, 15]],
+    blurb: 'a sunken swamp of croaking gloom',
+  },
+  east: {
+    dir: 'East', name: 'The Thunderfen', champion: 'voltra', tier: 2,
+    ground: ['#5f9a86', '#69a690'],
+    packs: { bat: 4, fox: 4, slime: 2 },
+    minerals: ['sunstone', 'aquamarine', 'quartz', 'amethyst'],
+    gate: [[25, 8], [25, 9]],
+    blurb: 'storm-lashed reedlands',
+  },
+  west: {
+    dir: 'West', name: 'The Moldwood', champion: 'mildew', tier: 3,
+    ground: ['#6a8a3a', '#749644'],
+    packs: { shroom: 5, golem: 2, fox: 2, gazer: 1 },
+    minerals: ['emerald', 'aquamarine', 'emerald', 'quartz'],
+    gate: [[2, 13], [2, 14]],
+    blurb: 'a rotting, spore-choked forest',
+  },
+  north: {
+    dir: 'North', name: 'The Weeping Heights', champion: 'umbrella', tier: 4,
+    ground: ['#7286a4', '#7e92b0'],
+    packs: { golem: 3, gazer: 3, fox: 2 },
+    minerals: ['roseopal', 'emerald', 'sunstone', 'roseopal'],
+    gate: [[13, 2], [14, 2]],
+    blurb: 'cold cliffs under endless drizzle',
+  },
+};
+
 // Main quest stages (index = state.mainQuest)
 const QUEST_TEXT = [
   'Talk to Mayor Puddle in Drizzlewick.',
-  'Defeat the four gloom champions out in Rainyday.',
+  'Take a gate out of the village and defeat the gloom champion in each direction.',
   'The land shines! Report to Mayor Puddle.',
   'Step onto the Cloudgate 🌈 in the plaza and ride to the Rainycastle.',
   'Defeat the Rainwyrm in the Rainycastle!',

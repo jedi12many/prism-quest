@@ -3,14 +3,16 @@
 //       the Rainycastle in the rainclouds → Sog'naroth's realm (one way!)
 
 const TILE = 44;
-const WORLD_W = 48, WORLD_H = 36;
 const SPAWN = { x: 6, y: 6 };                        // new-hero spot in the village
 const VILLAGE_ENTRY = { x: 14, y: 13 };              // where travel drops you at home
-const WORLD_GATE = { x: 24, y: 18 };                 // wilds: the way back home
+const ZONE_IDS = ['north', 'east', 'west', 'south'];
+const ZONE_W = 34, ZONE_H = 26;                      // each zone map's size
+const ZONE_ENTRY = { x: 17, y: 22 };                 // the way-home gate block in a zone
+const ZONE_SPAWN = { x: 17, y: 23 };                 // where you arrive in a zone
+const ZONE_LAIR = { x: 17, y: 4 };                   // the champion, far from the entry
 const BASE_RECT = { x0: 2, y0: 2, x1: 11, y1: 11 };  // the buildable camp plot
 const GATE_TILES = [[6, 11], [7, 11]];               // opening in the castle walls
-const REGION_NAMES = ['north-west', 'north-east', 'south-west', 'south-east'];
-const SAVE_KEY = 'prismquest_save_v2';
+const SAVE_KEY = 'prismquest_save_v3';
 
 const G = {
   state: null,
@@ -19,7 +21,7 @@ const G = {
   nodes: [],                 // mineral nodes {x, y, mineral, respawnAt}
   monsters: [],              // {x, y, type, alive, respawnAt, home, moveAt}
   npcs: [],                  // {id, x, y} (village only)
-  gates: [],                 // {x, y, kind: 'world'|'village'|'cloudgate'|'portal'}
+  gates: [],                 // {x, y, kind: 'zone'|'village'|'cloudgate'|'portal', zone?}
   wallTiles: [],
   path: [],
   pendingMine: null,
@@ -74,17 +76,14 @@ function eff(key) {
 
 function atBase() { return G.mapId === 'village'; }
 
-// Which quadrant of the wilds a tile belongs to (0 NW, 1 NE, 2 SW, 3 SE)
-function regionOf(x, y) {
-  return (x >= WORLD_W / 2 ? 1 : 0) + (y >= WORLD_H / 2 ? 2 : 0);
-}
+function inZone() { return ZONE_IDS.includes(G.mapId); }
 
-// Sunshine per map. Gloom-things cannot exist in it.
+// Sunshine per map. Gloom-things cannot exist in it. A zone is sunny once cleared.
 function inSun(x, y) {
   if (!G.state) return false;
   if (G.state.sunRestored) return true;
   if (G.mapId === 'village') return true;
-  if (G.mapId === 'world') return G.state.regionsRestored[regionOf(x, y)];
+  if (inZone()) return !!G.state.zonesCleared[G.mapId];
   return false; // the rainclouds and the realm never see the sun
 }
 
@@ -151,7 +150,7 @@ function questText() {
   const s = G.state;
   if (!s) return '';
   if (s.mainQuest === 1) {
-    const done = s.regionsRestored.filter(Boolean).length;
+    const done = ZONE_IDS.filter(z => s.zonesCleared[z]).length;
     return `${QUEST_TEXT[1]} (${done}/4)`;
   }
   return QUEST_TEXT[s.mainQuest] || '';
@@ -171,7 +170,7 @@ function buildMap(mapId) {
   G.mapId = mapId;
   G.nodes = []; G.monsters = []; G.npcs = []; G.gates = []; G.wallTiles = [];
   if (mapId === 'village') buildVillage();
-  else if (mapId === 'world') buildWorld();
+  else if (ZONE_IDS.includes(mapId)) buildZone(mapId);
   else if (mapId === 'clouds') buildClouds();
   else buildRealm();
 }
@@ -199,97 +198,86 @@ function buildVillage() {
     for (let y = BASE_RECT.y0; y <= BASE_RECT.y1; y++)
       if (isWallTile(x, y)) G.wallTiles.push([x, y]);
   G.npcs = Object.entries(NPCS).map(([id, n]) => ({ id, x: n.x, y: n.y }));
-  G.gates = [
-    { x: 13, y: 15, kind: 'world' }, { x: 14, y: 15, kind: 'world' },
-    { x: 18, y: 4, kind: 'cloudgate' },
-  ];
+  // a gate to each of the four zones, plus the plaza cloudgate
+  G.gates = [{ x: 18, y: 4, kind: 'cloudgate' }];
+  for (const zid of ZONE_IDS) {
+    for (const [gx, gy] of ZONES[zid].gate) {
+      G.map[gy][gx] = 'grass'; // keep the gate tile clear
+      G.gates.push({ x: gx, y: gy, kind: 'zone', zone: zid });
+    }
+  }
 }
 
-// The wilds of Rainyday — a fresh layout every time you step out
-function buildWorld() {
+// A directional zone — a fresh themed level with a champion at the far end
+function buildZone(zoneId) {
+  const z = ZONES[zoneId];
   const rng = mulberry32((Math.random() * 1e9) | 0);
-  blankMap(WORLD_W, WORLD_H, 'grass', 'tree');
+  const W = ZONE_W, H = ZONE_H;
+  blankMap(W, H, 'grass', 'tree');
   // lakes
-  for (let i = 0; i < 3; i++) {
-    const cx = 6 + rng() * (WORLD_W - 12), cy = 6 + rng() * (WORLD_H - 12);
-    const rx = 3 + rng() * 4, ry = 2 + rng() * 3;
-    for (let y = 2; y < WORLD_H - 2; y++) for (let x = 2; x < WORLD_W - 2; x++) {
+  const lakes = 2 + ((rng() * 2) | 0);
+  for (let i = 0; i < lakes; i++) {
+    const cx = 6 + rng() * (W - 12), cy = 5 + rng() * (H - 10), rx = 2 + rng() * 3, ry = 2 + rng() * 2;
+    for (let y = 2; y < H - 2; y++) for (let x = 2; x < W - 2; x++) {
       const dx = (x - cx) / rx, dy = (y - cy) / ry;
       if (dx * dx + dy * dy < 1) G.map[y][x] = 'water';
     }
   }
   // forest scatter
-  for (let y = 2; y < WORLD_H - 2; y++) for (let x = 2; x < WORLD_W - 2; x++) {
-    if (G.map[y][x] === 'grass' && rng() < 0.08) G.map[y][x] = 'tree';
+  for (let y = 2; y < H - 2; y++) for (let x = 2; x < W - 2; x++) {
+    if (G.map[y][x] === 'grass' && rng() < 0.09) G.map[y][x] = 'tree';
   }
-  // champion lairs + the gate home stay clear
-  const lairs = [{ x: 7, y: 6 }, { x: 40, y: 6 }, { x: 7, y: 29 }, { x: 40, y: 29 }];
+  const entry = ZONE_ENTRY, lair = ZONE_LAIR;
   const clear = (cx, cy, r) => {
-    for (let y = Math.max(2, cy - r); y <= Math.min(WORLD_H - 3, cy + r); y++)
-      for (let x = Math.max(2, cx - r); x <= Math.min(WORLD_W - 3, cx + r); x++)
+    for (let y = Math.max(2, cy - r); y <= Math.min(H - 3, cy + r); y++)
+      for (let x = Math.max(2, cx - r); x <= Math.min(W - 3, cx + r); x++)
         G.map[y][x] = 'grass';
   };
-  clear(WORLD_GATE.x, WORLD_GATE.y, 2);
-  lairs.forEach(l => clear(l.x, l.y, 2));
-  // the way home is a 2x2 landmark you can enter from any of its tiles
+  clear(entry.x, entry.y, 2);
+  clear(lair.x, lair.y, 2);
+  // carve a wandering path from entry up to the lair so the level is traversable
+  let px = entry.x;
+  for (let y = entry.y; y >= lair.y; y--) {
+    G.map[y][clamp(px, 3, W - 4)] = 'grass';
+    if (rng() < 0.55) px = clamp(px + (rng() < 0.5 ? -1 : 1), 3, W - 4);
+    G.map[y][clamp(px, 3, W - 4)] = 'grass';
+  }
+  // way-home 2x2 gate at the entry
   G.gates = [];
-  for (const [gx, gy] of [[WORLD_GATE.x - 1, WORLD_GATE.y - 1], [WORLD_GATE.x, WORLD_GATE.y - 1],
-                          [WORLD_GATE.x - 1, WORLD_GATE.y], [WORLD_GATE.x, WORLD_GATE.y]]) {
+  for (const [gx, gy] of [[entry.x - 1, entry.y - 1], [entry.x, entry.y - 1],
+                          [entry.x - 1, entry.y], [entry.x, entry.y]]) {
     G.gates.push({ x: gx, y: gy, kind: 'village' });
   }
 
-  // mineral nodes per region (restored regions become safe mining meadows)
-  const regionMinerals = [
-    ['quartz', 'quartz', 'amethyst', 'sunstone'],
-    ['sunstone', 'aquamarine', 'quartz', 'amethyst'],
-    ['emerald', 'aquamarine', 'quartz', 'amethyst'],
-    ['roseopal', 'emerald', 'sunstone', 'aquamarine'],
-  ];
-  const regionBounds = r => ({
-    x0: r % 2 ? WORLD_W / 2 : 2, x1: r % 2 ? WORLD_W - 3 : WORLD_W / 2 - 1,
-    y0: r >= 2 ? WORLD_H / 2 : 2, y1: r >= 2 ? WORLD_H - 3 : WORLD_H / 2 - 1,
-  });
-  for (let r = 0; r < 4; r++) {
-    const b = regionBounds(r);
-    let placed = 0, guard = 0;
-    while (placed < 7 && guard++ < 2000) {
-      const x = b.x0 + Math.floor(rng() * (b.x1 - b.x0));
-      const y = b.y0 + Math.floor(rng() * (b.y1 - b.y0));
-      if (G.map[y][x] !== 'grass') continue;
-      if (cheb(x, y, WORLD_GATE.x, WORLD_GATE.y) < 3) continue;
-      if (G.nodes.some(n => cheb(n.x, n.y, x, y) < 2)) continue;
-      const pool = regionMinerals[r];
-      G.nodes.push({ x, y, mineral: pool[Math.floor(rng() * pool.length)], respawnAt: 0 });
-      placed++;
-    }
-    // legendary prismatite grows near each champion lair
-    G.nodes.push({ x: lairs[r].x + 1, y: lairs[r].y + 1, mineral: 'prismatite', respawnAt: 0 });
+  // mineral nodes (themed pool); legendary prismatite by the lair
+  let placed = 0, guard = 0;
+  while (placed < 10 && guard++ < 3000) {
+    const x = 3 + ((rng() * (W - 6)) | 0), y = 3 + ((rng() * (H - 6)) | 0);
+    if (G.map[y][x] !== 'grass') continue;
+    if (cheb(x, y, entry.x, entry.y) < 3) continue;
+    if (G.nodes.some(n => cheb(n.x, n.y, x, y) < 2)) continue;
+    G.nodes.push({ x, y, mineral: z.minerals[(rng() * z.minerals.length) | 0], respawnAt: 0 });
+    placed++;
   }
+  G.nodes.push({ x: lair.x + 1, y: lair.y + 1, mineral: 'prismatite', respawnAt: 0 });
+  G.nodes.push({ x: lair.x - 1, y: lair.y + 1, mineral: 'prismatite', respawnAt: 0 });
 
-  // monsters per region (none where the light has returned)
-  const regionPacks = [
-    { slime: 4, bat: 3 }, { bat: 3, fox: 4 },
-    { shroom: 4, golem: 3 }, { fox: 3, golem: 2, gazer: 3 },
-  ];
-  const champs = ['bogmaw', 'voltra', 'mildew', 'umbrella'];
-  for (let r = 0; r < 4; r++) {
-    if (G.state.regionsRestored[r] || G.state.sunRestored) continue;
-    const b = regionBounds(r);
-    for (const [type, count] of Object.entries(regionPacks[r])) {
-      let placed = 0, guard = 0;
-      while (placed < count && guard++ < 2000) {
-        const x = b.x0 + Math.floor(rng() * (b.x1 - b.x0));
-        const y = b.y0 + Math.floor(rng() * (b.y1 - b.y0));
-        if (G.map[y][x] !== 'grass') continue;
-        if (cheb(x, y, WORLD_GATE.x, WORLD_GATE.y) < 5) continue;
-        if (cheb(x, y, lairs[r].x, lairs[r].y) < 2) continue;
+  // monsters + the champion (none once the zone is cleared / the sun is back)
+  if (!G.state.zonesCleared[zoneId] && !G.state.sunRestored) {
+    for (const [type, count] of Object.entries(z.packs)) {
+      let p = 0, g2 = 0;
+      while (p < count && g2++ < 3000) {
+        const x = 3 + ((rng() * (W - 6)) | 0), y = 3 + ((rng() * (H - 6)) | 0);
+        if (!walkable(x, y)) continue;
+        if (cheb(x, y, entry.x, entry.y) < 5) continue;
+        if (cheb(x, y, lair.x, lair.y) < 2) continue;
         if (G.monsters.some(m => cheb(m.x, m.y, x, y) < 3)) continue;
         if (G.nodes.some(n => n.x === x && n.y === y)) continue;
         G.monsters.push({ x, y, type, alive: true, respawnAt: 0, home: { x, y }, moveAt: 1 + rng() * 2 });
-        placed++;
+        p++;
       }
     }
-    G.monsters.push({ x: lairs[r].x, y: lairs[r].y, type: champs[r], alive: true, respawnAt: 0, home: { ...lairs[r] }, moveAt: Infinity });
+    G.monsters.push({ x: lair.x, y: lair.y, type: z.champion, alive: true, respawnAt: 0, home: { ...lair }, moveAt: Infinity });
   }
 }
 
@@ -364,9 +352,11 @@ function onGate(g) {
   if (g.kind === 'village') {
     travelTo('village', VILLAGE_ENTRY.x, VILLAGE_ENTRY.y);
     toast('🏘️ Home sweet Drizzlewick.');
-  } else if (g.kind === 'world') {
-    travelTo('world', WORLD_GATE.x, WORLD_GATE.y + 1);
-    toast('🌧️ The wilds of Rainyday. The storm never sleeps out here…');
+  } else if (g.kind === 'zone') {
+    const z = ZONES[g.zone];
+    travelTo(g.zone, ZONE_SPAWN.x, ZONE_SPAWN.y);
+    const cleared = G.state.zonesCleared[g.zone];
+    toast(`${z.dir} — ${z.name}: ${z.blurb}.${cleared ? ' ☀️ The light has returned here.' : ''}`);
   } else if (g.kind === 'cloudgate') {
     if (G.state.mainQuest >= 3) rideRainbow();
     else toast('🌈 A faint shimmer in the stones… the Mayor might know what it means.');
@@ -418,7 +408,7 @@ function save() {
     hp: s.hp, x: Math.round(G.px / TILE - 0.5), y: Math.round(G.py / TILE - 0.5),
     raw: s.raw, polished: s.polished, spells: s.spells, skills: s.skills,
     kills: s.kills, bossDefeated: s.bossDefeated, sunRestored: s.sunRestored, base: s.base,
-    mapId: G.mapId, mainQuest: s.mainQuest, regionsRestored: s.regionsRestored, npcFlags: s.npcFlags,
+    mapId: G.mapId, mainQuest: s.mainQuest, zonesCleared: s.zonesCleared, npcFlags: s.npcFlags,
     equip: s.equip, inventory: s.inventory,
   }));
 }
@@ -447,7 +437,8 @@ function newGameWithClass(classId) {
     skills: {},
     kills: 0, bossDefeated: false, sunRestored: false,
     base: { house: 1, kitchen: 0, factory: 0, stalls: 0, training: 0, walls: 0 },
-    mapId: 'village', mainQuest: 0, regionsRestored: [false, false, false, false], npcFlags: {},
+    mapId: 'village', mainQuest: 0,
+    zonesCleared: { north: false, east: false, west: false, south: false }, npcFlags: {},
     equip: { weapon: rollItem(1, 'common', 'weapon'), helm: null, armor: null, boots: null, charm: null },
     inventory: [],
     x: SPAWN.x, y: SPAWN.y,
@@ -461,8 +452,8 @@ function startGame() {
   const s = G.state;
   buildMap(s.mapId || 'village');
   if (!walkable(s.x, s.y)) {
-    const home = G.mapId === 'village' ? SPAWN : G.mapId === 'world'
-      ? { x: WORLD_GATE.x, y: WORLD_GATE.y + 1 } : G.mapId === 'clouds' ? { x: 4, y: 8 } : { x: 3, y: 12 };
+    const home = G.mapId === 'village' ? SPAWN : inZone() ? ZONE_SPAWN
+      : G.mapId === 'clouds' ? { x: 4, y: 8 } : { x: 3, y: 12 };
     s.x = home.x; s.y = home.y;
   }
   G.px = (s.x + 0.5) * TILE;
@@ -491,15 +482,16 @@ function boot() {
     G.state = Object.assign({
       raw: {}, polished: {}, spells: {}, skills: {}, kills: 0, bossDefeated: false, sunRestored: false,
       base: { house: 1, kitchen: 0, factory: 0, stalls: 0, training: 0, walls: 0 },
-      mapId: 'village', mainQuest: 0, regionsRestored: [false, false, false, false], npcFlags: {},
+      mapId: 'village', mainQuest: 0,
+      zonesCleared: { north: false, east: false, west: false, south: false }, npcFlags: {},
       equip: { weapon: null, helm: null, armor: null, boots: null, charm: null },
       inventory: [],
     }, saved);
     calcStats();
     if (G.state.hp <= 0) G.state.hp = G.state.hpMax;
-    // procedural maps are rebuilt fresh — re-enter them at their gate
+    // procedural maps are rebuilt fresh — re-enter them at their entry
     G.mapId = G.state.mapId;
-    if (G.state.mapId === 'world') { G.state.x = WORLD_GATE.x; G.state.y = WORLD_GATE.y + 1; }
+    if (ZONE_IDS.includes(G.state.mapId)) { G.state.x = ZONE_SPAWN.x; G.state.y = ZONE_SPAWN.y; }
     if (G.state.mapId === 'realm') { G.state.x = 3; G.state.y = 12; }
     startGame();
     toast('Welcome back! Your quest continues.');
@@ -725,7 +717,7 @@ function update(dt) {
     }
     const nx = m.x + dx, ny = m.y + dy;
     if (inSun(nx, ny)) continue; // gloom-things hiss and stop at the sunlight's edge
-    if (G.mapId === 'world' && regionOf(nx, ny) !== regionOf(m.home.x, m.home.y)) continue;
+    if (cheb(nx, ny, m.home.x, m.home.y) > 7) continue; // don't wander too far from home
     if (nx === p.x && ny === p.y) { startBattle(m, true); return; }
     if (walkable(nx, ny) && !G.monsters.some(o => o !== m && o.alive && o.x === nx && o.y === ny)) {
       m.x = nx; m.y = ny;
@@ -813,11 +805,13 @@ function draw() {
   ctx.textBaseline = 'middle';
 
   // pass 1: ground — base colour, texture, water/void detail, weather wash
+  const zoneGround = inZone() ? ZONES[G.mapId].ground : null; // themed grass per zone
   for (let y = Math.max(0, y0); y <= y1; y++) {
     for (let x = Math.max(0, x0); x <= x1; x++) {
       const t = G.map[y][x];
       const sx = x * TILE - cam.x, sy = y * TILE - cam.y;
-      const base = t === 'tree' || t === 'cottage' ? TILE_COLORS.grass : TILE_COLORS[t];
+      const grassy = t === 'grass' || t === 'tree' || t === 'cottage';
+      const base = grassy ? (zoneGround || TILE_COLORS.grass) : TILE_COLORS[t];
       ctx.fillStyle = base[(x + y) % 2];
       ctx.fillRect(sx, sy, TILE, TILE);
       tileTexture(ctx, t === 'tree' || t === 'cottage' ? 'grass' : t, sx, sy, x, y);
@@ -840,7 +834,7 @@ function draw() {
         const pulse = Math.sin(G.time * 1.5 + x * 2.1 + y * 1.3) * 2;
         ctx.fillRect(sx + 10, sy + 10 + pulse, TILE - 20, TILE - 20);
       }
-      if (G.mapId === 'village' || G.mapId === 'world') {
+      if (G.mapId === 'village' || inZone()) {
         ctx.fillStyle = inSun(x, y) ? 'rgba(255,225,120,0.10)' : 'rgba(70,80,125,0.22)';
         ctx.fillRect(sx, sy, TILE, TILE);
       }
@@ -922,9 +916,21 @@ function draw() {
     }
   }
 
-  // other gates
+  // village zone gates — one directional signpost per zone
+  const zoneGates = G.gates.filter(g => g.kind === 'zone');
+  if (zoneGates.length) {
+    const byZone = {};
+    for (const g of zoneGates) (byZone[g.zone] = byZone[g.zone] || []).push(g);
+    for (const [zid, gs] of Object.entries(byZone)) {
+      const gx = gs.reduce((a, g) => a + g.x, 0) / gs.length;
+      const gy = gs.reduce((a, g) => a + g.y, 0) / gs.length;
+      drawZoneSign(ctx, (gx + 0.5) * TILE - cam.x, (gy + 0.5) * TILE - cam.y, zid);
+    }
+  }
+
+  // other gates (cloudgate / portal)
   for (const g of G.gates) {
-    if (g.kind === 'village') continue;
+    if (g.kind === 'village' || g.kind === 'zone') continue;
     if (g.kind === 'cloudgate' && G.state.mainQuest < 3) continue;
     const sx = g.x * TILE - cam.x + TILE / 2, sy = g.y * TILE - cam.y + TILE / 2;
     if (sx < -TILE || sy < -TILE || sx > w + TILE || sy > h + TILE) continue;
@@ -1055,12 +1061,13 @@ function draw() {
   // the weather: rain per map (heavier in the clouds, purple in the realm)
   if (!G.state.sunRestored && G.rain) {
     const drizzle = castleActive();
+    const cfgKey = inZone() ? 'zone' : G.mapId;
     const cfg = {
       village: drizzle ? { color: 'rgba(170,190,255,', full: 0, light: 0.22 } : null,
-      world: { color: 'rgba(170,190,255,', full: 0.4, light: drizzle ? 0.18 : 0 },
+      zone: { color: 'rgba(170,190,255,', full: 0.4, light: drizzle ? 0.18 : 0 },
       clouds: { color: 'rgba(190,205,255,', full: 0.55, light: 0 },
       realm: { color: 'rgba(180,92,255,', full: 0.45, light: 0 },
-    }[G.mapId];
+    }[cfgKey];
     if (cfg) {
       ctx.lineWidth = 1.5;
       ctx.lineCap = 'round';
@@ -1135,6 +1142,37 @@ function drawVillageLandmark(ctx, cx, cy) {
   ctx.fillStyle = '#fff';
   ctx.strokeText('Village', cx, cy + s * 1.0);
   ctx.fillText('Village', cx, cy + s * 1.0);
+}
+
+// a wooden signpost in the village pointing to a zone, with its name + cleared mark
+function drawZoneSign(ctx, cx, cy, zid) {
+  const z = ZONES[zid];
+  const cleared = G.state.zonesCleared[zid];
+  const arrow = { North: '▲', South: '▼', East: '▶', West: '◀' }[z.dir];
+  // post
+  ctx.fillStyle = '#6a4028';
+  ctx.fillRect(cx - 2, cy - 4, 4, TILE * 0.5);
+  // board
+  const bw = TILE * 1.5, bh = 18;
+  ctx.fillStyle = cleared ? '#3a7d3a' : '#8a5a2a';
+  ctx.strokeStyle = 'rgba(0,0,0,0.55)';
+  ctx.lineWidth = 2;
+  ctx.fillRect(cx - bw / 2, cy - 24, bw, bh);
+  ctx.strokeRect(cx - bw / 2, cy - 24, bw, bh);
+  // direction line
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 11px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(`${arrow} ${z.dir}`, cx, cy - 15);
+  // zone name below
+  ctx.font = '10px system-ui, sans-serif';
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = 'rgba(0,0,0,0.75)';
+  ctx.fillStyle = cleared ? '#bff0bf' : '#ffe9a8';
+  const label = (cleared ? '✓ ' : '') + z.name;
+  ctx.strokeText(label, cx, cy + TILE * 0.5);
+  ctx.fillText(label, cx, cy + TILE * 0.5);
 }
 
 let lastFrame = 0;
