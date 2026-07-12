@@ -114,6 +114,15 @@ procedurally; spell effects use a particle layer. (Toggle
 `window.__spriteSheet = true` in the console to see a contact sheet of every
 sprite.)
 
+## Sound
+
+All audio is **synthesized at runtime with the Web Audio API** — no sound files,
+matching the code-drawn art. Every action has an SFX (mining, polishing,
+crafting, bonks, crits, spell casts, taking a hit, dodging, level-ups, victory,
+death, buying, keys…) and each map has a subtle ambient arpeggio whose mood
+shifts (calm village, tense zones, ominous dungeons, dissonant realm). A 🔊/🔇
+button in the HUD mutes everything, and the choice persists.
+
 ## Tech
 
 Plain HTML5 Canvas + vanilla JavaScript. No dependencies, no build.

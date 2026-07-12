@@ -57,10 +57,15 @@ html, body {
   box-shadow: 0 3px 10px rgba(0,0,0,0.35);
 }
 #hudBtns button:active { transform: scale(0.93); }
-@media (max-width: 430px) {
-  #hudBtns { gap: 6px; }
-  #hudBtns button { width: 44px; height: 44px; font-size: 21px; }
-  #hudBars { max-width: 150px; }
+@media (max-width: 480px) {
+  #hudBtns { gap: 5px; }
+  #hudBtns button { width: 40px; height: 40px; font-size: 19px; }
+  #hudBars { max-width: 130px; }
+}
+@media (max-width: 380px) {
+  #hudBtns { gap: 4px; }
+  #hudBtns button { width: 36px; height: 36px; font-size: 17px; }
+  #hudBars { max-width: 108px; }
 }
 #skillDot {
   display: none;

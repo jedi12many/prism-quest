@@ -91,6 +91,7 @@ function playerAction(action, spellId) {
     fxBurst(fxTo.x, fxTo.y, { count: 10, colors: ['#ffffff', '#ffd24a'], star: true, speed: 220, life: 0.5 });
     shakeEl('bMonEmoji');
     const crit = isCrit();
+    crit ? sndCrit() : sndBonk();
     let dmg = s.atk * 2 * (1 + eff('basicDmg')) * variance() * dreadMult();
     if (crit) dmg *= 1.7;
     dmg = Math.max(1, Math.round(dmg - B.mdef * 0.5));
@@ -112,6 +113,7 @@ function playerAction(action, spellId) {
     if (!free) s.spells[spellId]--;
     else blog('⛓️ Chain Light — the charge is refunded!');
     spellFX(spellId, fxFrom, fxTo);
+    sndSpell(spellId);
     if (sp.power > 0 && spellId !== 'unicorn') shakeEl('bMonEmoji');
 
     if (spellId === 'prismshield') {
@@ -188,6 +190,7 @@ function monsterHit() {
   // dodge — a defensive stat from boots and affixes (capped so you can't be untouchable)
   if (Math.random() < Math.min(0.6, eff('dodge'))) {
     blog(`🌀 You dance aside — ${B.def.name}'s attack whiffs!`);
+    sndDodge();
     setTimeout(() => fxBurst(ppos.x, ppos.y, { count: 8, colors: ['#b8f4f8', '#ffffff'], speed: 150, life: 0.5, star: true }), 350);
     return;
   }
@@ -203,6 +206,7 @@ function monsterHit() {
     blog(`${B.def.emoji} ${B.def.name} hits you for ${dmg}!`);
     setTimeout(() => {
       shakeEl('bPlayerEmoji');
+      sndHurt();
       fxBurst(ppos.x, ppos.y, { count: 9, colors: ['#ff5c7a', '#ffffff'], speed: 190, life: 0.5, star: true });
     }, 380);
   }
@@ -314,10 +318,12 @@ function victory() {
   B.monster.alive = false;
   B.monster.respawnAt = def.boss ? Infinity : G.time + 45;
 
+  sndVictory();
+
   if (B.warden && s.dungeon) {
     // the Warden falls — the way down is unlocked
     s.dungeon.hasKey = true;
-    setTimeout(() => { toast('🗝️ The Warden drops a heavy key — the stair is open!'); fxConfetti(mpos.x, mpos.y, 24); }, 600);
+    setTimeout(() => { toast('🗝️ The Warden drops a heavy key — the stair is open!'); fxConfetti(mpos.x, mpos.y, 24); sndKey(); }, 600);
   }
 
   if (def.finalBoss && !s.sunRestored) {
@@ -328,6 +334,7 @@ function victory() {
     setTimeout(() => {
       closeScreen('battleScreen');
       openScreen('winBanner');
+      sndWin();
       fxConfetti(window.innerWidth / 2, 160, 80);
       setTimeout(() => fxConfetti(window.innerWidth / 2, window.innerHeight / 2, 60), 500);
     }, 900);
@@ -369,6 +376,7 @@ function defeat() {
   fxBurst(pp.x, pp.y, { count: 22, colors: ['#9a93b5', '#d8d3ea', '#3a3450'], speed: 170, life: 1.1 });
   fxBurst(pp.x, pp.y, { count: 3, emoji: ['💀'], speed: 90, size: 24, life: 1.4, g: -30 });
   blog(`💀 ${classDef().name} has fallen. The gloom claims another hero…`);
+  sndDeath();
   const summary = recordDeath();
   renderBattle(false, true);
   setTimeout(() => { closeScreen('battleScreen'); B = null; showGameOver(summary); }, 1400);

@@ -158,6 +158,7 @@ function gainXp(n) {
     G.state.hp = G.state.hpMax;
     toast(`⭐ Level ${s.level}! Fully healed. +1 skill point`);
     fxConfetti(window.innerWidth / 2, window.innerHeight - 140, 30);
+    sndLevel();
   }
   renderHUD();
   return gained;
@@ -526,6 +527,7 @@ function travelTo(mapId, x, y) {
   G.px = (x + 0.5) * TILE;
   G.py = (y + 0.5) * TILE;
   G.path = []; G.pendingMine = null; G.pendingNpc = null;
+  setMusic(mapId);
   renderHUD();
   save();
 }
@@ -725,6 +727,7 @@ function startGame() {
   G.pendingMine = null; G.pendingNpc = null;
   closeAllScreens();
   document.getElementById('hud').style.display = 'flex';
+  setMusic(G.mapId);
   renderHUD();
   save();
 }
@@ -735,6 +738,7 @@ function boot() {
   resizeCanvas();
   fxInit();
   seedRain();
+  sndBoot();
   window.addEventListener('resize', resizeCanvas);
   G.canvas.addEventListener('pointerdown', onTap);
   window.addEventListener('keydown', onKey);
@@ -781,6 +785,7 @@ function resizeCanvas() {
 function playerTile() { return { x: Math.floor(G.px / TILE), y: Math.floor(G.py / TILE) }; }
 
 function onTap(e) {
+  sndUnlock();
   if (G.lock || !G.state || G.riding) return;
   const cam = camera();
   const tx = Math.floor((e.clientX + cam.x) / TILE);
@@ -817,6 +822,7 @@ function onTap(e) {
 }
 
 function onKey(e) {
+  sndUnlock();
   if (G.lock || !G.state || G.riding) return;
   const dirs = {
     ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0],
@@ -869,6 +875,7 @@ function mineNode(node) {
   s.raw[node.mineral] = (s.raw[node.mineral] || 0) + amount;
   node.respawnAt = G.time + 60;
   addFloater(node.x, node.y, `+${amount} ${m.name}`, m.color);
+  sndMine();
   const cam = camera();
   fxBurst(node.x * TILE - cam.x + TILE / 2, node.y * TILE - cam.y + TILE / 2,
     { colors: [m.color, '#ffffff'], star: true, count: 16, speed: 230, life: 0.8, g: 260 });

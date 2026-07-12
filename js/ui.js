@@ -119,6 +119,7 @@ function buyMeta(id) {
   meta.motes -= cost;
   meta.upgrades[id] = rank + 1;
   saveMeta(meta);
+  sndCoin();
   toast(`${u.icon} ${u.name} upgraded! (${rank + 1}/${u.max})`);
   renderMeta();
 }
@@ -433,6 +434,7 @@ function tallyText(c) { return `💠×${c.brilliant} 🔹×${c.fine} ◽×${c.ro
 function polishAll() {
   if (!Object.keys(G.state.raw).length) return;
   const c = polishBatch(0);
+  c.brilliant > 0 ? sndBrilliant() : sndPolish();
   const pr = document.querySelector('#bagScreen .panel').getBoundingClientRect();
   fxBurst(pr.left + pr.width / 2, pr.top + 100, {
     count: 18 + c.brilliant * 4, colors: ['#ffffff', '#ffe94a', '#c9b8ff'], star: true, speed: 260,
@@ -447,6 +449,7 @@ function summonDwarves() {
   if (!s.spells.dwarves || s.spells.dwarves <= 0) return;
   if (!Object.keys(s.raw).length) { toast('⛏️ The dwarves peer into your empty bag and shrug.'); return; }
   s.spells.dwarves--;
+  sndDwarves();
   const c = polishBatch(1.5); // master craftsdwarves: a nice big bonus
   const pr = document.querySelector('#bagScreen .panel').getBoundingClientRect();
   fxBurst(pr.left + pr.width / 2, pr.top + 120, { count: 10, emoji: ['🧔', '⛏️', '🔨'], speed: 220, size: 24, life: 1.6, g: 250 });
@@ -559,6 +562,7 @@ function choosePact(p) {
   s.activePact = { name: p.name, icon: p.icon, bless: p.bless, curse: p.curse };
   calcStats();
   s.hp = Math.min(s.hp, s.hpMax);
+  sndPact();
   save();
   closeScreen('pactScreen');
   toast(`${p.icon} Pact sealed: ${p.name}. ${p.desc}`);
@@ -668,6 +672,7 @@ function craftSpell(id) {
   const bonus = Math.round(qualitySum / gemCount);
   const charges = sp.base + bonus + eff('charges');
   s.spells[id] = (s.spells[id] || 0) + charges;
+  sndCraft();
   save();
   const pr = document.querySelector('#spellScreen .panel').getBoundingClientRect();
   fxBurst(pr.left + pr.width / 2, pr.top + 80, { count: 22, colors: RAINBOW, star: true, speed: 240 });
@@ -795,6 +800,7 @@ function buySkill(nodeId, branch, tier) {
   s.skillPoints--;
   s.skills[nodeId] = true;
   calcStats();
+  sndBrilliant();
   save();
   const node = branch.nodes[tier];
   toast(`${node.icon} Learned ${node.name}!`);
@@ -805,6 +811,9 @@ function buySkill(nodeId, branch, tier) {
 // ---------- bindings ----------
 
 function bindUI() {
+  const muteBtn = document.getElementById('btnMute');
+  muteBtn.textContent = SND.muted ? '🔇' : '🔊';
+  muteBtn.onclick = () => { sndUnlock(); muteBtn.textContent = sndToggleMute() ? '🔇' : '🔊'; };
   document.getElementById('btnBase').onclick = openBase;
   document.getElementById('btnChar').onclick = openChar;
   document.getElementById('btnBag').onclick = openBag;

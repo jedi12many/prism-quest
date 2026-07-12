@@ -25,6 +25,7 @@
     <button id="btnBag" title="Bag">🎒</button>
     <button id="btnSpells" title="Spellbook">✨</button>
     <button id="btnSkills" title="Skills">🌳<span id="skillDot"></span></button>
+    <button id="btnMute" title="Sound">🔊</button>
     <button id="btnMenu" title="Menu">⚙️</button>
   </div>
 </div>
@@ -225,7 +226,7 @@
 // Sequential loader with a dev cache-buster (python's http.server sends no
 // cache headers, so browsers serve stale JS). Pin CACHE_V before a real deploy.
 (function () {
-  var files = ['data', 'gems', 'sprites', 'loot', 'fx', 'game', 'battle', 'ui'];
+  var files = ['data', 'gems', 'sprites', 'loot', 'fx', 'audio', 'game', 'battle', 'ui'];
   var v = '?t=' + Date.now();
   (function next(i) {
     if (i >= files.length) { if (window.boot) boot(); return; }
