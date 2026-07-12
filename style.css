@@ -111,6 +111,76 @@ button.closeBtn.plain {
   cursor: pointer;
 }
 
+/* ---------- character sheet ---------- */
+.charGrid { display: flex; gap: 14px; flex-wrap: wrap; }
+.charCol { flex: 1 1 200px; min-width: 180px; }
+#charDoll { display: flex; flex-direction: column; gap: 6px; }
+.slotCell {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%; padding: 9px 11px;
+  border: 1.5px solid rgba(255,255,255,0.2);
+  border-radius: 12px;
+  background: rgba(255,255,255,0.05);
+  color: inherit; cursor: pointer; text-align: left;
+}
+.slotCell:active { transform: scale(0.98); }
+.slotEmoji { font-size: 24px; }
+.slotEmoji.empty { opacity: 0.4; }
+.slotItemName { font-weight: 700; font-size: 13.5px; flex: 1; }
+.slotItemName.dim { opacity: 0.5; font-weight: 500; }
+.slotSockets, .invSock { font-size: 12px; letter-spacing: 1px; color: #8fd0ff; }
+#charStats { display: flex; flex-direction: column; gap: 4px; }
+.statRow {
+  display: flex; justify-content: space-between;
+  padding: 6px 10px; border-radius: 8px;
+  background: rgba(255,255,255,0.05); font-size: 13.5px;
+}
+.statRow b { color: #ffe9a8; }
+#charSet {
+  margin-top: 12px; padding: 10px 12px;
+  border: 1.5px solid #39c26d; border-radius: 12px;
+  background: rgba(57,194,109,0.12);
+}
+.setTitle { font-weight: 800; color: #5be08c; margin-bottom: 5px; }
+.setLine { font-size: 12.5px; margin: 2px 0; }
+.setLine.on { color: #a9f0c6; }
+.setLine.off { color: #888; opacity: 0.6; }
+#charInv { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+.invItem {
+  flex: 1 1 46%; min-width: 130px;
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 11px;
+  border: 1.5px solid rgba(255,255,255,0.2);
+  border-radius: 12px;
+  background: rgba(255,255,255,0.05);
+  color: inherit; cursor: pointer; text-align: left;
+}
+.invItem:active { transform: scale(0.97); }
+.invEmoji { font-size: 20px; }
+.invName { font-weight: 700; font-size: 12.5px; flex: 1; }
+
+/* item card */
+.icHead { font-size: 19px; font-weight: 800; }
+.icSub { font-size: 12.5px; opacity: 0.7; margin: 2px 0 8px; }
+.icLore { font-size: 12.5px; font-style: italic; opacity: 0.8; margin-bottom: 8px; }
+.icStats { display: flex; flex-direction: column; gap: 3px; }
+.iStat { font-size: 13.5px; display: flex; justify-content: space-between; padding: 3px 0; }
+.iStat b { color: #8fd0ff; }
+.iStat.affix b { color: #ffe9a8; }
+.iStat.gemLine { color: #b8f4a9; }
+.iStat.gemLine b { color: #b8f4a9; }
+.icSockets { margin-top: 8px; font-size: 14px; letter-spacing: 2px; color: #8fd0ff; }
+.icCompare { margin-top: 8px; font-size: 12.5px; opacity: 0.85; }
+.icActs { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.icBtn {
+  flex: 1 1 40%; padding: 11px; border-radius: 11px; border: none;
+  font-size: 14px; font-weight: 700; cursor: pointer; color: #fff;
+}
+.icBtn.pri { background: linear-gradient(90deg, #39c26d, #4fd8e0); }
+.icBtn.sec { background: rgba(255,255,255,0.12); border: 1.5px solid rgba(255,255,255,0.25); }
+.icBtn.plain { background: none; color: #bdb3e0; flex: 1 1 100%; }
+.icBtn:active { transform: scale(0.97); }
+
 /* ---------- toasts ---------- */
 #toastWrap {
   position: fixed;

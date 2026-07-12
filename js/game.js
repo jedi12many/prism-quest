@@ -61,6 +61,14 @@ function eff(key) {
     const bd = BUILDINGS[bid];
     if (lvl > 0 && bd && bd.eff && bd.eff[key]) v += bd.eff[key] * lvl;
   }
+  for (const it of Object.values(G.state.equip || {})) {
+    if (!it) continue;
+    const st = itemStats(it);
+    if (st[key]) v += st[key];
+  }
+  const sc = prismSetCount();
+  if (sc >= 3 && PRISM_SET.b3[key]) v += PRISM_SET.b3[key];
+  if (sc >= 5 && PRISM_SET.b5[key]) v += PRISM_SET.b5[key];
   return v;
 }
 
@@ -108,8 +116,8 @@ function calcStats() {
   const s = G.state, cls = classDef();
   const lvl = s.level;
   s.hpMax = cls.hp + 6 * (lvl - 1) + eff('hpMax');
-  s.atk = cls.atk + (lvl - 1);
-  s.mag = cls.mag + (lvl - 1);
+  s.atk = cls.atk + (lvl - 1) + eff('atkFlat');
+  s.mag = cls.mag + (lvl - 1) + eff('magFlat');
   s.def = Math.floor(cls.def + (lvl - 1) * cls.defGrow) + eff('defFlat');
   s.hp = clamp(s.hp, 0, s.hpMax);
 }
@@ -406,6 +414,7 @@ function save() {
     raw: s.raw, polished: s.polished, spells: s.spells, skills: s.skills,
     kills: s.kills, bossDefeated: s.bossDefeated, sunRestored: s.sunRestored, base: s.base,
     mapId: G.mapId, mainQuest: s.mainQuest, regionsRestored: s.regionsRestored, npcFlags: s.npcFlags,
+    equip: s.equip, inventory: s.inventory,
   }));
 }
 
@@ -434,6 +443,8 @@ function newGameWithClass(classId) {
     kills: 0, bossDefeated: false, sunRestored: false,
     base: { house: 1, kitchen: 0, factory: 0, stalls: 0, training: 0, walls: 0 },
     mapId: 'village', mainQuest: 0, regionsRestored: [false, false, false, false], npcFlags: {},
+    equip: { weapon: rollItem(1, 'common', 'weapon'), helm: null, armor: null, boots: null, charm: null },
+    inventory: [],
     x: SPAWN.x, y: SPAWN.y,
   };
   calcStats();
@@ -476,6 +487,8 @@ function boot() {
       raw: {}, polished: {}, spells: {}, skills: {}, kills: 0, bossDefeated: false, sunRestored: false,
       base: { house: 1, kitchen: 0, factory: 0, stalls: 0, training: 0, walls: 0 },
       mapId: 'village', mainQuest: 0, regionsRestored: [false, false, false, false], npcFlags: {},
+      equip: { weapon: null, helm: null, armor: null, boots: null, charm: null },
+      inventory: [],
     }, saved);
     calcStats();
     if (G.state.hp <= 0) G.state.hp = G.state.hpMax;

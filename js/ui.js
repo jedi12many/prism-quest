@@ -129,6 +129,216 @@ function renderBag() {
   if (!anyPol) polList.innerHTML = '<div class="empty">Nothing polished yet. Polished gems are what spells are made of!</div>';
 }
 
+// ---------- character sheet ----------
+
+function openChar() {
+  renderChar();
+  openScreen('charScreen');
+}
+
+function critPct() { return Math.round((0.05 + eff('crit')) * 100); }
+function dodgePct() { return Math.round(Math.min(0.6, eff('dodge')) * 100); }
+
+function renderChar() {
+  const s = G.state;
+  // equipment doll
+  const doll = document.getElementById('charDoll');
+  doll.innerHTML = '';
+  for (const [slot, sd] of Object.entries(SLOTS)) {
+    const it = s.equip[slot];
+    const cell = document.createElement('button');
+    cell.className = 'slotCell' + (it ? ' filled' : '');
+    if (it) cell.style.borderColor = RARITIES[it.rarity].color;
+    cell.innerHTML = it
+      ? `<span class="slotEmoji">${sd.emoji}</span><span class="slotItemName" style="color:${RARITIES[it.rarity].color}">${it.name}</span>${it.sockets ? `<span class="slotSockets">${'◈'.repeat(it.gems.length)}${'◇'.repeat(it.sockets - it.gems.length)}</span>` : ''}`
+      : `<span class="slotEmoji empty">${sd.emoji}</span><span class="slotItemName dim">${sd.name}</span>`;
+    cell.onclick = () => it ? openItemCard(it, 'equipped') : toast(`Empty ${sd.name} slot — equip one from your loot below.`);
+    doll.appendChild(cell);
+  }
+
+  // derived stats
+  const set = prismSetCount();
+  const rows = [
+    ['⚔️ Attack', s.atk], ['🔮 Magic', s.mag], ['🛡️ Defense', s.def], ['❤️ Max HP', s.hpMax],
+    ['💥 Crit', critPct() + '%'], ['🌀 Dodge', dodgePct() + '%'],
+    ['✨ Spell dmg', '+' + Math.round(eff('spellDmg') * 100) + '%'],
+    ['🔨 Bonk dmg', '+' + Math.round(eff('basicDmg') * 100) + '%'],
+    ['🦄 Unicorn', '+' + Math.round(eff('unicornPower') * 100) + '%'],
+    ['🌿 Regen', eff('regen') + '/turn'],
+  ];
+  document.getElementById('charStats').innerHTML = rows.map(([k, v]) =>
+    `<div class="statRow"><span>${k}</span><b>${v}</b></div>`).join('');
+
+  // set bonus banner
+  const sb = document.getElementById('charSet');
+  if (set > 0) {
+    sb.style.display = 'block';
+    sb.innerHTML = `<div class="setTitle">🌈 ${PRISM_SET.name} (${set}/5)</div>
+      <div class="setLine ${set >= 3 ? 'on' : 'off'}">(3) ${PRISM_SET.b3Desc}</div>
+      <div class="setLine ${set >= 5 ? 'on' : 'off'}">(5) ${PRISM_SET.b5Desc}</div>`;
+  } else sb.style.display = 'none';
+
+  // inventory
+  const inv = document.getElementById('charInv');
+  inv.innerHTML = '';
+  if (!s.inventory.length) {
+    inv.innerHTML = '<div class="empty">No loot in your bag. Defeat monsters to find equipment!</div>';
+  } else {
+    for (const it of s.inventory) {
+      const cell = document.createElement('button');
+      cell.className = 'invItem';
+      cell.style.borderColor = RARITIES[it.rarity].color;
+      cell.innerHTML = `<span class="invEmoji">${SLOTS[it.slot].emoji}</span>
+        <span class="invName" style="color:${RARITIES[it.rarity].color}">${it.name}</span>
+        ${it.sockets ? `<span class="invSock">${'◈'.repeat(it.gems.length)}${'◇'.repeat(it.sockets - it.gems.length)}</span>` : ''}`;
+      cell.onclick = () => openItemCard(it, 'inventory');
+      inv.appendChild(cell);
+    }
+  }
+}
+
+function itemStatLines(item) {
+  const lines = [];
+  for (const [k, v] of Object.entries(item.base || {})) lines.push(`<div class="iStat">${STAT_LABELS[k] || k} <b>${fmtStat(k, v)}</b></div>`);
+  for (const [k, v] of Object.entries(item.affixes || {})) lines.push(`<div class="iStat affix">${STAT_LABELS[k] || k} <b>${fmtStat(k, v)}</b></div>`);
+  for (const g of item.gems || []) {
+    const gs = GEM_SOCKET_STATS[g.mineral];
+    lines.push(`<div class="iStat gemLine">◈ ${MINERALS[g.mineral].name} (${QUALITIES[g.quality].name}) <b>${fmtStat(gs.key, gs.vals[QUALITY_INDEX[g.quality]])}</b></div>`);
+  }
+  return lines.join('');
+}
+
+function openItemCard(item, where) {
+  const emptySockets = (item.sockets || 0) - item.gems.length;
+  const card = document.getElementById('itemCard');
+  card.style.borderColor = RARITIES[item.rarity].color;
+  const equipped = where === 'equipped';
+  const compareItem = !equipped ? G.state.equip[item.slot] : null;
+  card.innerHTML = `
+    <div class="icHead" style="color:${RARITIES[item.rarity].color}">
+      ${SLOTS[item.slot].emoji} ${item.name}
+    </div>
+    <div class="icSub">${RARITIES[item.rarity].name} ${SLOTS[item.slot].name}${item.setId ? ` · ${PRISM_SET.name}` : ''}</div>
+    ${item.lore ? `<div class="icLore">"${item.lore}"</div>` : ''}
+    <div class="icStats">${itemStatLines(item)}</div>
+    ${item.sockets ? `<div class="icSockets">Sockets: ${'◈'.repeat(item.gems.length)}${'◇'.repeat(emptySockets)}</div>` : ''}
+    ${compareItem ? `<div class="icCompare">Currently equipped: <b style="color:${RARITIES[compareItem.rarity].color}">${compareItem.name}</b></div>` : ''}
+    <div class="icActs" id="icActs"></div>`;
+  const acts = document.getElementById('icActs');
+  const mk = (label, cls, fn) => {
+    const b = document.createElement('button');
+    b.className = 'icBtn ' + cls;
+    b.textContent = label;
+    b.onclick = fn;
+    acts.appendChild(b);
+  };
+  if (equipped) {
+    mk('Unequip', 'sec', () => { unequip(item.slot); });
+  } else {
+    mk('Equip', 'pri', () => { equipItem(item); });
+  }
+  if (emptySockets > 0) mk('💎 Facet a gem', 'sec', () => openGemPicker(item));
+  if (!equipped) mk('♻️ Salvage', 'sec', () => salvageItem(item));
+  mk('Close', 'plain', () => closeScreen('itemCardScreen'));
+  openScreen('itemCardScreen');
+}
+
+function equipItem(item) {
+  const s = G.state;
+  const i = s.inventory.indexOf(item);
+  if (i < 0) return;
+  s.inventory.splice(i, 1);
+  const prev = s.equip[item.slot];
+  s.equip[item.slot] = item;
+  if (prev) s.inventory.push(prev);
+  calcStats();
+  save();
+  toast(`${SLOTS[item.slot].emoji} Equipped ${item.name}.`);
+  closeScreen('itemCardScreen');
+  renderChar();
+  renderHUD();
+}
+
+function unequip(slot) {
+  const s = G.state;
+  const it = s.equip[slot];
+  if (!it) return;
+  if (s.inventory.length >= INVENTORY_CAP) { toast('🎒 Bag is full — make room first.'); return; }
+  s.equip[slot] = null;
+  s.inventory.push(it);
+  calcStats();
+  save();
+  closeScreen('itemCardScreen');
+  renderChar();
+  renderHUD();
+}
+
+function salvageItem(item) {
+  const s = G.state;
+  const i = s.inventory.indexOf(item);
+  if (i < 0) return;
+  s.inventory.splice(i, 1);
+  // recover gems + a little quartz
+  for (const g of item.gems) {
+    if (!s.polished[g.mineral]) s.polished[g.mineral] = { rough: 0, fine: 0, brilliant: 0 };
+    s.polished[g.mineral][g.quality]++;
+  }
+  const q = item.rarity === 'legendary' || item.rarity === 'set' ? 3 : 1;
+  s.raw.quartz = (s.raw.quartz || 0) + q;
+  calcStats();
+  save();
+  toast(`♻️ Salvaged ${item.name} → ${q} Quartz${item.gems.length ? ' + recovered gems' : ''}.`);
+  closeScreen('itemCardScreen');
+  renderChar();
+}
+
+function openGemPicker(item) {
+  const s = G.state;
+  const pick = document.getElementById('gemPickList');
+  pick.innerHTML = '';
+  let any = false;
+  for (const [id, min] of Object.entries(MINERALS)) {
+    const p = s.polished[id];
+    if (!p) continue;
+    for (const [q, qd] of Object.entries(QUALITIES)) {
+      if (!p[q]) continue;
+      any = true;
+      const gs = GEM_SOCKET_STATS[id];
+      const row = document.createElement('button');
+      row.className = 'itemRow';
+      row.innerHTML = `${gemSVG(id, 30)}
+        <span class="itemName">${qd.name} ${min.name}</span>
+        <span class="itemCount">×${p[q]}</span>
+        <span class="itemAction">${STAT_LABELS[gs.key]} ${fmtStat(gs.key, gs.vals[QUALITY_INDEX[q]])} ➜</span>`;
+      row.onclick = () => facetGem(item, id, q);
+      pick.appendChild(row);
+    }
+  }
+  if (!any) pick.innerHTML = '<div class="empty">No polished gems to facet. Polish some in your Bag first!</div>';
+  document.getElementById('gemPickTitle').textContent = `Facet a gem into ${item.name}`;
+  openScreen('gemPickScreen');
+}
+
+function facetGem(item, mineralId, quality) {
+  const s = G.state;
+  if (item.gems.length >= item.sockets) return;
+  if (!s.polished[mineralId] || !s.polished[mineralId][quality]) return;
+  s.polished[mineralId][quality]--;
+  item.gems.push({ mineral: mineralId, quality });
+  calcStats();
+  save();
+  const gs = GEM_SOCKET_STATS[mineralId];
+  toast(`💎 Faceted ${QUALITIES[quality].name} ${MINERALS[mineralId].name} — ${STAT_LABELS[gs.key]} ${fmtStat(gs.key, gs.vals[QUALITY_INDEX[quality]])}!`);
+  const pr = document.querySelector('#gemPickScreen .panel').getBoundingClientRect();
+  fxBurst(pr.left + pr.width / 2, pr.top + 60, { count: 20, colors: [MINERALS[mineralId].color, '#ffffff'], star: true, speed: 240 });
+  closeScreen('gemPickScreen');
+  renderChar();
+  renderHUD();
+  // reopen the item card to show the new gem
+  const where = Object.values(s.equip).includes(item) ? 'equipped' : 'inventory';
+  openItemCard(item, where);
+}
+
 // ---------- polishing (luck-based) ----------
 
 // Quality is luck: the Factory, Steady Hands, and dwarf crews raise the odds.
@@ -481,6 +691,7 @@ function buySkill(nodeId, branch, tier) {
 
 function bindUI() {
   document.getElementById('btnBase').onclick = openBase;
+  document.getElementById('btnChar').onclick = openChar;
   document.getElementById('btnBag').onclick = openBag;
   document.getElementById('btnSpells').onclick = openSpells;
   document.getElementById('btnSkills').onclick = openSkills;

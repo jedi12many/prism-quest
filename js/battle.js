@@ -173,10 +173,16 @@ function playerAction(action, spellId) {
 function monsterHit() {
   if (!B || B.over) return;
   const s = G.state;
+  const ppos = bPos('bPlayerEmoji');
+  // dodge — a defensive stat from boots and affixes (capped so you can't be untouchable)
+  if (Math.random() < Math.min(0.6, eff('dodge'))) {
+    blog(`🌀 You dance aside — ${B.def.name}'s attack whiffs!`);
+    setTimeout(() => fxBurst(ppos.x, ppos.y, { count: 8, colors: ['#b8f4f8', '#ffffff'], speed: 150, life: 0.5, star: true }), 350);
+    return;
+  }
   let atk = B.def.atk;
   if (B.mStatus.weaken && B.mStatus.weaken.turns >= 0 && B.mStatus.weaken.mult) atk *= B.mStatus.weaken.mult;
   let dmg = Math.max(1, Math.round(atk * variance() * 1.6 - s.def * 0.6));
-  const ppos = bPos('bPlayerEmoji');
   if (B.pStatus.shield && B.pStatus.shield.turns > 0) {
     dmg = Math.max(1, Math.round(dmg * (1 - B.pStatus.shield.reduce)));
     B.pStatus.shield.turns--;
@@ -255,6 +261,17 @@ function victory() {
     const amount = def.boss ? 2 : 1;
     s.raw[picked] = (s.raw[picked] || 0) + amount;
     blog(`💎 It dropped ${amount} raw ${MINERALS[picked].name}!`);
+  }
+
+  // equipment loot
+  const item = rollMonsterLoot(def);
+  if (item) {
+    if (addItemToInventory(item)) {
+      blog(`${SLOTS[item.slot].emoji} <b style="color:${RARITIES[item.rarity].color}">${item.name}</b> dropped! (${RARITIES[item.rarity].name})`);
+      if (item.rarity === 'legendary' || item.rarity === 'set') {
+        setTimeout(() => fxConfetti(mpos.x, mpos.y, 30), 300);
+      }
+    }
   }
 
   const heal = eff('healOnWin');

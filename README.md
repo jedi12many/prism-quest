@@ -20,6 +20,16 @@ A Diablo-style campaign from the village hub of **Drizzlewick**:
    village, no gems, just the skills and spell charges you carry. Win, and the
    sun returns forever.
 
+**Diablo-style loot.** Monsters drop randomized gear across five rarities
+(Common → Magic → Rare → Legendary → Set) with rolled affixes scaled to monster
+level. Equip five slots — Weapon 🗡️, Helm 🪖, Armor 🧥, Boots 👢, Charm 📿 — from a
+character sheet with full derived stats (attack, magic, defense, HP, crit,
+**dodge**). **Facet** your polished gems into item sockets for permanent stat
+boosts (quality matters — a Brilliant Prismatite is a big spell-damage gem).
+Collect the **Rainbow Raiment** set for a 3-piece bonus and the all-5 *Double
+Rainbow*. Champions drop rare+, the Rainwyrm and Sog'naroth drop legendary/set.
+Salvage unwanted gear back into gems and quartz.
+
 ## Play it
 
 Any static file server works:

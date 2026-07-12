@@ -21,6 +21,7 @@
   </div>
   <div id="hudBtns">
     <button id="btnBase" title="Camp">🏰</button>
+    <button id="btnChar" title="Character">🧍</button>
     <button id="btnBag" title="Bag">🎒</button>
     <button id="btnSpells" title="Spellbook">✨</button>
     <button id="btnSkills" title="Skills">🌳<span id="skillDot"></span></button>
@@ -96,6 +97,42 @@
   </div>
 </div>
 
+<!-- Character sheet -->
+<div class="screen" id="charScreen">
+  <div class="panel wide">
+    <h2>🧍 Character</h2>
+    <div class="charGrid">
+      <div class="charCol">
+        <h3>Equipment</h3>
+        <div id="charDoll"></div>
+        <div id="charSet"></div>
+      </div>
+      <div class="charCol">
+        <h3>Stats</h3>
+        <div id="charStats"></div>
+      </div>
+    </div>
+    <h3>🎒 Loot <small>(tap to equip, socket, or salvage)</small></h3>
+    <div id="charInv"></div>
+    <button class="closeBtn bigBtn" data-close="charScreen">Close</button>
+  </div>
+</div>
+
+<!-- Item card -->
+<div class="screen" id="itemCardScreen">
+  <div class="panel" id="itemCard"></div>
+</div>
+
+<!-- Gem picker (faceting) -->
+<div class="screen" id="gemPickScreen">
+  <div class="panel">
+    <h2 id="gemPickTitle">Facet a gem</h2>
+    <p class="sub">Faceting is permanent. Better polish = a stronger gem.</p>
+    <div id="gemPickList"></div>
+    <button class="closeBtn bigBtn" data-close="gemPickScreen">Cancel</button>
+  </div>
+</div>
+
 <!-- Villager dialogue -->
 <div class="screen" id="dialogScreen">
   <div class="panel">
@@ -126,7 +163,8 @@
       <p>🚶 <b>Tap the ground</b> to walk (or WASD/arrows on desktop). Tap villagers to talk — they drive the story.</p>
       <p>🏘️ <b>Drizzlewick</b> is your home: always sunny, always safe. Rest to heal, build up your camp, and open the <b>Power Tree and Spellbook</b> here. The south gate leads to the wilds.</p>
       <p>🌧️ The <b>wilds of Rainyday</b> redraw themselves every trip. Four <b>gloom champions</b> rule its regions — defeat one and sunlight floods that region for good.</p>
-      <p>⛏️ <b>Tap gem nodes</b> to mine. <b>Polish all</b> in your Bag turns raw minerals into gems (luck-based — the Factory and dwarf crews ⛏️ raise the odds). Craft spells from gems; each craft gives limited charges.</p>
+      <p>⛏️ <b>Tap gem nodes</b> to mine. <b>Polish all</b> in your Bag turns raw minerals into gems (luck-based — the Factory and dwarf crews ⛏️ raise the odds). Gems fuel spells, camp upgrades, AND item sockets.</p>
+      <p>🧍 <b>Character sheet</b>: monsters drop randomized loot (Common → Magic → Rare → Legendary → Set). Equip 5 slots — Weapon, Helm, Armor, Boots, Charm — to boost your attack, defense, HP, crit, dodge, and more. <b>Facet</b> polished gems into item sockets for permanent power, and collect the <b>Rainbow Raiment</b> set for big 3-piece and 5-piece bonuses. Salvage what you don't need.</p>
       <p>🌈 Restore all four regions and the <b>Rainycastle</b> rises in the rainclouds. Step onto the plaza <b>Cloudgate</b> to ride your unicorn up and face the <b>Rainwyrm</b>.</p>
       <p>🌀 Beyond the wyrm, a portal leads to <b>Sog'naroth's realm — one way only</b>: no village, no gems, just the skills and charges you carry. Win, and the sun returns forever.</p>
     </div>
@@ -148,6 +186,7 @@
 
 <script src="js/data.js"></script>
 <script src="js/gems.js"></script>
+<script src="js/loot.js"></script>
 <script src="js/fx.js"></script>
 <script src="js/game.js"></script>
 <script src="js/battle.js"></script>
