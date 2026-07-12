@@ -80,24 +80,29 @@ function renderBag() {
     const count = s.raw[id] || 0;
     if (!count) continue;
     anyRaw = true;
-    const row = document.createElement('button');
-    row.className = 'itemRow';
+    const row = document.createElement('div');
+    row.className = 'itemRow static';
     row.innerHTML = `
       ${gemSVG(id, 32)}
       <span class="itemName">${min.name}</span>
-      <span class="itemCount">×${count}</span>
-      <span class="itemAction">Polish ➜</span>`;
-    row.onclick = () => polishOne(id);
+      <span class="itemCount">×${count}</span>`;
     rawList.appendChild(row);
   }
   if (!anyRaw) rawList.innerHTML = '<div class="empty">No raw minerals yet — tap the sparkling gem nodes on the map to mine!</div>';
-  const dwarfCharges = s.spells.dwarves || 0;
-  if (anyRaw && dwarfCharges > 0) {
+  if (anyRaw) {
     const btn = document.createElement('button');
-    btn.className = 'bigBtn dwarf';
-    btn.textContent = `⛏️ Summon Dwarves — polish everything! (×${dwarfCharges})`;
-    btn.onclick = summonDwarves;
+    btn.className = 'bigBtn';
+    btn.textContent = '🪞 Polish all';
+    btn.onclick = polishAll;
     rawList.appendChild(btn);
+    const dwarfCharges = s.spells.dwarves || 0;
+    if (dwarfCharges > 0) {
+      const dbtn = document.createElement('button');
+      dbtn.className = 'bigBtn dwarf';
+      dbtn.textContent = `⛏️ Summon Dwarves — big Brilliant bonus! (×${dwarfCharges})`;
+      dbtn.onclick = summonDwarves;
+      rawList.appendChild(dbtn);
+    }
   }
 
   const polList = document.getElementById('polList');
@@ -136,50 +141,48 @@ function rollQuality(bonus = 0) {
   return 'rough';
 }
 
-function polishOne(mineralId) {
+// polish every raw mineral in the bag; returns the quality tally
+function polishBatch(bonus) {
   const s = G.state;
-  if (!s.raw[mineralId]) return;
-  const quality = rollQuality();
-  s.raw[mineralId]--;
-  if (s.raw[mineralId] <= 0) delete s.raw[mineralId];
-  if (!s.polished[mineralId]) s.polished[mineralId] = { rough: 0, fine: 0, brilliant: 0 };
-  s.polished[mineralId][quality]++;
+  const counts = { rough: 0, fine: 0, brilliant: 0, total: 0 };
+  for (const [m, n] of Object.entries({ ...s.raw })) {
+    if (!s.polished[m]) s.polished[m] = { rough: 0, fine: 0, brilliant: 0 };
+    for (let i = 0; i < n; i++) {
+      const q = rollQuality(bonus);
+      s.polished[m][q]++;
+      counts[q]++;
+      counts.total++;
+    }
+    delete s.raw[m];
+  }
   save();
-  const min = MINERALS[mineralId];
-  const qd = QUALITIES[quality];
-  const cheer = { rough: '', fine: ' Nice and shiny!', brilliant: ' ✨ A perfect cut!' }[quality];
-  toast(`${qd.icon} ${qd.name} ${min.name}!${cheer}`);
+  return counts;
+}
+
+function tallyText(c) { return `💠×${c.brilliant} 🔹×${c.fine} ◽×${c.rough}`; }
+
+function polishAll() {
+  if (!Object.keys(G.state.raw).length) return;
+  const c = polishBatch(0);
   const pr = document.querySelector('#bagScreen .panel').getBoundingClientRect();
-  fxBurst(pr.left + pr.width / 2, pr.top + 90, {
-    count: quality === 'brilliant' ? 30 : quality === 'fine' ? 14 : 6,
-    colors: [min.color, '#ffffff'], star: true,
-    speed: quality === 'brilliant' ? 300 : 180,
+  fxBurst(pr.left + pr.width / 2, pr.top + 100, {
+    count: 18 + c.brilliant * 4, colors: ['#ffffff', '#ffe94a', '#c9b8ff'], star: true, speed: 260,
   });
-  if (quality === 'brilliant') fxRing(pr.left + pr.width / 2, pr.top + 90, '#ffffff', 90);
+  if (c.brilliant > 0) fxRing(pr.left + pr.width / 2, pr.top + 100, '#ffffff', 90);
+  toast(`🪞 Polished ${c.total} gems: ${tallyText(c)}`);
   renderBag();
 }
 
 function summonDwarves() {
   const s = G.state;
   if (!s.spells.dwarves || s.spells.dwarves <= 0) return;
-  const total = Object.values(s.raw).reduce((a, b) => a + b, 0);
-  if (!total) { toast('⛏️ The dwarves peer into your empty bag and shrug.'); return; }
+  if (!Object.keys(s.raw).length) { toast('⛏️ The dwarves peer into your empty bag and shrug.'); return; }
   s.spells.dwarves--;
-  const counts = { rough: 0, fine: 0, brilliant: 0 };
-  for (const [m, n] of Object.entries({ ...s.raw })) {
-    if (!s.polished[m]) s.polished[m] = { rough: 0, fine: 0, brilliant: 0 };
-    for (let i = 0; i < n; i++) {
-      const q = rollQuality(1.5); // master craftsdwarves: a nice big bonus
-      s.polished[m][q]++;
-      counts[q]++;
-    }
-    delete s.raw[m];
-  }
-  save();
+  const c = polishBatch(1.5); // master craftsdwarves: a nice big bonus
   const pr = document.querySelector('#bagScreen .panel').getBoundingClientRect();
   fxBurst(pr.left + pr.width / 2, pr.top + 120, { count: 10, emoji: ['🧔', '⛏️', '🔨'], speed: 220, size: 24, life: 1.6, g: 250 });
   fxConfetti(pr.left + pr.width / 2, pr.top + 120, 40);
-  toast(`⛏️ Hi-ho! The dwarf crew polished ${total} gems: 💠×${counts.brilliant} 🔹×${counts.fine} ◽×${counts.rough}!`);
+  toast(`⛏️ Hi-ho! The dwarf crew polished ${c.total} gems: ${tallyText(c)}`);
   renderBag();
 }
 

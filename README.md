@@ -24,10 +24,10 @@ then open http://localhost:8123 — on your phone, use your computer's LAN IP
 
 - **Tap the ground** to walk (WASD/arrows on desktop).
 - **Tap a sparkling gem node** to mine raw minerals. Nodes regrow after ~1 minute.
-- **Bag → tap a raw mineral** to polish it. Quality (Rough/Fine/Brilliant) is
-  luck — the Polishing Factory and Steady Hands raise the odds, and **Summon
-  Dwarves ⛏️** (a craftable utility spell) polishes your whole bag at once with
-  a big Brilliant bonus. Better gems = more spell charges.
+- **Bag → Polish all**: one button polishes every raw mineral at once. Quality
+  (Rough/Fine/Brilliant) is luck — the Polishing Factory and Steady Hands raise
+  the odds, and **Summon Dwarves ⛏️** (a craftable utility spell) does the same
+  job with a big Brilliant bonus. Better gems = more spell charges.
 - **Spellbook**: craft spells from polished gems — Rainbow Beam 🌈, Summon Unicorn 🦄,
   Glitter Bomb 🎆, Stardust Storm 🌟 and more. Charges are consumed when cast,
   so keep mining and crafting.
