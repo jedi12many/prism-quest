@@ -414,6 +414,31 @@ button.closeBtn:not(.bigBtn) {
 
 .howto p { font-size: 13.5px; margin-bottom: 8px; line-height: 1.45; }
 
+/* sanctuary (meta) */
+#metaScreen { z-index: 50; }
+.sanctuaryBtn {
+  display: block; width: 100%; margin: 4px 0 10px;
+  padding: 10px; border-radius: 12px;
+  border: 1.5px solid rgba(255,212,74,0.5);
+  background: rgba(255,212,74,0.12); color: #ffe9a8;
+  font-size: 14px; font-weight: 700; cursor: pointer;
+}
+.sanctuaryBtn:active { transform: scale(0.98); }
+.metaMotes { text-align: center; font-size: 16px; color: #ffe9a8; margin-bottom: 12px; }
+.metaCard {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.14);
+  border-radius: 12px; padding: 11px; margin-bottom: 9px;
+}
+.metaCard.owned { border-color: rgba(255,212,74,0.5); background: rgba(255,212,74,0.08); }
+.metaHead { display: flex; align-items: center; gap: 8px; }
+.metaIcon { font-size: 22px; }
+.metaName { font-weight: 800; font-size: 15px; flex: 1; }
+.metaRank { color: #ffd24a; font-weight: 800; font-size: 13px; }
+.metaDesc { font-size: 12.5px; opacity: 0.85; margin: 5px 0 8px; }
+.metaPerm { color: #7bf59b; }
+.goMotes { font-size: 14px; color: #ffe9a8; margin: 6px 0; }
+
 /* gloom pacts */
 .pactChip { font-size: 11px; color: #c9a8ff; font-weight: 700; }
 #pactList { display: flex; flex-direction: column; gap: 10px; margin-bottom: 6px; }

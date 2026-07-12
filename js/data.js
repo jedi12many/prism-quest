@@ -204,6 +204,19 @@ const ELITE_MODS = {
 };
 const ELITE_KEYS = Object.keys(ELITE_MODS);
 
+// Sanctuary meta-upgrades — bought with Motes ✦ (earned each run) and kept
+// across deaths. 'eff' upgrades are always-on; 'start' upgrades grant something
+// to each new hero. cost(rank) is the price to buy the next rank.
+const META_UPGRADES = {
+  hearty:     { name: 'Hearty',     icon: '❤️', max: 4, cost: r => 20 + r * 20, desc: '+8 starting max HP', eff: { hpMax: 8 } },
+  veteran:    { name: 'Veteran',    icon: '⭐', max: 3, cost: r => 30 + r * 30, desc: '+6% XP gained',      eff: { xpGain: 0.06 } },
+  fleet:      { name: 'Fleet-footed', icon: '🌀', max: 3, cost: r => 30 + r * 25, desc: '+3% dodge chance', eff: { dodge: 0.03 } },
+  keen:       { name: 'Keen Eye',   icon: '💥', max: 3, cost: r => 30 + r * 25, desc: '+3% crit chance',    eff: { crit: 0.03 } },
+  trained:    { name: 'Well-Trained', icon: '🌳', max: 2, cost: r => 50 + r * 50, desc: '+1 starting skill point', start: { skillPoints: 1 } },
+  prospector: { name: 'Prospector', icon: '💎', max: 3, cost: r => 25 + r * 20, desc: 'Start with 2 Fine gems', start: { gems: 2 } },
+  arsenal:    { name: 'Arsenal',    icon: '🗡️', max: 1, cost: () => 90,          desc: 'Start with a Magic weapon', start: { magicWeapon: true } },
+};
+
 // Gloom Pacts — a blessing paired with a curse, chosen when you dive into an
 // uncleared zone. Active only while you're in that zone (a fresh choice each dive).
 const PACTS = [

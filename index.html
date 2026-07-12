@@ -37,6 +37,7 @@
     <h1>💎 Prism Quest 🌈</h1>
     <p class="sub">The world of <b>Rainyday</b> has spent a hundred years beneath one endless storm. Deep in the gloom squirms <b>Sog'naroth, the Endless Drizzle</b> — an ancient thing that can only exist where the sun never shines.</p>
     <p class="sub">From the village of <b>Drizzlewick</b>: quest into the wilds, defeat the gloom champions, ride a rainbow to the Rainycastle, and <b>bring back the sunshine!</b></p>
+    <button id="btnSanctuary" class="sanctuaryBtn"><span id="sanctuaryBanner"></span> — visit the Sanctuary ➜</button>
     <div id="classCards"></div>
   </div>
 </div>
@@ -176,6 +177,17 @@
   </div>
 </div>
 
+<!-- Sanctuary (meta-progression shop) -->
+<div class="screen" id="metaScreen">
+  <div class="panel">
+    <h2>🏛️ The Sanctuary</h2>
+    <p class="sub">Motes ✦ are gathered by every hero, win or lose. Spend them here on gifts that pass to all who follow.</p>
+    <div id="metaMotes" class="metaMotes"></div>
+    <div id="metaList"></div>
+    <button class="closeBtn bigBtn" data-close="metaScreen">Back to heroes</button>
+  </div>
+</div>
+
 <!-- Gloom Pact choice -->
 <div class="screen" id="pactScreen">
   <div class="panel">
@@ -193,6 +205,7 @@
     <h2>You Have Fallen</h2>
     <p class="sub">Rainyday's gloom is real, and it does not forget. This hero's tale ends here — but a new one can always begin.</p>
     <div id="goStats"></div>
+    <button id="btnGoSanctuary" class="bigBtn">🏛️ Spend Motes in the Sanctuary</button>
     <button id="btnNewHero" class="bigBtn danger">⚔️ Begin a New Hero</button>
   </div>
 </div>

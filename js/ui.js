@@ -63,8 +63,59 @@ function showClassScreen() {
     card.onclick = () => { closeScreen('classScreen'); newGameWithClass(id); };
     wrap.appendChild(card);
   }
+  const meta = loadMeta();
+  const banner = document.getElementById('sanctuaryBanner');
+  banner.innerHTML = `✦ <b>${meta.motes}</b> Motes` + (meta.runs ? ` · run #${(meta.runs || 0) + 1}` : '');
   document.getElementById('hud').style.display = 'none';
   openScreen('classScreen');
+}
+
+// ---------- Sanctuary (meta-progression shop) ----------
+
+function openMeta() {
+  renderMeta();
+  openScreen('metaScreen');
+}
+
+function renderMeta() {
+  const meta = loadMeta();
+  document.getElementById('metaMotes').innerHTML = `✦ <b>${meta.motes}</b> Motes to spend`;
+  const list = document.getElementById('metaList');
+  list.innerHTML = '';
+  for (const [id, u] of Object.entries(META_UPGRADES)) {
+    const rank = meta.upgrades[id] || 0;
+    const maxed = rank >= u.max;
+    const cost = maxed ? null : u.cost(rank);
+    const can = !maxed && meta.motes >= cost;
+    const card = document.createElement('div');
+    card.className = 'metaCard' + (rank > 0 ? ' owned' : '');
+    card.innerHTML = `
+      <div class="metaHead"><span class="metaIcon">${u.icon}</span>
+        <span class="metaName">${u.name}</span>
+        <span class="metaRank">${maxed ? 'MAX' : rank > 0 ? `${rank}/${u.max}` : ''}</span></div>
+      <div class="metaDesc">${u.desc}${u.eff ? ' <span class="metaPerm">(permanent)</span>' : ''}</div>`;
+    const btn = document.createElement('button');
+    btn.className = 'craftBtn';
+    btn.textContent = maxed ? 'Maxed' : `Buy — ✦ ${cost}`;
+    btn.disabled = !can;
+    btn.onclick = () => buyMeta(id);
+    card.appendChild(btn);
+    list.appendChild(card);
+  }
+}
+
+function buyMeta(id) {
+  const meta = loadMeta();
+  const u = META_UPGRADES[id];
+  const rank = meta.upgrades[id] || 0;
+  if (rank >= u.max) return;
+  const cost = u.cost(rank);
+  if (meta.motes < cost) return;
+  meta.motes -= cost;
+  meta.upgrades[id] = rank + 1;
+  saveMeta(meta);
+  toast(`${u.icon} ${u.name} upgraded! (${rank + 1}/${u.max})`);
+  renderMeta();
 }
 
 // ---------- bag ----------
@@ -524,6 +575,7 @@ function showGameOver(summary) {
   const b = summary.best;
   document.getElementById('goStats').innerHTML = `
     <div class="goRun">This hero: <b>Level ${summary.level}</b> · ${summary.zones}/4 lands freed · ${summary.kills} kills</div>
+    <div class="goMotes">✦ Earned <b>${summary.earned}</b> Motes — ${b.motes} banked</div>
     <div class="goBest">Best ever: Level ${b.bestLevel || 0} · ${b.bestZones || 0}/4 lands · run #${b.runs || 1}</div>`;
   openScreen('gameOverScreen');
 }
@@ -758,6 +810,8 @@ function bindUI() {
     if (confirm('Start over? Your current hero will be lost.')) resetSave();
   };
   document.getElementById('btnDeclinePact').onclick = declinePact;
+  document.getElementById('btnSanctuary').onclick = openMeta;
+  document.getElementById('btnGoSanctuary').onclick = openMeta;
   document.getElementById('btnNewHero').onclick = () => {
     closeScreen('gameOverScreen');
     document.getElementById('hud').style.display = 'none';

@@ -68,6 +68,14 @@ then open http://localhost:8123 — on your phone, use your computer's LAN IP
   push (South is gentlest, North deadliest; the clouds and Sog'naroth's realm
   hardest of all). Flee when outmatched, rest at camp, and consider a **revive
   capstone** deep in your Power Tree to cheat death once per life (rebound to 50% HP).
+- **Elite monsters** with coloured auras — Vicious, Armored, Swift, Venomous,
+  Cursed, or Radiant (guaranteed rare+ loot) — appear more often the deeper you go.
+- **Gloom Pacts.** Diving into an uncleared zone offers three blessing-and-curse
+  pacts (e.g. +35% spell damage but −18 max HP). Pick one for the dive, or refuse.
+- **The Sanctuary (meta-progression).** Every hero banks **Motes ✦** based on how
+  far they got, win or lose. Spend them between runs on permanent gifts for all
+  who follow: more starting HP, XP, dodge, crit, a bonus skill point, starting
+  gems, or a Magic starter weapon.
 - **Level up → spend skill points** in your class Power Tree: 3 branches × 5 tiers
   (15 skills), but a **level cap of 12** means you can't learn everything — you'll
   only reach two of your three branch capstones, so builds matter.

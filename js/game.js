@@ -14,7 +14,7 @@ const BASE_RECT = { x0: 2, y0: 2, x1: 11, y1: 11 };  // the buildable camp plot
 const GATE_TILES = [[6, 11], [7, 11]];               // opening in the castle walls
 const LEVEL_CAP = 12;                                 // caps skill points so you can't get everything
 const SAVE_KEY = 'prismquest_save_v3';
-const BEST_KEY = 'prismquest_best_v1';               // meta record, survives death
+const META_KEY = 'prismquest_meta_v1';               // Motes + upgrades, survive death
 
 const G = {
   state: null,
@@ -78,6 +78,7 @@ function eff(key) {
     if (pact.bless[key]) v += pact.bless[key];
     if (pact.curse[key]) v += pact.curse[key];
   }
+  v += metaEff(key); // permanent Sanctuary upgrades
   return v;
 }
 
@@ -454,21 +455,47 @@ function resetSave() {
   location.reload();
 }
 
-// rogue-like: on death the hero is gone. Record the run, then wipe the save.
-function loadBest() {
-  try { return JSON.parse(localStorage.getItem(BEST_KEY)) || {}; } catch (e) { return {}; }
+// meta-progression store: Motes, purchased upgrades, and best-run records
+function loadMeta() {
+  try {
+    const m = JSON.parse(localStorage.getItem(META_KEY)) || {};
+    m.motes = m.motes || 0;
+    m.upgrades = m.upgrades || {};
+    return m;
+  } catch (e) { return { motes: 0, upgrades: {} }; }
 }
+function saveMeta(m) { localStorage.setItem(META_KEY, JSON.stringify(m)); }
+
+// always-on bonuses from purchased 'eff' upgrades
+function metaEff(key) {
+  const up = loadMeta().upgrades;
+  let v = 0;
+  for (const [id, rank] of Object.entries(up)) {
+    const def = META_UPGRADES[id];
+    if (def && def.eff && def.eff[key]) v += def.eff[key] * rank;
+  }
+  return v;
+}
+
+function motesForRun(s) {
+  const zones = ZONE_IDS.filter(z => s.zonesCleared[z]).length;
+  return s.kills * 2 + zones * 15 + s.level * 3 + (s.sunRestored ? 100 : 0);
+}
+
+// rogue-like: on death the hero is gone. Bank Motes, record the run, wipe save.
 function recordDeath() {
   const s = G.state;
-  const best = loadBest();
+  const meta = loadMeta();
   const zones = ZONE_IDS.filter(z => s.zonesCleared[z]).length;
-  best.runs = (best.runs || 0) + 1;
-  best.bestLevel = Math.max(best.bestLevel || 0, s.level);
-  best.bestZones = Math.max(best.bestZones || 0, zones);
-  best.bestKills = Math.max(best.bestKills || 0, s.kills);
-  localStorage.setItem(BEST_KEY, JSON.stringify(best));
+  const earned = motesForRun(s);
+  meta.motes += earned;
+  meta.runs = (meta.runs || 0) + 1;
+  meta.bestLevel = Math.max(meta.bestLevel || 0, s.level);
+  meta.bestZones = Math.max(meta.bestZones || 0, zones);
+  meta.bestKills = Math.max(meta.bestKills || 0, s.kills);
+  saveMeta(meta);
   localStorage.removeItem(SAVE_KEY); // the hero is lost
-  return { level: s.level, zones, kills: s.kills, best };
+  return { level: s.level, zones, kills: s.kills, earned, best: meta };
 }
 
 // ---------- game start ----------
@@ -489,7 +516,13 @@ function newGameWithClass(classId) {
     inventory: [], activePact: null,
     x: SPAWN.x, y: SPAWN.y,
   };
+  // apply Sanctuary starting grants
+  const up = loadMeta().upgrades;
+  if (up.trained) G.state.skillPoints += up.trained;
+  if (up.prospector) G.state.polished.quartz = { rough: 0, fine: up.prospector * 2, brilliant: 0 };
+  if (up.arsenal) G.state.equip.weapon = rollItem(3, 'magic', 'weapon');
   calcStats();
+  G.state.hp = G.state.hpMax; // start full (meta HP included)
   startGame();
   toast(`Welcome to Drizzlewick, ${cls.name}! The Mayor 🎩 is waiting to speak with you.`);
 }
