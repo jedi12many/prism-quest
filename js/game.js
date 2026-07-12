@@ -231,7 +231,12 @@ function buildWorld() {
   };
   clear(WORLD_GATE.x, WORLD_GATE.y, 2);
   lairs.forEach(l => clear(l.x, l.y, 2));
-  G.gates = [{ x: WORLD_GATE.x, y: WORLD_GATE.y, kind: 'village' }];
+  // the way home is a 2x2 landmark you can enter from any of its tiles
+  G.gates = [];
+  for (const [gx, gy] of [[WORLD_GATE.x - 1, WORLD_GATE.y - 1], [WORLD_GATE.x, WORLD_GATE.y - 1],
+                          [WORLD_GATE.x - 1, WORLD_GATE.y], [WORLD_GATE.x, WORLD_GATE.y]]) {
+    G.gates.push({ x: gx, y: gy, kind: 'village' });
+  }
 
   // mineral nodes per region (restored regions become safe mining meadows)
   const regionMinerals = [
@@ -906,8 +911,20 @@ function draw() {
     ctx.fillText('🏰', 18 * TILE - cam.x, 7 * TILE - cam.y - 6);
   }
 
-  // gates
+  // the village landmark — a labelled 2x2 hamlet, drawn once at the block centre
+  const villageGates = G.gates.filter(g => g.kind === 'village');
+  if (villageGates.length) {
+    const gx = villageGates.reduce((a, g) => a + g.x, 0) / villageGates.length;
+    const gy = villageGates.reduce((a, g) => a + g.y, 0) / villageGates.length;
+    const vx = (gx + 0.5) * TILE - cam.x, vy = (gy + 0.5) * TILE - cam.y;
+    if (vx > -2 * TILE && vy > -2 * TILE && vx < w + 2 * TILE && vy < h + 2 * TILE) {
+      drawVillageLandmark(ctx, vx, vy);
+    }
+  }
+
+  // other gates
   for (const g of G.gates) {
+    if (g.kind === 'village') continue;
     if (g.kind === 'cloudgate' && G.state.mainQuest < 3) continue;
     const sx = g.x * TILE - cam.x + TILE / 2, sy = g.y * TILE - cam.y + TILE / 2;
     if (sx < -TILE || sy < -TILE || sx > w + TILE || sy > h + TILE) continue;
@@ -916,6 +933,7 @@ function draw() {
     ctx.translate(sx, sy);
     ctx.scale(pulse, pulse);
     ctx.font = `${TILE * 0.72}px "Segoe UI Emoji", serif`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(GATE_EMOJI[g.kind], 0, 0);
     ctx.strokeStyle = 'rgba(255,255,255,0.5)';
     ctx.lineWidth = 2;
@@ -1075,6 +1093,48 @@ function draw() {
     ctx.fillText(f.text, fx, fy);
   }
   ctx.globalAlpha = 1;
+}
+
+// a 2x2 hamlet landmark marking the way home, with a waving flag and label
+function drawVillageLandmark(ctx, cx, cy) {
+  const s = TILE;
+  // eye-catching pulse ring at the base
+  const pr = s * 1.15 + Math.sin(G.time * 3) * 4;
+  ctx.strokeStyle = 'rgba(255,236,150,0.55)';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.ellipse(cx, cy + s * 0.6, pr, pr * 0.42, 0, 0, Math.PI * 2);
+  ctx.stroke();
+  drawShadow(ctx, cx, cy + s * 0.68, s * 1.5);
+  // a little cluster of cottages: taller one behind, two in front
+  drawSprite(ctx, 'cottage', cx, cy - s * 0.5, s * 1.4);
+  drawSprite(ctx, 'cottage', cx - s * 0.62, cy + s * 0.06, s * 1.12);
+  drawSprite(ctx, 'cottage', cx + s * 0.62, cy + s * 0.06, s * 1.12, { flip: true });
+  // flag on the tall cottage
+  const fx = cx + s * 0.02, fy = cy - s * 1.05;
+  ctx.strokeStyle = '#6a4028';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(fx, fy);
+  ctx.lineTo(fx, fy - s * 0.5);
+  ctx.stroke();
+  const wav = Math.sin(G.time * 4) * 3;
+  ctx.fillStyle = '#ff6ec7';
+  ctx.beginPath();
+  ctx.moveTo(fx, fy - s * 0.5);
+  ctx.lineTo(fx + s * 0.34 + wav, fy - s * 0.4);
+  ctx.lineTo(fx, fy - s * 0.3);
+  ctx.closePath();
+  ctx.fill();
+  // label
+  ctx.font = 'bold 14px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.lineWidth = 3.5;
+  ctx.strokeStyle = 'rgba(0,0,0,0.75)';
+  ctx.fillStyle = '#fff';
+  ctx.strokeText('Village', cx, cy + s * 1.0);
+  ctx.fillText('Village', cx, cy + s * 1.0);
 }
 
 let lastFrame = 0;
