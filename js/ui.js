@@ -35,8 +35,13 @@ function renderHUD() {
   if (!G.state) return;
   const s = G.state;
   const pact = s.activePact;
+  let line = '📜 ' + questText();
+  if (G.mapId === 'dungeon' && s.dungeon) {
+    const dc = DUNGEONS[s.dungeon.type];
+    line = `${dc.emoji} ${dc.name} — Floor ${s.dungeon.floor}/${s.dungeon.maxFloor}`;
+  }
   document.getElementById('questLine').innerHTML =
-    '📜 ' + questText() + (pact ? `<br><span class="pactChip">${pact.icon} Pact: ${pact.name}</span>` : '');
+    line + (pact ? `<br><span class="pactChip">${pact.icon} Pact: ${pact.name}</span>` : '');
   document.getElementById('hpFill').style.width = Math.max(0, s.hp / s.hpMax * 100) + '%';
   document.getElementById('hpText').textContent = `❤️ ${s.hp}/${s.hpMax}`;
   const need = xpNext(s.level);

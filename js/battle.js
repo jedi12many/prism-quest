@@ -20,11 +20,12 @@ function startBattle(monster, ambush) {
   // difficulty scaling: tougher in higher-tier zones and the finale maps
   const tier = combatTier();
   const em = monster.elite ? ELITE_MODS[monster.elite] : null;
-  const hpMult = (1 + (tier - 1) * 0.4) * (em ? em.hpMul : 1);
-  const atkScale = (1 + (tier - 1) * 0.22) * (em ? (em.atkMul || 1) : 1);
+  const warden = !!monster.warden;
+  const hpMult = (1 + (tier - 1) * 0.4) * (em ? em.hpMul : 1) * (warden ? 1.6 : 1);
+  const atkScale = (1 + (tier - 1) * 0.22) * (em ? (em.atkMul || 1) : 1) * (warden ? 1.15 : 1);
   const hp = Math.round(def.hp * hpMult);
   B = {
-    monster, def, tier, atkScale, elite: em,
+    monster, def, tier, atkScale, elite: em, warden,
     mdef: def.def + (em ? (em.defBonus || 0) : 0),
     mhp: hp, mhpMax: hp,
     mStatus: {},          // burn:{turns,dmg}, poison:{turns,dmg}, weaken:{turns,mult}
@@ -41,6 +42,7 @@ function startBattle(monster, ambush) {
   if (def.finalBoss) blog('🌑 SOG\'NAROTH RISES. The rain bends toward it. The gloom has a heartbeat.');
   else if (monster.type === 'dragon') blog('🌧️ The storm-fattened serpent coils around its cloud throne!');
   else if (def.dungeonBoss) blog('💀 The keeper of this place stirs — deadly, but its hoard is legendary!');
+  else if (monster.warden) blog('🗝️ The Warden bars the stair. Slay it to claim the key below!');
   else if (def.miniboss !== undefined) blog('⚡ A champion of the gloom! Defeat it and the light returns to this land!');
   if (ambush && !eff('fleeSure')) {
     blog('😱 Ambush! It strikes first!');
@@ -311,6 +313,12 @@ function victory() {
 
   B.monster.alive = false;
   B.monster.respawnAt = def.boss ? Infinity : G.time + 45;
+
+  if (B.warden && s.dungeon) {
+    // the Warden falls — the way down is unlocked
+    s.dungeon.hasKey = true;
+    setTimeout(() => { toast('🗝️ The Warden drops a heavy key — the stair is open!'); fxConfetti(mpos.x, mpos.y, 24); }, 600);
+  }
 
   if (def.finalBoss && !s.sunRestored) {
     // the sun returns to Rainyday — gloom-things cannot exist beneath it

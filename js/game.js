@@ -419,10 +419,23 @@ function buildDungeon() {
   }
   G.dungeonSpawn = spawn;
   G.gates = [{ x: entry.x, y: entry.y, kind: 'zoneback', zone: d.fromZone }];
-  G.monsters = [{ x: boss.x, y: boss.y, type: cfg.boss, alive: true, respawnAt: 0, home: { ...boss }, moveAt: Infinity }];
 
   const floors = [];
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (FLOOR_TILES.has(G.map[y][x])) floors.push({ x, y });
+
+  const finalFloor = d.floor >= d.maxFloor;
+  G.monsters = [];
+  if (finalFloor) {
+    // the keeper of the dungeon, with the richest loot
+    G.monsters.push({ x: boss.x, y: boss.y, type: cfg.boss, alive: true, respawnAt: 0, home: { ...boss }, moveAt: Infinity });
+  } else {
+    // a locked way down, guarded by a Warden that carries the key
+    G.gates.push({ x: boss.x, y: boss.y, kind: 'stairsdown' });
+    let wpos = { x: boss.x, y: boss.y };
+    for (const f of floors) { if (cheb(f.x, f.y, boss.x, boss.y) === 1) { wpos = f; break; } }
+    const wtype = d.type === 'house' ? 'gazer' : 'golem';
+    G.monsters.push({ x: wpos.x, y: wpos.y, type: wtype, warden: true, elite: 'armored', alive: true, respawnAt: 0, home: { ...wpos }, moveAt: Infinity });
+  }
   for (const [type, count] of Object.entries(cfg.mobs)) {
     let p = 0, g2 = 0;
     while (p < count && g2++ < 3000) {
@@ -532,12 +545,30 @@ function onGate(g) {
   } else if (g.kind === 'dungeon') {
     const dcfg = DUNGEONS[g.dtype];
     const tier = ZONE_IDS.includes(g.fromZone) ? ZONES[g.fromZone].tier : 1;
-    G.state.dungeon = { type: g.dtype, fromZone: g.fromZone, tier };
+    G.state.dungeon = { type: g.dtype, fromZone: g.fromZone, tier, floor: 1, maxFloor: 2 + (Math.random() < 0.5 ? 1 : 0), hasKey: false };
     travelTo('dungeon', 0, 0);
-    toast(`${dcfg.emoji} You descend into the ${dcfg.name}. Deadly, but rich — turn back at any exit.`);
+    toast(`${dcfg.emoji} You enter the ${dcfg.name} — ${G.state.dungeon.maxFloor} floors deep. Deadly, but rich.`);
   } else if (g.kind === 'zoneback') {
     travelTo(g.zone, ZONE_SPAWN.x, ZONE_SPAWN.y); // keep your pact; the dive continues
     toast('🪜 You climb back out into the open.');
+  } else if (g.kind === 'stairsdown') {
+    if (G.state.dungeon.hasKey) {
+      G.state.dungeon.floor++;
+      G.state.dungeon.tier++;
+      G.state.dungeon.hasKey = false;
+      travelTo('dungeon', 0, 0);
+      toast(`⬇️ You descend to floor ${G.state.dungeon.floor}. The gloom thickens…`);
+    } else {
+      toast('🔒 The way down is locked. Defeat the Warden to claim its key.');
+      const p = playerTile();
+      for (const [dx, dy] of [[0, 1], [1, 0], [-1, 0], [0, -1]]) {
+        if (walkable(p.x + dx, p.y + dy)) {
+          G.px = (p.x + dx + 0.5) * TILE; G.py = (p.y + dy + 0.5) * TILE;
+          G.state.x = p.x + dx; G.state.y = p.y + dy;
+          break;
+        }
+      }
+    }
   } else if (g.kind === 'cloudgate') {
     if (G.state.mainQuest >= 3) rideRainbow();
     else toast('🌈 A faint shimmer in the stones… the Mayor might know what it means.');
@@ -990,7 +1021,7 @@ const TILE_COLORS = {
   housefloor: ['#7a5a3a', '#845f3c'], housewall: ['#33241a', '#3a2a20'],
 };
 
-const GATE_EMOJI = { village: '🏘️', world: '🗺️', cloudgate: '🌈', portal: '🌀', zoneback: '🪜' };
+const GATE_EMOJI = { village: '🏘️', world: '🗺️', cloudgate: '🌈', portal: '🌀', zoneback: '🪜', stairsdown: '⬇️' };
 
 function tileHash(x, y) {
   let h = (x * 374761393 + y * 668265263) | 0;
@@ -1206,6 +1237,11 @@ function draw() {
     ctx.beginPath();
     ctx.arc(0, 0, TILE * 0.42, 0, Math.PI * 2);
     ctx.stroke();
+    if (g.kind === 'stairsdown') {
+      const locked = !(G.state.dungeon && G.state.dungeon.hasKey);
+      ctx.font = `${TILE * 0.4}px "Segoe UI Emoji", serif`;
+      ctx.fillText(locked ? '🔒' : '🗝️', TILE * 0.3, -TILE * 0.3);
+    }
     ctx.restore();
   }
 
@@ -1290,7 +1326,11 @@ function draw() {
       const breathe = Math.sin(G.time * 3 + m.home.x) * 0.035;
       drawShadow(ctx, sx, sy + TILE * 0.42, size * 0.5);
       drawSprite(ctx, key, sx, sy - 2, size, { bob, flip: m.x > pt.x, squashY: 1 + breathe, squashX: 1 - breathe });
-      if (em) {
+      if (m.warden) {
+        ctx.font = `${TILE * 0.4}px "Segoe UI Emoji", serif`;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('🗝️', sx, sy - TILE * 0.55 + bob);
+      } else if (em) {
         ctx.fillStyle = em.color;
         ctx.font = `${TILE * 0.32}px "Segoe UI Emoji", serif`;
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';

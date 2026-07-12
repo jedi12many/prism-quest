@@ -253,6 +253,35 @@ const SPRITES = {
     ],
   },
 
+  // ---------- dungeon bosses ----------
+  gloomtroll: {
+    mirror: true,
+    pal: { '.': null, o: '#16290f', g: '#5a7a3a', G: '#6e9048', d: '#3f5a28', e: '#ffd24a', b: '#6a4a2a' },
+    rows: [
+      '...ogggg', '..oggggg', '.oggeggg', '.oggeggg', '.ogggggg', '..oggggg',
+      'oogggggg', 'oggggggg', 'oggGGggg', 'oggggggg', 'oggggggg',
+      '.obbbbbb', '.ogggggg', '.oggg...', '.ooo....', '........',
+    ],
+  },
+  revenant: {
+    mirror: true,
+    pal: { '.': null, o: '#22222a', s: '#8a8496', S: '#5a5566', l: '#b4afc0', e: '#ff5c5c' },
+    rows: [
+      '...ossss', '..osssss', '..osesss', '..osssss', 'oossssss', 'osssssss',
+      'osSsssSs', 'osssssss', 'osssssss', 'osSsssss', '.ossssss',
+      '.ossssss', '.osss...', '.osss...', '.ooo....', '........',
+    ],
+  },
+  poltergeist: {
+    mirror: true,
+    pal: { '.': null, o: '#33334a', w: '#e8e8f5', W: '#b0b0cc', e: '#33334a', v: '#c9a8ff' },
+    rows: [
+      '...wwwww', '..wwwwww', '.wwwwwww', 'wwwwwwww', 'wwweewww', 'wwwwwwww',
+      'wwwwwwoo', 'wwwwwwww', 'wWwwwwww', 'wwwwwwww', 'wwwWwwww',
+      'wwwwwwww', 'ww.ww.ww', 'w..w..w.', '........', '........',
+    ],
+  },
+
   // ---------- environment ----------
   tree: {
     mirror: true,
@@ -356,6 +385,7 @@ const MONSTER_SPRITE = {
   gazer: 'gazer', spawnling: 'spawnling',
   bogmaw: 'bogmaw', voltra: 'voltra', mildew: 'mildew', umbrella: 'umbrella',
   dragon: 'dragon', sognaroth: 'sognaroth',
+  gloomtroll: 'gloomtroll', revenant: 'revenant', poltergeist: 'poltergeist',
 };
 const NPC_SPRITE = { mayor: 'npc_mayor', grandma: 'npc_grandma', foreman: 'npc_foreman' };
 function playerSpriteKey() {
