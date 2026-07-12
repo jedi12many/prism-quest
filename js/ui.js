@@ -34,7 +34,9 @@ function toast(msg) {
 function renderHUD() {
   if (!G.state) return;
   const s = G.state;
-  document.getElementById('questLine').textContent = '📜 ' + questText();
+  const pact = s.activePact;
+  document.getElementById('questLine').innerHTML =
+    '📜 ' + questText() + (pact ? `<br><span class="pactChip">${pact.icon} Pact: ${pact.name}</span>` : '');
   document.getElementById('hpFill').style.width = Math.max(0, s.hp / s.hpMax * 100) + '%';
   document.getElementById('hpText').textContent = `❤️ ${s.hp}/${s.hpMax}`;
   const need = xpNext(s.level);
@@ -474,6 +476,48 @@ function npcDialog(id) {
   return { text: 'Upgrade the camp, hero — Kitchen for your health, Stalls for your unicorn, Walls for your hide. Raw minerals pay the bills.' };
 }
 
+// Gloom Pact — offer three random blessing/curse pacts on a zone dive
+function offerPact(zoneId) {
+  const pool = [...PACTS].sort(() => Math.random() - 0.5).slice(0, 3);
+  const list = document.getElementById('pactList');
+  list.innerHTML = '';
+  document.getElementById('pactSub').textContent =
+    `You step into ${ZONES[zoneId].name}. The gloom offers a bargain — choose a pact, or refuse it.`;
+  for (const p of pool) {
+    const card = document.createElement('button');
+    card.className = 'pactCard';
+    const blessTxt = Object.entries(p.bless).map(([k, v]) => STAT_LABELS[k] + ' ' + fmtStat(k, v)).join(', ');
+    const curseTxt = Object.entries(p.curse).map(([k, v]) => STAT_LABELS[k] + ' ' + fmtStat(k, v)).join(', ');
+    card.innerHTML = `
+      <div class="pactName">${p.icon} ${p.name}</div>
+      <div class="pactBless">✦ ${blessTxt}</div>
+      <div class="pactCurse">☠ ${curseTxt}</div>`;
+    card.onclick = () => choosePact(p);
+    list.appendChild(card);
+  }
+  openScreen('pactScreen');
+}
+
+function choosePact(p) {
+  const s = G.state;
+  s.activePact = { name: p.name, icon: p.icon, bless: p.bless, curse: p.curse };
+  calcStats();
+  s.hp = Math.min(s.hp, s.hpMax);
+  save();
+  closeScreen('pactScreen');
+  toast(`${p.icon} Pact sealed: ${p.name}. ${p.desc}`);
+  renderHUD();
+}
+
+function declinePact() {
+  G.state.activePact = null;
+  calcStats();
+  save();
+  closeScreen('pactScreen');
+  toast('🚫 You refuse the gloom\'s bargain. No blessing, no curse.');
+  renderHUD();
+}
+
 // rogue-like game over — the run is done, offer a fresh hero
 function showGameOver(summary) {
   closeAllScreens();
@@ -713,6 +757,7 @@ function bindUI() {
   document.getElementById('btnNewGame').onclick = () => {
     if (confirm('Start over? Your current hero will be lost.')) resetSave();
   };
+  document.getElementById('btnDeclinePact').onclick = declinePact;
   document.getElementById('btnNewHero').onclick = () => {
     closeScreen('gameOverScreen');
     document.getElementById('hud').style.display = 'none';

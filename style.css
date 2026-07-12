@@ -414,6 +414,22 @@ button.closeBtn:not(.bigBtn) {
 
 .howto p { font-size: 13.5px; margin-bottom: 8px; line-height: 1.45; }
 
+/* gloom pacts */
+.pactChip { font-size: 11px; color: #c9a8ff; font-weight: 700; }
+#pactList { display: flex; flex-direction: column; gap: 10px; margin-bottom: 6px; }
+.pactCard {
+  text-align: left;
+  padding: 12px 14px;
+  border: 1.5px solid rgba(201,168,255,0.4);
+  border-radius: 14px;
+  background: rgba(127,92,255,0.1);
+  color: inherit; cursor: pointer;
+}
+.pactCard:active { transform: scale(0.98); }
+.pactName { font-weight: 800; font-size: 15px; margin-bottom: 5px; }
+.pactBless { font-size: 12.5px; color: #7bf59b; }
+.pactCurse { font-size: 12.5px; color: #ff8a9c; margin-top: 2px; }
+
 /* game over */
 #goStats { text-align: center; margin: 10px 0 4px; }
 .goRun { font-size: 15px; font-weight: 700; color: #ffe9a8; margin-bottom: 6px; }

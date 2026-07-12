@@ -204,6 +204,27 @@ const ELITE_MODS = {
 };
 const ELITE_KEYS = Object.keys(ELITE_MODS);
 
+// Gloom Pacts — a blessing paired with a curse, chosen when you dive into an
+// uncleared zone. Active only while you're in that zone (a fresh choice each dive).
+const PACTS = [
+  { name: 'Glass Rainbow',    icon: '🌈', bless: { spellDmg: 0.35 },              curse: { hpMax: -18 },
+    desc: '+35% spell damage, but −18 max HP' },
+  { name: "Berserker's Vow",  icon: '⚔️', bless: { basicDmg: 0.4, crit: 0.08 },   curse: { defFlat: -3 },
+    desc: '+40% Bonk damage & +8% crit, but −3 defense' },
+  { name: "Hoarder's Bargain", icon: '💎', bless: { rareLuck: 0.25, mineYield: 1 }, curse: { xpGain: -0.3 },
+    desc: '+25% rare-gem luck & +1 mining, but −30% XP' },
+  { name: "Turtle's Patience", icon: '🛡️', bless: { defFlat: 4, hpMax: 20 },       curse: { spellDmg: -0.2, basicDmg: -0.2 },
+    desc: '+4 defense & +20 max HP, but −20% all damage' },
+  { name: "Unicorn's Fervor", icon: '🦄', bless: { unicornPower: 0.6, healPower: 0.3 }, curse: { atkFlat: -2 },
+    desc: '+60% unicorn power & +30% healing, but −2 attack' },
+  { name: 'Nimble Gambit',    icon: '🌀', bless: { dodge: 0.12, crit: 0.08 },      curse: { hpMax: -12 },
+    desc: '+12% dodge & +8% crit, but −12 max HP' },
+  { name: "Scholar's Focus",  icon: '📖', bless: { xpGain: 0.5, chargeSave: 0.15 }, curse: { defFlat: -2 },
+    desc: '+50% XP & 15% free casts, but −2 defense' },
+  { name: "Ascetic's Boon",   icon: '✨', bless: { spellDmg: 0.2, basicDmg: 0.2, regen: 2 }, curse: { hpMax: -25 },
+    desc: '+20% all damage & regen, but −25 max HP' },
+];
+
 // Drizzlewick villagers
 const NPCS = {
   mayor:   { name: 'Mayor Puddle',   emoji: '🎩', x: 14, y: 6 },

@@ -73,6 +73,11 @@ function eff(key) {
   const sc = prismSetCount();
   if (sc >= 3 && PRISM_SET.b3[key]) v += PRISM_SET.b3[key];
   if (sc >= 5 && PRISM_SET.b5[key]) v += PRISM_SET.b5[key];
+  const pact = G.state.activePact;
+  if (pact) {
+    if (pact.bless[key]) v += pact.bless[key];
+    if (pact.curse[key]) v += pact.curse[key];
+  }
   return v;
 }
 
@@ -361,6 +366,8 @@ function walkable(x, y) {
 function travelTo(mapId, x, y) {
   G.state.mapId = mapId;
   G.state.x = x; G.state.y = y;
+  G.state.activePact = null; // pacts last only for one zone dive
+  calcStats();
   buildMap(mapId);
   G.px = (x + 0.5) * TILE;
   G.py = (y + 0.5) * TILE;
@@ -378,6 +385,7 @@ function onGate(g) {
     travelTo(g.zone, ZONE_SPAWN.x, ZONE_SPAWN.y);
     const cleared = G.state.zonesCleared[g.zone];
     toast(`${z.dir} — ${z.name}: ${z.blurb}.${cleared ? ' ☀️ The light has returned here.' : ''}`);
+    if (!cleared && !G.state.sunRestored) offerPact(g.zone);
   } else if (g.kind === 'cloudgate') {
     if (G.state.mainQuest >= 3) rideRainbow();
     else toast('🌈 A faint shimmer in the stones… the Mayor might know what it means.');
@@ -430,7 +438,7 @@ function save() {
     raw: s.raw, polished: s.polished, spells: s.spells, skills: s.skills,
     kills: s.kills, bossDefeated: s.bossDefeated, sunRestored: s.sunRestored, base: s.base,
     mapId: G.mapId, mainQuest: s.mainQuest, zonesCleared: s.zonesCleared, npcFlags: s.npcFlags,
-    equip: s.equip, inventory: s.inventory, reviveUsed: s.reviveUsed,
+    equip: s.equip, inventory: s.inventory, reviveUsed: s.reviveUsed, activePact: s.activePact,
   }));
 }
 
@@ -478,7 +486,7 @@ function newGameWithClass(classId) {
     mapId: 'village', mainQuest: 0,
     zonesCleared: { north: false, east: false, west: false, south: false }, npcFlags: {},
     equip: { weapon: rollItem(1, 'common', 'weapon'), helm: null, armor: null, boots: null, charm: null },
-    inventory: [],
+    inventory: [], activePact: null,
     x: SPAWN.x, y: SPAWN.y,
   };
   calcStats();
@@ -524,7 +532,7 @@ function boot() {
       mapId: 'village', mainQuest: 0,
       zonesCleared: { north: false, east: false, west: false, south: false }, npcFlags: {},
       equip: { weapon: null, helm: null, armor: null, boots: null, charm: null },
-      inventory: [],
+      inventory: [], activePact: null,
     }, saved);
     calcStats();
     if (G.state.hp <= 0) G.state.hp = G.state.hpMax;
