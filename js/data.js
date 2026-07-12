@@ -192,6 +192,18 @@ const MONSTERS = {
             drops: { prismatite: 1 } },
 };
 
+// Elite monster affixes — a rare mob spawns "elite" with a modifier, more HP,
+// better XP/loot, and a coloured aura. (Champions/bosses are never elite.)
+const ELITE_MODS = {
+  vicious:  { name: 'Vicious',  color: '#ff6b6b', hpMul: 1.3, atkMul: 1.45, xpMul: 1.8 },
+  armored:  { name: 'Armored',  color: '#8fb7ff', hpMul: 2.0, defBonus: 3,  xpMul: 1.8 },
+  swift:    { name: 'Swift',    color: '#5cff8a', hpMul: 1.3, extraHit: 0.5, xpMul: 1.8 },
+  venomous: { name: 'Venomous', color: '#b06ee8', hpMul: 1.35, venom: true, xpMul: 1.8 },
+  cursed:   { name: 'Cursed',   color: '#c86bff', hpMul: 1.4, curse: true,  xpMul: 1.9 },
+  radiant:  { name: 'Radiant',  color: '#ffd24a', hpMul: 1.6, xpMul: 2.5, richLoot: true },
+};
+const ELITE_KEYS = Object.keys(ELITE_MODS);
+
 // Drizzlewick villagers
 const NPCS = {
   mayor:   { name: 'Mayor Puddle',   emoji: '🎩', x: 14, y: 6 },

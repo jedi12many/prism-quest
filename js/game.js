@@ -219,6 +219,12 @@ function buildVillage() {
   }
 }
 
+// occasionally promote a spawned mob to an elite with an affix
+function maybeElite(m, tier, rng) {
+  const chance = 0.1 + (tier - 1) * 0.04; // ~10% (South) to ~22% (North)
+  if (rng() < chance) m.elite = ELITE_KEYS[(rng() * ELITE_KEYS.length) | 0];
+}
+
 // A directional zone — a fresh themed level with a champion at the far end
 function buildZone(zoneId) {
   const z = ZONES[zoneId];
@@ -284,7 +290,9 @@ function buildZone(zoneId) {
         if (cheb(x, y, lair.x, lair.y) < 2) continue;
         if (G.monsters.some(m => cheb(m.x, m.y, x, y) < 3)) continue;
         if (G.nodes.some(n => n.x === x && n.y === y)) continue;
-        G.monsters.push({ x, y, type, alive: true, respawnAt: 0, home: { x, y }, moveAt: 1 + rng() * 2 });
+        const mob = { x, y, type, alive: true, respawnAt: 0, home: { x, y }, moveAt: 1 + rng() * 2 };
+        maybeElite(mob, z.tier, rng);
+        G.monsters.push(mob);
         p++;
       }
     }
@@ -326,7 +334,9 @@ function buildRealm() {
       if (G.map[y][x] !== 'gloomstone') continue;
       if (cheb(x, y, 28, 12) < 3 || cheb(x, y, 3, 12) < 4) continue;
       if (G.monsters.some(m => cheb(m.x, m.y, x, y) < 2)) continue;
-      G.monsters.push({ x, y, type, alive: true, respawnAt: 0, home: { x, y }, moveAt: 0.8 + rng() });
+      const mob = { x, y, type, alive: true, respawnAt: 0, home: { x, y }, moveAt: 0.8 + rng() };
+      maybeElite(mob, 5, rng); // the realm crawls with elites
+      G.monsters.push(mob);
       placed++;
     }
   }
@@ -1039,12 +1049,32 @@ function draw() {
     if (sx < -TILE || sy < -TILE || sx > w + TILE || sy > h + TILE) continue;
     const bob = Math.sin(G.time * 4 + m.home.x) * 2;
     const def = MONSTERS[m.type];
+    const em = m.elite ? ELITE_MODS[m.elite] : null;
+    if (em) {
+      // pulsing coloured aura marking an elite
+      const ar = TILE * (0.5 + Math.sin(G.time * 4 + m.home.x) * 0.05);
+      ctx.save();
+      ctx.globalAlpha = 0.5;
+      ctx.strokeStyle = em.color;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(sx, sy + TILE * 0.2, ar, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      ctx.restore();
+    }
     const key = MONSTER_SPRITE[m.type];
     if (key && hasSprite(key)) {
       const size = def.boss ? TILE * 1.5 : TILE * 1.02;
       const breathe = Math.sin(G.time * 3 + m.home.x) * 0.035;
       drawShadow(ctx, sx, sy + TILE * 0.42, size * 0.5);
       drawSprite(ctx, key, sx, sy - 2, size, { bob, flip: m.x > pt.x, squashY: 1 + breathe, squashX: 1 - breathe });
+      if (em) {
+        ctx.fillStyle = em.color;
+        ctx.font = `${TILE * 0.32}px "Segoe UI Emoji", serif`;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('✦', sx, sy - TILE * 0.5 + bob);
+      }
     } else {
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.font = `${def.boss ? TILE * 1.15 : TILE * 0.72}px "Segoe UI Emoji", serif`;

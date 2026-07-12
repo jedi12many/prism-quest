@@ -19,11 +19,13 @@ function startBattle(monster, ambush) {
   const def = MONSTERS[monster.type];
   // difficulty scaling: tougher in higher-tier zones and the finale maps
   const tier = combatTier();
-  const hpMult = 1 + (tier - 1) * 0.4;
-  const atkScale = 1 + (tier - 1) * 0.22;
+  const em = monster.elite ? ELITE_MODS[monster.elite] : null;
+  const hpMult = (1 + (tier - 1) * 0.4) * (em ? em.hpMul : 1);
+  const atkScale = (1 + (tier - 1) * 0.22) * (em ? (em.atkMul || 1) : 1);
   const hp = Math.round(def.hp * hpMult);
   B = {
-    monster, def, tier, atkScale,
+    monster, def, tier, atkScale, elite: em,
+    mdef: def.def + (em ? (em.defBonus || 0) : 0),
     mhp: hp, mhpMax: hp,
     mStatus: {},          // burn:{turns,dmg}, poison:{turns,dmg}, weaken:{turns,mult}
     pStatus: {},          // shield:{turns,reduce}, poison:{turns,dmg}
@@ -66,7 +68,7 @@ function spellDamage(power) {
   let dmg = power * (1 + s.mag * 0.05) * (1 + eff('spellDmg')) * variance() * dreadMult();
   const crit = isCrit();
   if (crit) dmg *= 1.7;
-  dmg = Math.max(1, Math.round(dmg - B.def.def * 0.3));
+  dmg = Math.max(1, Math.round(dmg - B.mdef * 0.3));
   return { dmg, crit };
 }
 
@@ -88,7 +90,7 @@ function playerAction(action, spellId) {
     const crit = isCrit();
     let dmg = s.atk * 2 * (1 + eff('basicDmg')) * variance() * dreadMult();
     if (crit) dmg *= 1.7;
-    dmg = Math.max(1, Math.round(dmg - B.def.def * 0.5));
+    dmg = Math.max(1, Math.round(dmg - B.mdef * 0.5));
     if (hitMonster(dmg, crit ? '💥 CRITICAL BONK!' : '🪄 Bonk!')) return;
 
   } else if (action === 'flee') {
@@ -168,8 +170,9 @@ function playerAction(action, spellId) {
   if (regen > 0 && s.hp < s.hpMax) s.hp = Math.min(s.hpMax, s.hp + regen);
 
   monsterHit();
-  if (!B.over && B.def.doubleHit && Math.random() < B.def.doubleHit) {
-    blog('🐉 It attacks again!');
+  const extraHit = (B.def.doubleHit || 0) + (B.elite ? (B.elite.extraHit || 0) : 0);
+  if (!B.over && extraHit && Math.random() < extraHit) {
+    blog(B.elite && B.elite.extraHit ? '💨 It blurs and strikes again!' : '🐉 It attacks again!');
     monsterHit();
   }
   if (!B.over) renderBattle();
@@ -203,8 +206,9 @@ function monsterHit() {
   applyPlayerDamage(dmg);
   if (B.over) return;
 
-  if (B.def.poison && Math.random() < 0.4) {
-    B.pStatus.poison = { turns: 3, dmg: 2 };
+  const venom = B.def.poison || (B.elite && B.elite.venom);
+  if (venom && Math.random() < 0.4) {
+    B.pStatus.poison = { turns: 3, dmg: B.elite && B.elite.venom ? 3 : 2 };
     blog('🟣 You\'ve been poisoned!');
   }
   const pp = B.pStatus.poison;
@@ -213,7 +217,8 @@ function monsterHit() {
     blog(`🟣 Poison stings you for ${pp.dmg}.`);
     applyPlayerDamage(pp.dmg);
   }
-  if (B.def.dread && !B.over && Math.random() < 0.35) {
+  const curse = B.def.dread || (B.elite && B.elite.curse);
+  if (curse && !B.over && Math.random() < 0.35) {
     B.pStatus.dread = { turns: 2 };
     blog('😰 It whispers something you should not have heard… (your damage -25%)');
   }
@@ -263,8 +268,9 @@ function victory() {
   document.getElementById('bMonEmoji').classList.add('dying');
   setTimeout(() => fxBurst(mpos.x, mpos.y, { count: 26, colors: ['#cbb6ff', '#ffffff'], star: true, speed: 260 }), 200);
   setTimeout(() => fxConfetti(mpos.x, mpos.y + 60, 40), 420);
-  blog(`🎉 ${def.name} is defeated!`);
-  const gained = gainXp(Math.round(def.xp * (1 + ((B.tier || 1) - 1) * 0.3)));
+  const foeName = B.elite ? `${B.elite.name} ${def.name}` : def.name;
+  blog(`🎉 ${foeName} is defeated!`);
+  const gained = gainXp(Math.round(def.xp * (1 + ((B.tier || 1) - 1) * 0.3) * (B.elite ? B.elite.xpMul : 1)));
   blog(`⭐ +${gained} XP`);
 
   // drops
@@ -282,8 +288,10 @@ function victory() {
     blog(`💎 It dropped ${amount} raw ${MINERALS[picked].name}!`);
   }
 
-  // equipment loot
-  const item = rollMonsterLoot(def);
+  // equipment loot — elites always drop; Radiant elites drop guaranteed rare+
+  let item = rollMonsterLoot(def);
+  if (B.elite && B.elite.richLoot) item = rollItem(Math.max(2, (B.tier || 1) * 2), Math.random() < 0.3 ? 'legendary' : 'rare');
+  else if (!item && B.elite) item = rollItem(Math.max(1, (B.tier || 1) * 2));
   if (item) {
     if (addItemToInventory(item)) {
       blog(`${SLOTS[item.slot].emoji} <b style="color:${RARITIES[item.rarity].color}">${item.name}</b> dropped! (${RARITIES[item.rarity].name})`);
@@ -386,7 +394,12 @@ function renderBattle(won, lost) {
   const cls = classDef();
 
   document.getElementById('bMonEmoji').innerHTML = actorHTML(MONSTER_SPRITE[B.monster.type], B.def.emoji, 76);
-  document.getElementById('bMonName').textContent = B.def.name;
+  const nameEl = document.getElementById('bMonName');
+  if (B.elite) {
+    nameEl.innerHTML = `<span style="color:${B.elite.color}">✦ ${B.elite.name}</span> ${B.def.name}`;
+  } else {
+    nameEl.textContent = B.def.name;
+  }
   const mpct = Math.max(0, B.mhp / B.mhpMax * 100);
   document.getElementById('bMonHpFill').style.width = mpct + '%';
   document.getElementById('bMonHpText').textContent = `${Math.max(0, B.mhp)} / ${B.mhpMax}`;
