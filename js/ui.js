@@ -535,7 +535,7 @@ function showBossIntro(type) {
   sndBossIntro(type);
   clearTimeout(BI_TIMER);
   const dismiss = () => { el.classList.remove('show'); el.onclick = null; clearTimeout(BI_TIMER); };
-  BI_TIMER = setTimeout(dismiss, 2800);
+  BI_TIMER = setTimeout(dismiss, 3800);
   el.onclick = dismiss;
 }
 

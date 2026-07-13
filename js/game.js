@@ -229,8 +229,9 @@ function buildVillage() {
     for (let y = BASE_RECT.y0; y <= BASE_RECT.y1; y++)
       if (isWallTile(x, y)) G.wallTiles.push([x, y]);
   G.npcs = Object.entries(NPCS).map(([id, n]) => ({ id, x: n.x, y: n.y }));
-  // zone gates, the plaza cloudgate, the Glassworks kiln, and the Village Ledger
-  G.gates = [{ x: 18, y: 4, kind: 'cloudgate' }, { x: 11, y: 7, kind: 'forge' }, { x: 15, y: 4, kind: 'board' }];
+  // zone gates, the plaza cloudgate, the Glassworks kiln (outside the walls —
+  // fire safety!), and the Village Ledger
+  G.gates = [{ x: 18, y: 4, kind: 'cloudgate' }, { x: 12, y: 7, kind: 'forge' }, { x: 15, y: 4, kind: 'board' }];
   for (const zid of ZONE_IDS) {
     for (const [gx, gy] of ZONES[zid].gate) {
       G.map[gy][gx] = 'grass'; // keep the gate tile clear
@@ -978,7 +979,8 @@ function onTap(e) {
   const node = G.nodes.find(n => n.x === tx && n.y === ty && n.respawnAt <= G.time);
   if (node) {
     if (cheb(p.x, p.y, tx, ty) <= 1) { mineNode(node); G.path = []; G.pendingMine = null; return; }
-    const path = findPath(p, (x, y) => cheb(x, y, tx, ty) <= 1);
+    // walk right onto the gem (it auto-mines on arrival); fall back to adjacent
+    const path = findPath(p, (x, y) => x === tx && y === ty) || findPath(p, (x, y) => cheb(x, y, tx, ty) <= 1);
     if (path) { G.path = path; G.pendingMine = node; G.pendingNpc = null; }
     else toast("Can't reach that node from here.");
     return;
@@ -1124,6 +1126,9 @@ function update(dt) {
       const gate = G.gates.find(g => g.x === target.x && g.y === target.y);
       if (gate && G.gateArmed) { G.path = []; G.pendingMine = null; G.pendingNpc = null; onGate(gate); return; }
       if (G.treasure && G.treasure.x === target.x && G.treasure.y === target.y) digTreasure();
+      // walking over a gem node scoops it up — no tap required
+      const stepNode = G.nodes.find(n => n.x === target.x && n.y === target.y && n.respawnAt <= G.time);
+      if (stepNode) mineNode(stepNode);
       if (!G.path.length && G.pendingMine) {
         const n = G.pendingMine; G.pendingMine = null;
         const p = playerTile();
