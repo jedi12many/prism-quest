@@ -838,7 +838,7 @@ function bindUI() {
       toast('🌞 Drizzlewick throws you the biggest festival Rainyday has ever seen!');
     }
   };
-  document.querySelectorAll('.closeBtn').forEach(btn => {
+  document.querySelectorAll('.closeBtn[data-close]').forEach(btn => {
     btn.onclick = () => closeScreen(btn.dataset.close);
   });
 }

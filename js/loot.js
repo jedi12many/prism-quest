@@ -93,7 +93,9 @@ const STAT_LABELS = {
 };
 
 function fmtStat(key, val) {
-  return FLAT_KEYS.includes(key) ? `+${val}` : `+${Math.round(val * 100)}%`;
+  const n = FLAT_KEYS.includes(key) ? val : Math.round(val * 100);
+  const s = (n >= 0 ? '+' : '−') + Math.abs(n); // proper minus sign for penalties
+  return FLAT_KEYS.includes(key) ? s : s + '%';
 }
 
 function lootPick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
