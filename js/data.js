@@ -72,9 +72,9 @@ const SPELLS = {
 
 const CLASSES = {
   mage: {
-    name: 'Prism Mage', emoji: '🧙', hp: 34, atk: 4, mag: 7, def: 2, defGrow: 0.5,
-    perk: { spellDmg: 0.2 },
-    perkDesc: '+20% spell damage',
+    name: 'Prism Mage', emoji: '🧙', hp: 40, atk: 4, mag: 9, def: 3, defGrow: 0.5, difficulty: 'Expert ★★★',
+    perk: { spellDmg: 0.35, chargeSave: 0.1 },
+    perkDesc: '+35% spell damage, 10% free casts',
     blurb: 'A scholar of light. Spells hit harder, but robes are thin.',
     tree: [
       { branch: 'Radiance', color: '#ff6ec7', nodes: [
@@ -101,7 +101,7 @@ const CLASSES = {
     ],
   },
   knight: {
-    name: 'Crystal Knight', emoji: '🛡️', hp: 46, atk: 8, mag: 4, def: 4, defGrow: 1,
+    name: 'Crystal Knight', emoji: '🛡️', hp: 46, atk: 8, mag: 4, def: 4, defGrow: 1, difficulty: 'Steady ★★',
     perk: { basicDmg: 0.5, spellDmg: -0.1 },
     perkDesc: '+50% Bonk damage, tough as gemstone',
     blurb: 'A walking geode. Bonks first, asks questions never.',
@@ -130,9 +130,9 @@ const CLASSES = {
     ],
   },
   whisperer: {
-    name: 'Unicorn Whisperer', emoji: '🦄', hp: 38, atk: 5, mag: 6, def: 3, defGrow: 0.5,
-    perk: { unicornPower: 0.5 },
-    perkDesc: 'Unicorns are 50% stronger; starts with Summon Unicorn',
+    name: 'Unicorn Whisperer', emoji: '🦄', hp: 38, atk: 5, mag: 6, def: 3, defGrow: 0.5, difficulty: 'Gentle ★',
+    perk: { unicornPower: 0.35 },
+    perkDesc: 'Unicorns are 35% stronger; starts with Summon Unicorn',
     perkSpells: { unicorn: 2 },
     blurb: 'Speaks fluent sparkle. Unicorns answer the call.',
     tree: [
@@ -177,7 +177,7 @@ const MONSTERS = {
   spawnling: { name: 'Spawn of Sog', emoji: '🦑', hp: 24, atk: 10, def: 1, xp: 26,
             drops: { roseopal: 1 } },
   // the four gloom champions — beat one and its region floods with light
-  bogmaw:   { name: 'Bogmaw the Damp',        emoji: '🐸', hp: 50, atk: 9,  def: 2, xp: 60, boss: true, miniboss: 0, poison: true,
+  bogmaw:   { name: 'Bogmaw the Damp',        emoji: '🐸', hp: 46, atk: 8,  def: 2, xp: 60, boss: true, miniboss: 0, poison: true,
             drops: { aquamarine: 2, prismatite: 1 } },
   voltra:   { name: 'Voltra the Storm Serpent', emoji: '🐍', hp: 55, atk: 11, def: 2, xp: 70, boss: true, miniboss: 1, doubleHit: 0.35,
             drops: { sunstone: 2, prismatite: 1 } },

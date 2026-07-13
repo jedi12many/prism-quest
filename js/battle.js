@@ -196,7 +196,7 @@ function monsterHit() {
   }
   let atk = B.def.atk * (B.atkScale || 1);
   if (B.mStatus.weaken && B.mStatus.weaken.turns >= 0 && B.mStatus.weaken.mult) atk *= B.mStatus.weaken.mult;
-  let dmg = Math.max(1, Math.round(atk * variance() * 1.85 - s.def * 0.5));
+  let dmg = Math.max(1, Math.round(atk * variance() * 1.7 - s.def * 0.5));
   if (B.pStatus.shield && B.pStatus.shield.turns > 0) {
     dmg = Math.max(1, Math.round(dmg * (1 - B.pStatus.shield.reduce)));
     B.pStatus.shield.turns--;

@@ -226,7 +226,7 @@
 // Sequential loader with a dev cache-buster (python's http.server sends no
 // cache headers, so browsers serve stale JS). Pin CACHE_V before a real deploy.
 (function () {
-  var files = ['data', 'gems', 'sprites', 'loot', 'fx', 'audio', 'game', 'battle', 'ui'];
+  var files = ['data', 'gems', 'sprites', 'loot', 'fx', 'audio', 'game', 'battle', 'ui', 'sim'];
   var v = '?t=' + Date.now();
   (function next(i) {
     if (i >= files.length) { if (window.boot) boot(); return; }

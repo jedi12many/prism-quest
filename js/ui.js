@@ -64,7 +64,8 @@ function showClassScreen() {
       <div class="className">${cls.name}</div>
       <div class="classBlurb">${cls.blurb}</div>
       <div class="classPerk">✨ ${cls.perkDesc}</div>
-      <div class="classStats">❤️ ${cls.hp} &nbsp; ⚔️ ${cls.atk} &nbsp; 🔮 ${cls.mag} &nbsp; 🛡️ ${cls.def}</div>`;
+      <div class="classStats">❤️ ${cls.hp} &nbsp; ⚔️ ${cls.atk} &nbsp; 🔮 ${cls.mag} &nbsp; 🛡️ ${cls.def}</div>
+      <div class="classDiff">${cls.difficulty || ''}</div>`;
     card.onclick = () => { closeScreen('classScreen'); newGameWithClass(id); };
     wrap.appendChild(card);
   }

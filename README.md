@@ -123,6 +123,24 @@ death, buying, keys…) and each map has a subtle ambient arpeggio whose mood
 shifts (calm village, tense zones, ominous dungeons, dissonant realm). A 🔊/🔇
 button in the HUD mutes everything, and the choice persists.
 
+## Balance simulator
+
+`js/sim.js` plays full games headlessly through the real systems (combat, loot,
+XP, pacts, elites, dungeons, skill builds) with a scripted player. From the
+browser console:
+
+```js
+runSim(100, 5000)   // 100 games, seeds 5001..5100 — returns the outcome mix
+window.SIM_LAST     // per-run details (class, build, deaths, minHp, ...)
+```
+
+Runs are **deterministic per seed** (Math.random is re-seeded per run), so after
+a balance change you re-run the same seeds and compare apples to apples. Saving,
+meta-progression, and death records are stubbed during the sim, and your real
+game state is restored afterwards. Target mix we tune toward: roughly half the
+runs are losses, with a healthy spread of close wins, comfortable wins, and the
+occasional godlike **crush** (won without ever being truly threatened).
+
 ## Tech
 
 Plain HTML5 Canvas + vanilla JavaScript. No dependencies, no build.
