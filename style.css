@@ -300,6 +300,68 @@ button.closeBtn:not(.bigBtn) {
 /* ---------- dwarf crew ---------- */
 .bigBtn.dwarf { background: linear-gradient(90deg, #a06a2c, #d99a4e); }
 
+/* ---------- boss intro cinematic ---------- */
+#bossIntro {
+  position: fixed; inset: 0; z-index: 110;
+  display: none;
+  align-items: center; justify-content: center;
+  background: radial-gradient(ellipse at center, rgba(44,12,66,0.92), rgba(8,4,16,0.97));
+  cursor: pointer;
+}
+#bossIntro.show { display: flex; animation: biBg 0.35s ease-out; }
+@keyframes biBg { from { opacity: 0; } to { opacity: 1; } }
+#biWrap {
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
+  animation: biShake 0.5s 0.4s;
+  padding: 20px;
+}
+@keyframes biShake {
+  0%, 100% { transform: none; }
+  20% { transform: translate(-9px, 5px); }
+  40% { transform: translate(8px, -6px); }
+  60% { transform: translate(-6px, 3px); }
+  80% { transform: translate(4px, -2px); }
+}
+#biTag {
+  font-size: 12px; font-weight: 800; letter-spacing: 4px;
+  color: #ff8a9e; opacity: 0.9;
+  animation: biIn 0.4s 0.15s backwards;
+}
+#biSprite {
+  width: 176px; height: 176px;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 0 26px rgba(255, 90, 140, 0.5)) drop-shadow(0 6px 18px rgba(0,0,0,0.6));
+  animation: biSlam 0.55s cubic-bezier(.2, 1.5, .4, 1), biMenace 1.4s 0.65s ease-in-out infinite;
+}
+@keyframes biSlam {
+  0% { transform: scale(5.5) rotate(-6deg); opacity: 0; }
+  55% { transform: scale(0.9) rotate(2deg); opacity: 1; }
+  75% { transform: scale(1.12) rotate(-1deg); }
+  100% { transform: scale(1) rotate(0); }
+}
+@keyframes biMenace {
+  0%, 100% { transform: scale(1) translateY(0); }
+  50% { transform: scale(1.07) translateY(-7px); }
+}
+#biName {
+  font-size: 24px; font-weight: 900; letter-spacing: 1px;
+  text-align: center; padding: 0 16px;
+  text-shadow: 0 2px 12px rgba(0,0,0,0.9);
+  animation: biIn 0.5s 0.4s backwards;
+}
+#biQuote {
+  max-width: 460px; text-align: center;
+  font-style: italic; font-size: 15px; line-height: 1.55;
+  color: #e8dff5; padding: 0 24px;
+  animation: biIn 0.6s 0.75s backwards;
+}
+#biSkip {
+  font-size: 11px; color: rgba(255,255,255,0.45);
+  margin-top: 10px;
+  animation: biIn 0.5s 1.4s backwards;
+}
+@keyframes biIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+
 /* ---------- the Village Ledger ---------- */
 .ledgerQuest { font-size: 14px; font-weight: 600; color: #ffe9a8; padding: 6px 0; }
 .ledgerFavor { font-size: 13px; padding: 3px 0 3px 10px; opacity: 0.9; }

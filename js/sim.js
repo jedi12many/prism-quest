@@ -16,7 +16,7 @@ const SIM_CRAFT_ORDER = ['bloomheal', 'unicorn', 'rainbowbeam', 'stardust', 'sun
 const SIM_PATCH = ['toast', 'renderBattle', 'renderHUD', 'renderBag', 'renderSpells', 'renderSkills',
   'renderBase', 'renderChar', 'renderForge', 'openItemCard', 'fxBurst', 'fxConfetti', 'fxRing', 'fxRise',
   'fxFlutter', 'fxBeam', 'fxUnicornSummon', 'fxUnicornStrike', 'fxStardust', 'spellFX', 'shakeEl',
-  'showGameOver', 'setMusic', 'addFloater', 'offerPact', 'save', 'achEvent'];
+  'showGameOver', 'setMusic', 'addFloater', 'offerPact', 'save', 'achEvent', 'showBossIntro'];
 
 function simShuffle(arr, rng) {
   const a = [...arr];

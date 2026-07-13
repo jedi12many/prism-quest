@@ -121,6 +121,44 @@ function sndRainbowRide() {
   chord([1046, 1319, 1568, 2093], { type: 'sine', dur: 0.9, vol: 0.14, when: 1.35 });
 }
 
+// boss entrances — a signature sting per villain
+function sndBossIntro(type) {
+  switch (type) {
+    case 'bogmaw': // swamp glorps and a belly croak
+      tone({ freq: 180, type: 'square', dur: 0.18, vol: 0.3, slideTo: 90 });
+      tone({ freq: 140, type: 'square', dur: 0.22, vol: 0.3, slideTo: 70, when: 0.22 });
+      noise({ freq: 300, freqTo: 110, dur: 0.5, vol: 0.2, when: 0.42 });
+      tone({ freq: 58, type: 'sine', dur: 0.9, vol: 0.35, when: 0.5 });
+      break;
+    case 'voltra': // crackling zaps into a storm chord
+      for (let i = 0; i < 4; i++) tone({ freq: 1500 - i * 240, type: 'sawtooth', dur: 0.06, vol: 0.2, slideTo: 2300, when: i * 0.09 });
+      noise({ freq: 3200, dur: 0.35, vol: 0.16, filter: 'highpass', when: 0.4 });
+      chord([98, 147], { type: 'sawtooth', dur: 0.8, vol: 0.2, when: 0.5 });
+      break;
+    case 'mildew': // queasy detuned rot-wobble
+      chord([110, 116.5], { type: 'sine', dur: 1.5, vol: 0.3 });
+      tone({ freq: 220, type: 'triangle', dur: 0.9, vol: 0.18, slideTo: 175, when: 0.4 });
+      noise({ freq: 240, dur: 0.8, vol: 0.1, when: 0.5 });
+      break;
+    case 'umbrella': // theatrical dun… DUN, under rain hiss
+      chord([147, 175, 220], { type: 'sawtooth', dur: 0.32, vol: 0.26 });
+      chord([131, 156, 196], { type: 'sawtooth', dur: 1.0, vol: 0.3, when: 0.45 });
+      noise({ freq: 1200, freqTo: 500, dur: 1.0, vol: 0.1, when: 0.45 });
+      break;
+    case 'dragon': // roar into a power chord
+      noise({ freq: 400, freqTo: 2400, dur: 0.5, vol: 0.3 });
+      tone({ freq: 700, type: 'sawtooth', dur: 0.6, vol: 0.3, slideTo: 110 });
+      chord([73, 110, 146], { type: 'sawtooth', dur: 1.2, vol: 0.28, when: 0.5 });
+      break;
+    case 'sognaroth': // the deep breathes: sub drone + dissonant swell
+      tone({ freq: 41, type: 'sine', dur: 2.4, vol: 0.4, attack: 0.4 });
+      chord([233, 245, 466], { type: 'sine', dur: 1.8, vol: 0.13, when: 0.5 });
+      noise({ freq: 200, freqTo: 1400, dur: 1.6, vol: 0.12, filter: 'bandpass', when: 0.3 });
+      tone({ freq: 55, type: 'sawtooth', dur: 1.3, vol: 0.2, slideTo: 28, when: 1.2 });
+      break;
+  }
+}
+
 // forging at the Glassworks — anvil clink, molten hiss, rising fusion chord
 function sndForge(power) {
   noise({ freq: 2200, dur: 0.08, vol: 0.3, filter: 'highpass' });

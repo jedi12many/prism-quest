@@ -474,6 +474,33 @@ function requireCamp(what) {
   return false;
 }
 
+// ---------- boss intro cinematic ----------
+
+let BI_TIMER = null;
+
+function showBossIntro(type) {
+  const intro = BOSS_INTROS[type];
+  if (!intro) return;
+  const def = MONSTERS[type];
+  const el = document.getElementById('bossIntro');
+  const key = MONSTER_SPRITE[type];
+  const url = key && hasSprite(key) ? spriteDataURL(key) : null;
+  const img = document.getElementById('biSprite');
+  if (url) { img.src = url; img.style.display = 'block'; } else { img.style.display = 'none'; }
+  const nameEl = document.getElementById('biName');
+  nameEl.textContent = def.name;
+  nameEl.style.color = intro.color;
+  document.getElementById('biQuote').textContent = intro.quote;
+  el.classList.remove('show');
+  void el.offsetWidth; // restart the animations
+  el.classList.add('show');
+  sndBossIntro(type);
+  clearTimeout(BI_TIMER);
+  const dismiss = () => { el.classList.remove('show'); el.onclick = null; clearTimeout(BI_TIMER); };
+  BI_TIMER = setTimeout(dismiss, 2800);
+  el.onclick = dismiss;
+}
+
 // ---------- villagers ----------
 
 // Grandma's whisper about the shattered Prismblade

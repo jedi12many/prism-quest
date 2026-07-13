@@ -52,6 +52,7 @@ function startBattle(monster, ambush) {
   renderBattle();
   const mp = bPos('bMonEmoji');
   fxBurst(mp.x, mp.y, { count: 16, colors: ['#b45cff', '#ffffff'], star: true, speed: 200, life: 0.7 });
+  if (BOSS_INTROS[monster.type]) showBossIntro(monster.type); // the real villains announce themselves
 }
 
 function blog(msg) {

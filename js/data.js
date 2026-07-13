@@ -208,6 +208,16 @@ const MONSTERS = {
             drops: { prismatite: 1 } },
 };
 
+// The six real villains get a cinematic entrance: sprite slam, quote, sting.
+const BOSS_INTROS = {
+  bogmaw:    { color: '#6fae4a', quote: '“GLORP. This swamp has drowned ninety-nine heroes. You make it a nice round number.”' },
+  voltra:    { color: '#4bbf8a', quote: '“Ssssso. A little spark crawls in… to challenge the storm itself.”' },
+  mildew:    { color: '#8fae3a', quote: '“Everything rots. Everything joins us. You will make LOVELY compost.”' },
+  umbrella:  { color: '#6f8fe0', quote: '“A hundred years I have kept the rain off my betters. You? You are merely damp.”' },
+  dragon:    { color: '#8fb0d8', quote: '“I AM THE STORM’S TOOTH, groundling. The sky was never yours.”' },
+  sognaroth: { color: '#b45cff', quote: '“little light. i have drowned ten thousand dawns. yours will not even ripple.”' },
+};
+
 // Elite monster affixes — a rare mob spawns "elite" with a modifier, more HP,
 // better XP/loot, and a coloured aura. (Champions/bosses are never elite.)
 const ELITE_MODS = {
