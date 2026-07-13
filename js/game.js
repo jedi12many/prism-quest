@@ -484,8 +484,9 @@ function buildClouds() {
   for (const [hx, hy] of [[8, 5], [13, 4], [6, 9], [12, 10]]) G.map[hy][hx] = 'sky';
   for (const [kx, ky] of [[17, 6], [18, 6], [17, 7], [18, 7]]) G.map[ky][kx] = 'keep';
   G.gates = [{ x: 3, y: 7, kind: 'village' }];
-  if (G.state.bossDefeated) G.gates.push({ x: 16, y: 9, kind: 'portal' });
-  else G.monsters.push({ x: 15, y: 7, type: 'dragon', alive: true, respawnAt: 0, home: { x: 15, y: 7 }, moveAt: Infinity });
+  // the tear in the sky seals for good once the sun returns
+  if (G.state.bossDefeated && !G.state.sunRestored) G.gates.push({ x: 16, y: 9, kind: 'portal' });
+  else if (!G.state.bossDefeated) G.monsters.push({ x: 15, y: 7, type: 'dragon', alive: true, respawnAt: 0, home: { x: 15, y: 7 }, moveAt: Infinity });
 }
 
 // Sog'naroth's realm — one way in, one fight out
@@ -502,6 +503,11 @@ function buildRealm() {
   }
   G.map[12][3] = 'gloomstone';
   G.map[12][28] = 'gloomstone';
+  if (G.state.sunRestored) {
+    // Sog'naroth is dead — the realm is a silent echo, and the way home stands open
+    G.gates.push({ x: 3, y: 12, kind: 'village' });
+    return;
+  }
   const packs = { spawnling: 6, gazer: 4 };
   for (const [type, count] of Object.entries(packs)) {
     let placed = 0, guard = 0;
