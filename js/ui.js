@@ -531,6 +531,8 @@ function showBossIntro(type) {
   const url = key && hasSprite(key) ? spriteDataURL(key) : null;
   const img = document.getElementById('biSprite');
   if (url) { img.src = url; img.style.display = 'block'; } else { img.style.display = 'none'; }
+  const tag = intro.tag || 'BOSS';
+  document.getElementById('biTag').textContent = `— ⚔ ${tag} ⚔ —`;
   const nameEl = document.getElementById('biName');
   nameEl.textContent = def.name;
   nameEl.style.color = intro.color;

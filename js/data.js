@@ -216,6 +216,17 @@ const BOSS_INTROS = {
   umbrella:  { color: '#6f8fe0', quote: '“A hundred years I have kept the rain off my betters. You? You are merely damp.”' },
   dragon:    { color: '#8fb0d8', quote: '“I AM THE STORM’S TOOTH, groundling. The sky was never yours.”' },
   sognaroth: { color: '#b45cff', quote: '“little light. i have drowned ten thousand dawns. yours will not even ripple.”' },
+
+  // named lieutenants — the storm's stairway guardians (fought on the way up/down)
+  sentinel:   { tag: 'GUARDIAN', color: '#8fb0d8', quote: '“None climb past me. The storm keeps its crown, and I keep its stair.”' },
+  raincaller:  { tag: 'GUARDIAN', color: '#5cc9ff', quote: '“I have called this rain down for a hundred years. I will call your name down next.”' },
+  herald:     { tag: 'GUARDIAN', color: '#7a4aba', quote: '“Turn back, sunlit thing. You only hurry toward the mouth that waits below.”' },
+  voidmaw:    { tag: 'GUARDIAN', color: '#b45cff', quote: '“I am the last dark before the dark. Everything bright ends in me.”' },
+
+  // dungeon keepers — hoarders in the deep places
+  gloomtroll: { tag: 'DUNGEON KEEPER', color: '#6fae4a', quote: '“HRRN. Shiny go in cave. Hero go in cave. Cave keeps ALL.”' },
+  revenant:   { tag: 'DUNGEON KEEPER', color: '#a8a2b4', quote: '“I have guarded these stones since before your sun. Kneel, or be rubble.”' },
+  poltergeist: { tag: 'DUNGEON KEEPER', color: '#e8e8f5', quote: '“Ahaha— a VISITOR! Stay. Stay forever. Everyone here does.”' },
 };
 
 // Elite monster affixes — a rare mob spawns "elite" with a modifier, more HP,

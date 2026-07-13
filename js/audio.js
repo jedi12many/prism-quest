@@ -167,6 +167,38 @@ function sndBossIntro(type) {
       noise({ freq: 200, freqTo: 1400, dur: 1.6, vol: 0.12, filter: 'bandpass', when: 0.3 });
       tone({ freq: 55, type: 'sawtooth', dur: 1.3, vol: 0.2, slideTo: 28, when: 1.2 });
       break;
+    case 'sentinel': // wind-shear whoosh into a proud brass-ish chord
+      noise({ freq: 500, freqTo: 2600, dur: 0.5, vol: 0.2, filter: 'bandpass' });
+      chord([131, 196, 262], { type: 'sawtooth', dur: 1.0, vol: 0.22, when: 0.35 });
+      break;
+    case 'raincaller': // downpour hiss + a summoning minor chord
+      noise({ freq: 2400, freqTo: 700, dur: 0.9, vol: 0.16, filter: 'bandpass' });
+      chord([147, 175, 220], { type: 'sine', dur: 1.1, vol: 0.2, when: 0.3 });
+      break;
+    case 'herald': // a heralding call that curdles
+      tone({ freq: 392, type: 'sawtooth', dur: 0.4, vol: 0.22, slideTo: 466 });
+      tone({ freq: 466, type: 'sawtooth', dur: 0.7, vol: 0.2, slideTo: 233, when: 0.4 });
+      noise({ freq: 300, freqTo: 900, dur: 0.8, vol: 0.1, filter: 'bandpass', when: 0.5 });
+      break;
+    case 'voidmaw': // a swallowing descent into sub-bass
+      tone({ freq: 300, type: 'sine', dur: 1.4, vol: 0.32, slideTo: 34, attack: 0.05 });
+      chord([220, 233], { type: 'sine', dur: 1.0, vol: 0.12, when: 0.4 });
+      break;
+    case 'gloomtroll': // heavy grunts and a cave-boom
+      tone({ freq: 130, type: 'square', dur: 0.16, vol: 0.28, slideTo: 80 });
+      tone({ freq: 150, type: 'square', dur: 0.18, vol: 0.26, slideTo: 90, when: 0.24 });
+      tone({ freq: 52, type: 'sine', dur: 0.9, vol: 0.34, when: 0.42 });
+      break;
+    case 'revenant': // grinding stone and a slab thunk
+      noise({ freq: 220, dur: 0.6, vol: 0.2, filter: 'lowpass' });
+      tone({ freq: 90, type: 'square', dur: 0.5, vol: 0.28, slideTo: 55, when: 0.35 });
+      chord([98, 131], { type: 'sawtooth', dur: 0.9, vol: 0.16, when: 0.4 });
+      break;
+    case 'poltergeist': // a giddy detuned wail
+      tone({ freq: 400, type: 'sine', dur: 0.8, vol: 0.2, slideTo: 900 });
+      tone({ freq: 412, type: 'sine', dur: 0.8, vol: 0.16, slideTo: 920 }); // detune shimmer
+      tone({ freq: 700, type: 'triangle', dur: 0.6, vol: 0.16, slideTo: 300, when: 0.6 });
+      break;
   }
 }
 
