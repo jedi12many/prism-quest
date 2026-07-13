@@ -700,7 +700,7 @@ function renderBase() {
   const s = G.state;
   const here = atBase();
   document.getElementById('baseSub').textContent = here
-    ? 'Your sunny sanctuary. Build with raw minerals to grow your power.'
+    ? 'Your sunny sanctuary. Build with gems — raw or polished — to grow your power.'
     : '🌧️ You are away from camp — walk home to build and upgrade.';
   const list = document.getElementById('baseList');
   list.innerHTML = '';
@@ -713,7 +713,7 @@ function renderBase() {
     let costHtml = '';
     if (cost) {
       costHtml = Object.entries(cost).map(([m, n]) => {
-        const have = s.raw[m] || 0;
+        const have = gemStock(m); // raw + polished both count
         if (have < n) can = false;
         return `<span class="ing ${have >= n ? 'ok' : 'missing'}" style="--c:${MINERALS[m].color}">${gemSVG(m, 14)}${MINERALS[m].name} ${have}/${n}</span>`;
       }).join('');
@@ -741,6 +741,30 @@ function renderBase() {
   }
 }
 
+// total gems of a mineral available to spend on buildings (raw + polished)
+function gemStock(m) {
+  return (G.state.raw[m] || 0) + countPolished(m);
+}
+
+// consume n gems of a mineral: raw first, then polished cheapest-quality first
+function consumeGems(m, n) {
+  const s = G.state;
+  const fromRaw = Math.min(n, s.raw[m] || 0);
+  if (fromRaw > 0) {
+    s.raw[m] -= fromRaw;
+    if (s.raw[m] <= 0) delete s.raw[m];
+    n -= fromRaw;
+  }
+  if (n > 0 && s.polished[m]) {
+    for (const q of ['rough', 'fine', 'brilliant']) {
+      const take = Math.min(n, s.polished[m][q] || 0);
+      s.polished[m][q] -= take;
+      n -= take;
+      if (n <= 0) break;
+    }
+  }
+}
+
 function upgradeBuilding(id) {
   const s = G.state, b = BUILDINGS[id];
   const lvl = s.base[id] || 0;
@@ -748,11 +772,8 @@ function upgradeBuilding(id) {
   if (b.requires && (s.base[b.requires[0]] || 0) < b.requires[1]) return;
   const cost = b.costs[lvl];
   if (!cost) return;
-  for (const [m, n] of Object.entries(cost)) if ((s.raw[m] || 0) < n) return;
-  for (const [m, n] of Object.entries(cost)) {
-    s.raw[m] -= n;
-    if (s.raw[m] <= 0) delete s.raw[m];
-  }
+  for (const [m, n] of Object.entries(cost)) if (gemStock(m) < n) return;
+  for (const [m, n] of Object.entries(cost)) consumeGems(m, n);
   s.base[id] = lvl + 1;
   calcStats();
   save();

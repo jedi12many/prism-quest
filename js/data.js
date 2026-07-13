@@ -313,7 +313,7 @@ const QUEST_TEXT = [
   'Rainyday is saved! Bask in the sunshine.',
 ];
 
-// Camp buildings. costs[L] = raw minerals to go from level L to L+1 (null = prebuilt).
+// Camp buildings. costs[L] = gems (raw or polished) to reach level L+1 (null = prebuilt).
 const BUILDINGS = {
   house: {
     name: 'House', emoji: '🏠', tile: { x: 6, y: 4 }, max: 3,

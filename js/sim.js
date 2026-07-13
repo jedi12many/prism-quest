@@ -165,7 +165,7 @@ function simCampVisit(rng, build) {
       if (lvl >= b.max) continue;
       if (b.requires && (s.base[b.requires[0]] || 0) < b.requires[1]) continue;
       const cost = b.costs[lvl];
-      if (cost && Object.entries(cost).every(([m, n]) => (s.raw[m] || 0) >= n + 4)) {
+      if (cost && Object.entries(cost).every(([m, n]) => gemStock(m) >= n + 4)) {
         upgradeBuilding(bid);
         bought = true;
       }
