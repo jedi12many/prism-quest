@@ -77,6 +77,7 @@ function eff(key) {
     const st = itemStats(it);
     if (st[key]) v += st[key];
   }
+  if (G.state.questBonuses && G.state.questBonuses[key]) v += G.state.questBonuses[key];
   const sc = prismSetCount();
   if (sc >= 3 && PRISM_SET.b3[key]) v += PRISM_SET.b3[key];
   if (sc >= 5 && PRISM_SET.b5[key]) v += PRISM_SET.b5[key];
@@ -97,8 +98,8 @@ function inZone() { return ZONE_IDS.includes(G.mapId); }
 function combatTier() {
   if (inZone()) return ZONES[G.mapId].tier;
   if (G.mapId === 'dungeon') return (G.state.dungeon ? G.state.dungeon.tier : 1) + 1; // deadlier than its zone
-  if (G.mapId === 'clouds') return 5;
-  if (G.mapId === 'realm') return 6;
+  if (G.mapId === 'clouds') return 4 + Math.min(2, G.castleFloor || 1);   // 5 / 6 / 6
+  if (G.mapId === 'realm') return 6; // the whole descent is deadly enough with no camp
   return 1;
 }
 
@@ -228,8 +229,8 @@ function buildVillage() {
     for (let y = BASE_RECT.y0; y <= BASE_RECT.y1; y++)
       if (isWallTile(x, y)) G.wallTiles.push([x, y]);
   G.npcs = Object.entries(NPCS).map(([id, n]) => ({ id, x: n.x, y: n.y }));
-  // a gate to each of the four zones, the plaza cloudgate, and the Glassworks kiln
-  G.gates = [{ x: 18, y: 4, kind: 'cloudgate' }, { x: 11, y: 7, kind: 'forge' }];
+  // zone gates, the plaza cloudgate, the Glassworks kiln, and the Village Ledger
+  G.gates = [{ x: 18, y: 4, kind: 'cloudgate' }, { x: 11, y: 7, kind: 'forge' }, { x: 15, y: 4, kind: 'board' }];
   for (const zid of ZONE_IDS) {
     for (const [gx, gy] of ZONES[zid].gate) {
       G.map[gy][gx] = 'grass'; // keep the gate tile clear
@@ -376,6 +377,7 @@ function digTreasure() {
   save();
   const power = countFacetPower();
   toast(`💎 You unearth the ${item.name}! (${power}/4 facets — the Glassworks can fuse ${power >= 2 ? 'them' : 'two or more'})`);
+  if (ZONE_IDS.every(z => G.state.facetsFound[z])) achEvent('facets');
 }
 
 // ---------- special dungeons ----------
@@ -514,16 +516,40 @@ function buildDungeon() {
   }
 }
 
-// The Rainycastle, floating in the rainclouds
+// The Rainycastle — three floors up: courtyard, rain halls, then the throne.
+// Each floor's guardian must fall before the way up unseals.
 function buildClouds() {
+  const floor = G.castleFloor || 1;
+  const peaceful = G.state.sunRestored;
   blankMap(22, 14, 'sky', 'sky');
   for (let y = 3; y <= 11; y++) for (let x = 2; x <= 19; x++) G.map[y][x] = 'cloud';
-  for (const [hx, hy] of [[8, 5], [13, 4], [6, 9], [12, 10]]) G.map[hy][hx] = 'sky';
-  for (const [kx, ky] of [[17, 6], [18, 6], [17, 7], [18, 7]]) G.map[ky][kx] = 'keep';
-  G.gates = [{ x: 3, y: 7, kind: 'village' }];
-  // the tear in the sky seals for good once the sun returns
-  if (G.state.bossDefeated && !G.state.sunRestored) G.gates.push({ x: 16, y: 9, kind: 'portal' });
-  else if (!G.state.bossDefeated) G.monsters.push({ x: 15, y: 7, type: 'dragon', alive: true, respawnAt: 0, home: { x: 15, y: 7 }, moveAt: Infinity });
+  if (floor === 1) {
+    for (const [hx, hy] of [[7, 4], [12, 9], [15, 4], [5, 8]]) G.map[hy][hx] = 'sky';
+    G.gates = [{ x: 3, y: 7, kind: 'village' }, { x: 19, y: 7, kind: 'castleup' }];
+    if (!peaceful) {
+      G.monsters.push({ x: 16, y: 7, type: 'sentinel', keyGuard: true, alive: true, respawnAt: 0, home: { x: 16, y: 7 }, moveAt: Infinity });
+      for (const [mx, my, t] of [[8, 5, 'bat'], [11, 9, 'bat'], [13, 5, 'gazer']]) {
+        G.monsters.push({ x: mx, y: my, type: t, elite: 'swift', alive: true, respawnAt: 0, home: { x: mx, y: my }, moveAt: 1.5 });
+      }
+    }
+  } else if (floor === 2) {
+    for (const [kx, ky] of [[7, 5], [7, 9], [11, 4], [11, 10], [15, 5], [15, 9]]) G.map[ky][kx] = 'keep';
+    G.gates = [{ x: 3, y: 7, kind: 'village' }, { x: 19, y: 7, kind: 'castleup' }];
+    if (!peaceful) {
+      G.monsters.push({ x: 16, y: 7, type: 'raincaller', keyGuard: true, alive: true, respawnAt: 0, home: { x: 16, y: 7 }, moveAt: Infinity });
+      for (const [mx, my, t] of [[8, 4, 'gazer'], [9, 10, 'bat'], [13, 7, 'gazer']]) {
+        G.monsters.push({ x: mx, y: my, type: t, elite: 'cursed', alive: true, respawnAt: 0, home: { x: mx, y: my }, moveAt: 1.5 });
+      }
+    }
+  } else {
+    // the throne
+    for (const [hx, hy] of [[8, 5], [13, 4], [6, 9], [12, 10]]) G.map[hy][hx] = 'sky';
+    for (const [kx, ky] of [[17, 6], [18, 6], [17, 7], [18, 7]]) G.map[ky][kx] = 'keep';
+    G.gates = [{ x: 3, y: 7, kind: 'village' }];
+    // the tear in the sky seals for good once the sun returns
+    if (G.state.bossDefeated && !G.state.sunRestored) G.gates.push({ x: 16, y: 9, kind: 'portal' });
+    else if (!G.state.bossDefeated) G.monsters.push({ x: 15, y: 7, type: 'dragon', alive: true, respawnAt: 0, home: { x: 15, y: 7 }, moveAt: Infinity });
+  }
 }
 
 // Sog'naroth's realm — one way in, one fight out
@@ -541,11 +567,14 @@ function buildRealm() {
   G.map[12][3] = 'gloomstone';
   G.map[12][28] = 'gloomstone';
   if (G.state.sunRestored) {
-    // Sog'naroth is dead — the realm is a silent echo, and the way home stands open
+    // the gloom's heart is dead — the realm is a silent echo, and the way home stands open
     G.gates.push({ x: 3, y: 12, kind: 'village' });
     return;
   }
-  const packs = { spawnling: 6, gazer: 4 };
+  // three depths down: the outer dark, the drowned dark, then the heart
+  const depth = G.realmDepth || 1;
+  const packs = depth === 1 ? { spawnling: 4, gazer: 2 }
+    : depth === 2 ? { spawnling: 4, gazer: 4 } : { spawnling: 2, gazer: 2 };
   for (const [type, count] of Object.entries(packs)) {
     let placed = 0, guard = 0;
     while (placed < count && guard++ < 2000) {
@@ -555,12 +584,19 @@ function buildRealm() {
       if (cheb(x, y, 28, 12) < 3 || cheb(x, y, 3, 12) < 4) continue;
       if (G.monsters.some(m => cheb(m.x, m.y, x, y) < 2)) continue;
       const mob = { x, y, type, alive: true, respawnAt: 0, home: { x, y }, moveAt: 0.8 + rng() };
-      maybeElite(mob, 5, rng); // the realm crawls with elites
+      maybeElite(mob, 4 + depth, rng); // the realm crawls with elites
       G.monsters.push(mob);
       placed++;
     }
   }
-  G.monsters.push({ x: 28, y: 12, type: 'sognaroth', alive: true, respawnAt: 0, home: { x: 28, y: 12 }, moveAt: Infinity });
+  if (depth < 3) {
+    // a rift leads deeper, held shut by a guardian
+    G.gates.push({ x: 28, y: 12, kind: 'riftdown' });
+    const gtype = depth === 1 ? 'herald' : 'voidmaw';
+    G.monsters.push({ x: 27, y: 12, type: gtype, keyGuard: true, alive: true, respawnAt: 0, home: { x: 27, y: 12 }, moveAt: Infinity });
+  } else {
+    G.monsters.push({ x: 28, y: 12, type: 'sognaroth', alive: true, respawnAt: 0, home: { x: 28, y: 12 }, moveAt: Infinity });
+  }
 }
 
 function walkable(x, y) {
@@ -652,6 +688,7 @@ function onGate(g) {
       G.state.dungeon.hasKey = false;
       travelTo('dungeon', 0, 0);
       toast(`⬇️ You descend to floor ${G.state.dungeon.floor}. The gloom thickens…`);
+      if (G.state.dungeon.floor >= 3) achEvent('floor3');
     } else {
       toast('🔒 The way down is locked. Defeat the Warden to claim its key.');
       const p = playerTile();
@@ -665,6 +702,30 @@ function onGate(g) {
     }
   } else if (g.kind === 'forge') {
     openForge();
+  } else if (g.kind === 'board') {
+    openBoard();
+  } else if (g.kind === 'castleup') {
+    if (G.monsters.some(m => m.alive && m.keyGuard)) {
+      toast('⛔ The stair is sealed by storm-wards. Defeat this floor\'s guardian!');
+      stepOffGate();
+    } else {
+      G.castleFloor = (G.castleFloor || 1) + 1;
+      travelTo('clouds', 4, 7);
+      toast(G.castleFloor >= 3 ? '👑 The throne floor. The air itself is holding its breath…'
+        : '☁️ You climb into the rain halls. The storm sings louder here.');
+    }
+  } else if (g.kind === 'riftdown') {
+    if (G.monsters.some(m => m.alive && m.keyGuard)) {
+      toast('⛔ The rift is held shut from below. Destroy its guardian!');
+      stepOffGate();
+    } else {
+      G.realmDepth = (G.realmDepth || 1) + 1;
+      // a pocket of cold quiet between depths — catch your breath
+      G.state.hp = Math.min(G.state.hpMax, G.state.hp + Math.round(G.state.hpMax * 0.5));
+      travelTo('realm', 3, 12);
+      toast(G.realmDepth >= 3 ? '💀 The heart of the gloom. Something enormous is breathing. (+50% HP from the respite)'
+        : '🕳️ You slip deeper. In the rift\'s cold quiet you bind your wounds. (+50% HP)');
+    }
   } else if (g.kind === 'cloudgate') {
     if (G.state.mainQuest >= 3) rideRainbow();
     else toast('🌈 A faint shimmer in the stones… the Mayor might know what it means.');
@@ -683,6 +744,7 @@ function rideRainbow() {
   toast('🌈 You cast the rainbow — your unicorn leaps skyward!');
   setQuest(4);
   G.state.activePact = null;
+  G.castleFloor = 1;
   setTimeout(() => {
     travelTo('clouds', 4, 8);
     G.riding = false;
@@ -690,21 +752,25 @@ function rideRainbow() {
   }, 1700);
 }
 
-function enterPortal() {
-  if (!confirm("Beyond this portal lies Sog'naroth's realm.\n\nTHERE IS NO WAY BACK. No village, no gems, no resupply — only the skills and spell charges you carry right now.\n\nEnter?")) {
-    // step off so it doesn't instantly re-trigger
-    const p = playerTile();
-    for (const [dx, dy] of [[0, 1], [1, 0], [-1, 0], [0, -1]]) {
-      if (walkable(p.x + dx, p.y + dy)) {
-        G.px = (p.x + dx + 0.5) * TILE; G.py = (p.y + dy + 0.5) * TILE;
-        G.state.x = p.x + dx; G.state.y = p.y + dy;
-        break;
-      }
+function stepOffGate() {
+  const p = playerTile();
+  for (const [dx, dy] of [[0, 1], [1, 0], [-1, 0], [0, -1]]) {
+    if (walkable(p.x + dx, p.y + dy)) {
+      G.px = (p.x + dx + 0.5) * TILE; G.py = (p.y + dy + 0.5) * TILE;
+      G.state.x = p.x + dx; G.state.y = p.y + dy;
+      break;
     }
+  }
+}
+
+function enterPortal() {
+  if (!confirm("Beyond this portal lies the realm the rain comes from. Nobody has seen it and returned.\n\nTHERE IS NO WAY BACK. No village, no gems, no resupply — only the skills and spell charges you carry right now.\n\nEnter?")) {
+    stepOffGate(); // so it doesn't instantly re-trigger
     return;
   }
   setQuest(6);
   G.state.activePact = null;
+  G.realmDepth = 1;
   travelTo('realm', 3, 12);
   toast('🌀 The portal seals behind you. The rain here falls in colors that have no names.');
 }
@@ -721,7 +787,7 @@ function save() {
     kills: s.kills, bossDefeated: s.bossDefeated, sunRestored: s.sunRestored, base: s.base,
     mapId: G.mapId, mainQuest: s.mainQuest, zonesCleared: s.zonesCleared, npcFlags: s.npcFlags,
     equip: s.equip, inventory: s.inventory, reviveUsed: s.reviveUsed, activePact: s.activePact, dungeon: s.dungeon,
-    facetsFound: s.facetsFound,
+    facetsFound: s.facetsFound, playSec: s.playSec, lowHp: s.lowHp, questBonuses: s.questBonuses, sideQuests: s.sideQuests,
   }));
 }
 
@@ -776,6 +842,7 @@ function recordDeath() {
   meta.bestZones = Math.max(meta.bestZones || 0, zones);
   meta.bestKills = Math.max(meta.bestKills || 0, s.kills);
   saveMeta(meta);
+  achEvent('runEnd', { won: false, cls: s.classId, sec: s.playSec });
   localStorage.removeItem(SAVE_KEY); // the hero is lost
   return { level: s.level, zones, kills: s.kills, earned, best: meta };
 }
@@ -797,6 +864,8 @@ function newGameWithClass(classId) {
     equip: { weapon: rollItem(1, 'common', 'weapon'), helm: null, armor: null, boots: null, charm: null },
     inventory: [], activePact: null, dungeon: null,
     facetsFound: { north: false, east: false, west: false, south: false },
+    playSec: 0, lowHp: 1, questBonuses: {},
+    sideQuests: { pip: { stage: 0, n: 0 }, baker: { stage: 0 }, willow: { stage: 0 } },
     x: SPAWN.x, y: SPAWN.y,
   };
   // apply Sanctuary starting grants
@@ -854,6 +923,8 @@ function boot() {
       equip: { weapon: null, helm: null, armor: null, boots: null, charm: null },
       inventory: [], activePact: null, dungeon: null,
       facetsFound: { north: false, east: false, west: false, south: false },
+      playSec: 0, lowHp: 1, questBonuses: {},
+      sideQuests: { pip: { stage: 0, n: 0 }, baker: { stage: 0 }, willow: { stage: 0 } },
     }, saved);
     calcStats();
     if (G.state.hp <= 0) G.state.hp = G.state.hpMax;
@@ -1021,6 +1092,7 @@ function update(dt) {
   G.time += dt;
   updateRain(dt);
   if (G.locatePulse > 0) G.locatePulse = Math.max(0, G.locatePulse - dt);
+  if (G.state) G.state.playSec = (G.state.playSec || 0) + dt; // the run clock
   if (!G.state || G.lock || G.riding) return;
 
   // resting in the village heals (house and kitchen make it heartier)
@@ -1359,6 +1431,30 @@ function draw() {
     }
   }
 
+  // the Village Ledger — a signboard of quests, deeds, and records
+  const boardGate = G.gates.find(g => g.kind === 'board');
+  if (boardGate) {
+    const bx = boardGate.x * TILE - cam.x + TILE / 2, by = boardGate.y * TILE - cam.y + TILE / 2;
+    if (bx > -TILE && by > -TILE && bx < w + TILE && by < h + TILE) {
+      drawShadow(ctx, bx, by + TILE * 0.4, TILE * 0.42);
+      ctx.fillStyle = '#6a4028';
+      ctx.fillRect(bx - 2, by - 2, 4, TILE * 0.42);
+      ctx.fillStyle = '#8a5a2a';
+      ctx.strokeStyle = 'rgba(0,0,0,0.55)';
+      ctx.lineWidth = 2;
+      ctx.fillRect(bx - TILE * 0.42, by - TILE * 0.42, TILE * 0.84, TILE * 0.42);
+      ctx.strokeRect(bx - TILE * 0.42, by - TILE * 0.42, TILE * 0.84, TILE * 0.42);
+      ctx.fillStyle = '#ffe9c8';
+      ctx.font = 'bold 9px system-ui, sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('📖', bx, by - TILE * 0.21);
+      ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.75)'; ctx.fillStyle = '#ffe9c8';
+      ctx.font = 'bold 10px system-ui, sans-serif';
+      ctx.strokeText('Ledger', bx, by + TILE * 0.52);
+      ctx.fillText('Ledger', bx, by + TILE * 0.52);
+    }
+  }
+
   // a buried facet: nothing but a shy glint in the grass
   if (G.treasure) {
     const tx2 = G.treasure.x * TILE - cam.x + TILE / 2, ty2 = G.treasure.y * TILE - cam.y + TILE / 2;
@@ -1372,7 +1468,7 @@ function draw() {
 
   // other gates (cloudgate / portal / dungeon exit)
   for (const g of G.gates) {
-    if (g.kind === 'village' || g.kind === 'zone' || g.kind === 'dungeon' || g.kind === 'forge') continue;
+    if (g.kind === 'village' || g.kind === 'zone' || g.kind === 'dungeon' || g.kind === 'forge' || g.kind === 'board') continue;
     if (g.kind === 'cloudgate' && G.state.mainQuest < 3) continue;
     const sx = g.x * TILE - cam.x + TILE / 2, sy = g.y * TILE - cam.y + TILE / 2;
     if (sx < -TILE || sy < -TILE || sx > w + TILE || sy > h + TILE) continue;

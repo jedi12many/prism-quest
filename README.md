@@ -17,12 +17,18 @@ A Diablo-style campaign from the village hub of **Drizzlewick**:
    → the Weeping Heights (the Umbrella King ☂️). Signposts in the village point
    the way and track which lands you've cleared. Beat a champion and that whole
    zone floods with permanent sunlight.
-3. **The Rainycastle** rises in the rainclouds once the land shines — step onto
-   the plaza **Cloudgate**, cast a rainbow, and ride your unicorn up to slay the
-   **Rainwyrm**.
-4. The sky tears open: a portal to **Sog'naroth's realm** — one way only. No
-   village, no gems, just the skills and spell charges you carry. Win, and the
-   sun returns forever.
+3. **The Rainycastle** rises in the rainclouds once the land shines — ride the
+   rainbow up and climb it floor by floor, past the Storm Sentinel and the
+   Raincaller, to whatever brews the storm at the top.
+4. The sky tears open: a **one-way portal** into the deep dark — three depths
+   down past rift guardians, with no village, no gems, only what you carry.
+   Win, and the truth behind the hundred-year rain is finally revealed.
+
+Around the loop: the **Village Ledger** (quest journal, hidden deeds shown as
+`X/18` with only completed ones listed, run counts & fastest-sun times per
+class — all persistent per device), **villager favors** (Pip's lost frog,
+Barnaby's cold ovens, Willow's stubborn tulips), and Grandma's hints about
+deeds not yet done.
 
 **Diablo-style loot.** Monsters drop randomized gear across five rarities
 (Common → Magic → Rare → Legendary → Set) with rolled affixes scaled to monster

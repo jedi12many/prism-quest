@@ -43,6 +43,7 @@ function startBattle(monster, ambush) {
   else if (monster.type === 'dragon') blog('🌧️ The storm-fattened serpent coils around its cloud throne!');
   else if (def.dungeonBoss) blog('💀 The keeper of this place stirs — deadly, but its hoard is legendary!');
   else if (monster.warden) blog('🗝️ The Warden bars the stair. Slay it to claim the key below!');
+  else if (def.guardian) blog('⚔️ A guardian bars the way onward. Nothing passes while it stands!');
   else if (def.miniboss !== undefined) blog('⚡ A champion of the gloom! Defeat it and the light returns to this land!');
   if (ambush && !eff('fleeSure')) {
     blog('😱 Ambush! It strikes first!');
@@ -127,6 +128,7 @@ function playerAction(action, spellId) {
     } else if (spellId === 'unicorn') {
       const turns = 4 + eff('summonTurns');
       B.unicorn = { turns, power: 1 + eff('unicornPower') };
+      achEvent('unicorn');
       blog(`🦄 A radiant unicorn gallops to your side! (${turns} turns)`);
     } else {
       const sunSpell = B.def.finalBoss && ['sunflare', 'rainbowbeam', 'stardust'].includes(spellId);
@@ -241,6 +243,7 @@ function applyPlayerDamage(dmg) {
   if (!B || B.over) return; // already resolved (e.g. died on the first hit this turn)
   const s = G.state;
   s.hp -= dmg;
+  s.lowHp = Math.min(s.lowHp == null ? 1 : s.lowHp, Math.max(0, s.hp) / s.hpMax);
   if (s.hp <= 0) {
     // 1) Last Stand — survive at 1 HP, once per battle
     if (eff('lastStand') && !B.lastStandUsed) {
@@ -320,6 +323,15 @@ function victory() {
 
   sndVictory();
 
+  // deeds, favors, and the chronicle
+  if (B.monster.elite) achEvent('elite');
+  if (def.dungeonBoss) achEvent('keeper', { type: B.monster.type });
+  const pipQ = s.sideQuests && s.sideQuests.pip;
+  if (pipQ && pipQ.stage === 1 && G.mapId === 'south' && !def.boss) {
+    pipQ.n++;
+    if (pipQ.n === 5) setTimeout(() => toast('🐸 That should scare the swamp quiet — tell Pip!'), 1200);
+  }
+
   if (B.warden && s.dungeon) {
     // the Warden falls — the way down is unlocked
     s.dungeon.hasKey = true;
@@ -331,8 +343,11 @@ function victory() {
     s.sunRestored = true;
     s.mainQuest = 7;
     for (const m of G.monsters) { m.alive = false; m.respawnAt = Infinity; }
+    achEvent('runEnd', { won: true, cls: s.classId, sec: s.playSec, lowHp: s.lowHp == null ? 1 : s.lowHp });
     setTimeout(() => {
       closeScreen('battleScreen');
+      const wt = document.getElementById('winTime');
+      if (wt) wt.textContent = `Sun restored in ${fmtRunTime(s.playSec)} · recorded in the Village Ledger`;
       openScreen('winBanner');
       sndWin();
       fxConfetti(window.innerWidth / 2, 160, 80);
@@ -343,6 +358,7 @@ function victory() {
     const zid = G.mapId;
     s.zonesCleared[zid] = true;
     for (const m of G.monsters) { if (m.alive) { m.alive = false; m.respawnAt = Infinity; } }
+    achEvent('zone', { all4: ZONE_IDS.every(z => s.zonesCleared[z]), pact: !!s.activePact });
     setTimeout(() => {
       toast(`🌞 Sunlight floods ${ZONES[zid].name}! The gloom-things melt into dew.`);
       fxConfetti(window.innerWidth / 2, 200, 50);
@@ -358,10 +374,11 @@ function victory() {
   } else if (B.monster.type === 'dragon' && !s.bossDefeated) {
     s.bossDefeated = true;
     G.gates.push({ x: 16, y: 9, kind: 'portal' });
+    achEvent('wyrm');
     setTimeout(() => toast('🌊 The Rainwyrm bursts into mist — and the sky itself tears open…'), 900);
     setTimeout(() => {
       setQuest(5);
-      toast("🐙 Beyond the tear: SOG'NAROTH, the Endless Drizzle. A portal swirls beside the castle.");
+      toast('🌀 Beyond the tear: a deeper dark, and something enormous in it. A portal swirls beside the castle.');
     }, 3600);
   }
   renderBattle(true);

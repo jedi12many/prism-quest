@@ -452,6 +452,7 @@ function summonDwarves() {
   if (!Object.keys(s.raw).length) { toast('⛏️ The dwarves peer into your empty bag and shrug.'); return; }
   s.spells.dwarves--;
   sndDwarves();
+  achEvent('dwarves');
   const c = polishBatch(1.5); // master craftsdwarves: a nice big bonus
   const pr = document.querySelector('#bagScreen .panel').getBoundingClientRect();
   fxBurst(pr.left + pr.width / 2, pr.top + 120, { count: 10, emoji: ['🧔', '⛏️', '🔨'], speed: 220, size: 24, life: 1.6, g: 250 });
@@ -488,6 +489,10 @@ function npcHasNews(id) {
   if (id === 'mayor') return s.mainQuest === 0 || s.mainQuest === 2;
   if (id === 'grandma') return !s.npcFlags.grandma;
   if (id === 'foreman') return !s.npcFlags.foreman;
+  const sq = s.sideQuests || {};
+  if (id === 'pip') return !sq.pip || sq.pip.stage === 0 || (sq.pip.stage === 1 && sq.pip.n >= 5);
+  if (id === 'baker') return !sq.baker || sq.baker.stage === 0 || (sq.baker.stage === 1 && gemStock('sunstone') >= 4);
+  if (id === 'willow') return !sq.willow || sq.willow.stage === 0 || (sq.willow.stage === 1 && gemStock('roseopal') >= 2);
   return false;
 }
 
@@ -509,13 +514,13 @@ function npcDialog(id) {
     }
     if (q === 2) return {
       text: `You DID it! The whole land glitters — but do you feel that drizzle? The <b>RAINYCASTLE</b> has risen
-        in the rainclouds, and the Rainwyrm means to soak us all over again.<br><br>
+        in the rainclouds, and <i>something up there</i> is brewing the storm all over again. Nobody knows what. Nobody's ever come back to say.<br><br>
         There's only one road up: a rainbow. I've unsealed the old <b>Cloudgate</b> in the plaza. Ride well, hero.`,
       action: { label: '🌈 Open the Cloudgate!', fn: () => setQuest(3) },
     };
     if (q === 3) return { text: 'The <b>Cloudgate</b> 🌈 glows in the plaza, east of the fountain. Step onto it, cast your rainbow, and ride!' };
-    if (q === 4) return { text: 'The Rainwyrm coils atop the Rainycastle. Sun spells burn brightest up there, they say.' };
-    if (q === 5 || q === 6) return { text: "So the wyrm was only the doorman… <b>Sog'naroth</b> waits beyond that portal, and the portal only opens ONE way. Craft every spell you can carry before you step through, hero. Drizzlewick believes in you." };
+    if (q === 4) return { text: 'Climb the castle floor by floor — its guardians seal every stair. Whatever waits at the top, sun spells burn brightest up there, they say.' };
+    if (q === 5 || q === 6) return { text: 'So the serpent was only the doorman… something <i>older than weather</i> waits beyond that portal, and the portal only opens ONE way. Craft every spell you can carry before you step through, hero. Drizzlewick believes in you.' };
     return { text: '🌞 The HERO OF RAINYDAY stands before me! Statues shall be raised. Pies shall be baked. Welcome home.' };
   }
   if (id === 'grandma') {
@@ -527,10 +532,76 @@ function npcDialog(id) {
       return { text: `Oh, sweetheart, you'll catch your death out there. Here — some quartz from my rock garden, for practice.<br><br>
         Mind the rain: the gloom-things <b>cannot step into sunshine</b>. If they gang up on you, run for the light.` };
     }
-    if (q <= 1) return { text: 'The champions? Nasty things. The toad spits poison, the serpent strikes twice, the mold <i>regrows</i>, and the umbrella… whispers. Bring healing blooms, dearie.' + facetHint(s) };
-    if (q <= 4) return { text: 'The Rainwyrm hates sunlight — Sunflare, Rainbow Beam, Stardust. My knees ache just thinking about that climb.' + facetHint(s) };
-    if (q <= 6) return { text: "Beyond the portal there are <b>no gems to mine, no way home</b> until it's done. Pack every spell charge you can, dearie, and come back to me in one piece." };
-    return { text: 'Sunshine on my rocking chair at last. You wonderful child.' };
+    if (q <= 1) return { text: 'The champions? Nasty things. The toad spits poison, the serpent strikes twice, the mold <i>regrows</i>, and the umbrella… whispers. Bring healing blooms, dearie.' + facetHint(s) + achHintLine() };
+    if (q <= 4) return { text: 'Whatever rules that castle fears pure sunlight — Sunflare, Rainbow Beam, Stardust. My knees ache just thinking about that climb.' + facetHint(s) + achHintLine() };
+    if (q <= 6) return { text: "Beyond the portal there are <b>no gems to mine, no way home</b> until it's done. Pack every spell charge you can, dearie, and come back to me in one piece." + achHintLine() };
+    return { text: 'Sunshine on my rocking chair at last. You wonderful child.' + achHintLine() };
+  }
+  if (id === 'pip') {
+    const qp = s.sideQuests.pip;
+    if (qp.stage === 0) return {
+      text: `*sniff* Mister hero? My frog <b>Sir Croaksworth</b> hopped off toward the <b>South swamp</b> and he's too scared
+        to come home with all those monsters croaking around…<br><br>Could you scare off <b>five</b> of them? Please?`,
+      action: { label: '🐸 I\'ll clear the way home!', fn: () => { qp.stage = 1; save(); toast('📖 Favor accepted: scare off 5 monsters in Bogmire (South).'); } },
+    };
+    if (qp.stage === 1 && qp.n < 5) return { text: `You scared off <b>${qp.n}/5</b> so far! Sir Croaksworth says ribbit. That means hurry.` };
+    if (qp.stage === 1) return {
+      text: '<b>HE CAME HOME!</b> Sir Croaksworth hopped right onto my head! You\'re the best hero EVER. Here — I found these in a puddle. And this shiny thing!',
+      action: { label: '🎁 Aww. Take the reward', fn: () => {
+        qp.stage = 2;
+        s.raw.quartz = (s.raw.quartz || 0) + 3;
+        addItemToInventory(rollItem(3, 'magic'));
+        save(); sndCoin();
+        toast('🎁 Pip\'s favor complete: +3 Quartz and a shiny trinket!');
+        checkGoodNeighbor();
+      } },
+    };
+    return { text: 'Sir Croaksworth and me are gonna be knights when we grow up. Like YOU!' };
+  }
+  if (id === 'baker') {
+    const qb = s.sideQuests.baker;
+    if (qb.stage === 0) return {
+      text: `A customer! Oh — no, no bread today, friend. The rain got into my ovens and the sourdough has gone <i>gloomy</i>.
+        Four <b>Sunstones</b> would warm them right up. Raw, polished — the oven isn't picky.`,
+      action: { label: '🍞 I\'ll fetch the Sunstone', fn: () => { qb.stage = 1; save(); toast('📖 Favor accepted: bring Barnaby 4 Sunstone.'); } },
+    };
+    if (qb.stage === 1 && gemStock('sunstone') < 4) return { text: `Any luck? You've got ${gemStock('sunstone')}/4 Sunstone. The Thunderfen (East) practically glows with them.` };
+    if (qb.stage === 1) return {
+      text: 'FOUR SUNSTONES! Feel that? The ovens are singing already. First batch of <b>Sunshine Buns</b> is yours — eat up, they stick to your ribs forever.',
+      action: { label: '🥐 Trade 4 Sunstone for buns', fn: () => {
+        consumeGems('sunstone', 4);
+        qb.stage = 2;
+        s.questBonuses.hpMax = (s.questBonuses.hpMax || 0) + 10;
+        calcStats();
+        save(); sndHeal();
+        toast('🥐 Sunshine Buns! +10 max HP for the rest of this run.');
+        checkGoodNeighbor();
+        renderHUD();
+      } },
+    };
+    return { text: 'Smell that? THAT is what sunshine tastes like. Come back any time, friend.' };
+  }
+  if (id === 'willow') {
+    const qw = s.sideQuests.willow;
+    if (qw.stage === 0) return {
+      text: `Careful of the flowerbeds, love. My <b>rainbow tulips</b> refuse to bloom — a hundred years of drizzle will do that.
+        They just need a dusting of <b>Rose Opal</b>. Two would do it. The far south-east lands grow them… so I'm told.`,
+      action: { label: '🌷 I\'ll find the Rose Opal', fn: () => { qw.stage = 1; save(); toast('📖 Favor accepted: bring Willow 2 Rose Opal.'); } },
+    };
+    if (qw.stage === 1 && gemStock('roseopal') < 2) return { text: `The tulips are holding their breath. ${gemStock('roseopal')}/2 Rose Opal so far.` };
+    if (qw.stage === 1) return {
+      text: 'Oh, they\'re PERFECT. *dusts the beds* …Look at that. First bloom in a century. Sit with me a moment, hero — gardeners know a thing or two worth teaching.',
+      action: { label: '🌷 Trade 2 Rose Opal for wisdom', fn: () => {
+        consumeGems('roseopal', 2);
+        qw.stage = 2;
+        s.skillPoints++;
+        save(); sndLevel();
+        toast('🌷 The tulips bloom! Willow\'s wisdom: +1 skill point.');
+        checkGoodNeighbor();
+        renderHUD();
+      } },
+    };
+    return { text: 'The tulips turn to follow you when you walk past. They remember.' };
   }
   // foreman
   if (!s.npcFlags.foreman) {
@@ -542,6 +613,11 @@ function npcDialog(id) {
       They'll polish your whole bag, and they don't do sloppy work.<br><br>Build up that <b>Polishing Factory</b> and even your own hands get luckier.` };
   }
   return { text: 'Upgrade the camp, hero — Kitchen for your health, Stalls for your unicorn, Walls for your hide. Raw minerals pay the bills.' };
+}
+
+function checkGoodNeighbor() {
+  const q = G.state.sideQuests;
+  if (q && q.pip.stage >= 2 && q.baker.stage >= 2 && q.willow.stage >= 2) achEvent('neighbor');
 }
 
 // Gloom Pact — offer three random blessing/curse pacts on a zone dive
@@ -832,6 +908,7 @@ function forgePrism() {
   calcStats();
   save();
   sndForge(power);
+  achEvent('forge', { power });
   const pr = document.querySelector('#forgeScreen .panel').getBoundingClientRect();
   fxConfetti(pr.left + pr.width / 2, pr.top + 120, power >= 4 ? 80 : 40);
   toast(power >= 4 ? '🌈⚔️ THE PRISMBLADE IS WHOLE. Go blast everything.'
@@ -850,6 +927,7 @@ function upgradeBuilding(id) {
   for (const [m, n] of Object.entries(cost)) if (gemStock(m) < n) return;
   for (const [m, n] of Object.entries(cost)) consumeGems(m, n);
   s.base[id] = lvl + 1;
+  if (id === 'walls') achEvent('walls');
   calcStats();
   save();
   const pr = document.querySelector('#baseScreen .panel').getBoundingClientRect();

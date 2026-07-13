@@ -192,6 +192,15 @@ const MONSTERS = {
             drops: { aquamarine: 2, prismatite: 1 } },
   poltergeist: { name: 'Poltergeist',    emoji: '👻', hp: 78, atk: 14, def: 2, xp: 118, boss: true, dungeonBoss: true, dread: true, doubleHit: 0.4,
             drops: { roseopal: 2, prismatite: 1 } },
+  // guardians of the Rainycastle floors and the realm depths
+  sentinel:   { name: 'Galeheart, the Storm Sentinel', emoji: '🌩️', hp: 80, atk: 12, def: 5, xp: 110, boss: true, guardian: true, doubleHit: 0.3,
+            drops: { aquamarine: 2, prismatite: 1 } },
+  raincaller: { name: 'The Raincaller', emoji: '🌧️', hp: 90, atk: 13, def: 3, xp: 125, boss: true, guardian: true, regen: 3, dread: true,
+            drops: { sunstone: 2, prismatite: 1 } },
+  herald:     { name: 'The Herald Below', emoji: '🦑', hp: 85, atk: 13, def: 3, xp: 140, boss: true, guardian: true, doubleHit: 0.3, dread: true,
+            drops: { roseopal: 2, prismatite: 1 } },
+  voidmaw:    { name: 'The Voidmaw', emoji: '🕳️', hp: 95, atk: 13, def: 4, xp: 160, boss: true, guardian: true, regen: 3, doubleHit: 0.3,
+            drops: { prismatite: 2 } },
   dragon: { name: 'Rainwyrm',     emoji: '🐉', hp: 110, atk: 12, def: 3, xp: 150, boss: true, doubleHit: 0.4,
             drops: { prismatite: 1 } },
   sognaroth: { name: "Sog'naroth, the Endless Drizzle", emoji: '🐙', hp: 170, atk: 14, def: 4, xp: 300,
@@ -284,6 +293,32 @@ const NPCS = {
   mayor:   { name: 'Mayor Puddle',   emoji: '🎩', x: 14, y: 6 },
   grandma: { name: 'Grandma Nimbus', emoji: '🧓', x: 17, y: 9 },
   foreman: { name: 'Foreman Flint',  emoji: '🧔', x: 10, y: 12 },
+  pip:     { name: 'Pip',            emoji: '🧒', x: 20, y: 7 },
+  baker:   { name: 'Barnaby the Baker', emoji: '🧑‍🍳', x: 22, y: 11 },
+  willow:  { name: 'Willow the Gardener', emoji: '🧑‍🌾', x: 13, y: 10 },
+};
+
+// Deeds — persistent per-device achievements. Hidden until earned; the Ledger
+// shows only completed ones plus the denominator. Grandma hints at the rest.
+const ACHIEVEMENTS = {
+  'first-steps':   { name: 'First Light',      desc: 'Bring the sun back to one land.',            hint: 'Every dawn starts with a single sunbeam, dearie.' },
+  'lights-on':     { name: 'Four Dawns',       desc: 'Restore all four lands in a single run.',    hint: 'North, east, west, south — the sun misses them all.' },
+  'wyrmfall':      { name: 'Stormbreaker',     desc: 'Defeat the master of the Rainycastle.',      hint: 'Whatever rules that castle can fall like any other rain.' },
+  'sunbringer':    { name: 'Sunbringer',       desc: 'Banish the gloom and restore the sun.',      hint: 'Someday, someone will see this whole nightmare through.' },
+  'twinlight':     { name: 'Glasssmith',       desc: 'Fuse your first prism weapon.',              hint: 'The kiln has been cold for a hundred years. Feed it two colors.' },
+  'prismblade':    { name: 'All Colors, One Light', desc: 'Forge THE PRISMBLADE.',                 hint: 'Four facets. One blade. The old songs say it outshone the sun.' },
+  'facet-hunter':  { name: 'Glint-Eyed',       desc: 'Unearth all four Prism Facets in one run.',  hint: 'Four glints in four lands, for eyes patient enough.' },
+  'keeper-slayer': { name: 'Keeper of Keepers', desc: 'Defeat all three dungeon keepers.',         hint: 'A troll, a statue, a ghost — each hoards something wonderful.' },
+  'elite-slayer':  { name: 'Aura Breaker',     desc: 'Slay 25 elite monsters.',                    hint: 'The shiny ones hit harder. Hit them back, twenty-five times.' },
+  'dwarf-friend':  { name: 'Hi-Ho',            desc: 'Summon the dwarf crew.',                     hint: 'Flint\'s crew works for gems and glory. Mostly gems.' },
+  'unicorn-rider': { name: 'Best Friends',     desc: 'Summon a unicorn in battle.',                hint: 'When all seems lost, whistle for a friend with a horn.' },
+  'pact-victor':   { name: 'Devil\'s Due',     desc: 'Defeat a champion while under a Gloom Pact.', hint: 'Bargain with the gloom, then beat its champion anyway.' },
+  'good-neighbor': { name: 'Heart of Drizzlewick', desc: 'Complete all three villager favors in one run.', hint: 'Pip, Barnaby, and Willow each need a small kindness.' },
+  'speed-sun':     { name: 'Before Supper',    desc: 'Restore the sun in under 40 minutes.',       hint: 'My stew takes forty minutes. Race it.' },
+  'untouchable':   { name: 'Untouchable',      desc: 'Win without ever falling below 30% health.', hint: 'The best fights are the ones that barely muss your hair.' },
+  'triple-crown':  { name: 'Triple Crown',     desc: 'Restore the sun with every class.',          hint: 'Mage, knight, whisperer — the sun loves all three the same.' },
+  'deep-delver':   { name: 'Bottom Floor',     desc: 'Reach the third floor of a dungeon.',        hint: 'Some holes go down, and down, and down again.' },
+  'wall-builder':  { name: 'Castle Doctrine',  desc: 'Raise the camp walls.',                      hint: 'Good walls make the gloom sulk outside.' },
 };
 
 // The four directional zones out of Drizzlewick — one champion boss each.
@@ -329,9 +364,9 @@ const QUEST_TEXT = [
   'Take a gate out of the village and defeat the gloom champion in each direction.',
   'The land shines! Report to Mayor Puddle.',
   'Step onto the Cloudgate 🌈 in the plaza and ride to the Rainycastle.',
-  'Defeat the Rainwyrm in the Rainycastle!',
+  'Climb the Rainycastle and face whatever brews the storm!',
   'A portal has opened in the Rainycastle. Prepare, then enter — there is no way back.',
-  "Destroy Sog'naroth. No retreat, no resupply.",
+  'Descend to the heart of the gloom and destroy it. No retreat, no resupply.',
   'Rainyday is saved! Bask in the sunshine.',
 ];
 

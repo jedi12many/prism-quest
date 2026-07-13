@@ -16,7 +16,7 @@ const SIM_CRAFT_ORDER = ['bloomheal', 'unicorn', 'rainbowbeam', 'stardust', 'sun
 const SIM_PATCH = ['toast', 'renderBattle', 'renderHUD', 'renderBag', 'renderSpells', 'renderSkills',
   'renderBase', 'renderChar', 'renderForge', 'openItemCard', 'fxBurst', 'fxConfetti', 'fxRing', 'fxRise',
   'fxFlutter', 'fxBeam', 'fxUnicornSummon', 'fxUnicornStrike', 'fxStardust', 'spellFX', 'shakeEl',
-  'showGameOver', 'setMusic', 'addFloater', 'offerPact', 'save'];
+  'showGameOver', 'setMusic', 'addFloater', 'offerPact', 'save', 'achEvent'];
 
 function simShuffle(arr, rng) {
   const a = [...arr];
@@ -258,25 +258,41 @@ function simRunOne(seed) {
       simZone(zid, rng, ctx, build);
       if (ctx.dead) break;
     }
-    if (!ctx.dead) { // the Rainycastle
-      simCampVisit(rng, build);
-      buildMap('clouds'); s.mapId = 'clouds';
-      const wyrm = G.monsters.find(m => m.type === 'dragon' && m.alive);
-      if (wyrm) simBattle(wyrm, ctx, rng);
-    }
-    if (!ctx.dead && s.bossDefeated) { // one way: the realm
-      simCampVisit(rng, build);
-      buildMap('realm'); s.mapId = 'realm';
-      // one way only: no resting, no restocking beyond the portal
-      const horrors = simShuffle(G.monsters.filter(m => m.alive && m.type !== 'sognaroth'), rng).slice(0, 4);
-      for (const m of horrors) {
-        simBattle(m, ctx, rng);
+    if (!ctx.dead) { // the Rainycastle — three floors up
+      for (let f = 1; f <= 3 && !ctx.dead; f++) {
+        simCampVisit(rng, build); // players pop home between climbs
+        G.castleFloor = f;
+        buildMap('clouds'); s.mapId = 'clouds';
+        const mobs = simShuffle(G.monsters.filter(m => m.alive && !m.keyGuard && m.type !== 'dragon'), rng);
+        for (const m of mobs) {
+          if (rng() > 0.6) continue;
+          simFieldRest(rng, ctx, build, false);
+          simBattle(m, ctx, rng);
+          if (ctx.dead) break;
+        }
         if (ctx.dead) break;
+        simFieldRest(rng, ctx, build, true);
+        const bossMon = G.monsters.find(m => m.alive && (m.keyGuard || m.type === 'dragon'));
+        if (bossMon) simBattle(bossMon, ctx, rng);
       }
-      if (!ctx.dead) {
-        const sog = G.monsters.find(m => m.type === 'sognaroth' && m.alive);
-        if (sog) {
-          simBattle(sog, ctx, rng);
+    }
+    if (!ctx.dead && s.bossDefeated) { // one way: the realm, three depths down
+      simCampVisit(rng, build);
+      G.realmDepth = 1;
+      for (let dpt = 1; dpt <= 3 && !ctx.dead; dpt++) {
+        G.realmDepth = dpt;
+        if (dpt > 1) s.hp = Math.min(s.hpMax, s.hp + Math.round(s.hpMax * 0.5)); // rift respite
+        buildMap('realm'); s.mapId = 'realm';
+        // no resting, no restocking beyond the portal
+        const horrors = simShuffle(G.monsters.filter(m => m.alive && !m.keyGuard && m.type !== 'sognaroth'), rng).slice(0, 3);
+        for (const m of horrors) {
+          simBattle(m, ctx, rng);
+          if (ctx.dead) break;
+        }
+        if (ctx.dead) break;
+        const deep = G.monsters.find(m => m.alive && (m.keyGuard || m.type === 'sognaroth'));
+        if (deep) {
+          simBattle(deep, ctx, rng);
           if (!ctx.dead && s.sunRestored) ctx.endHp = s.hp / s.hpMax;
         }
       }

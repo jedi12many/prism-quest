@@ -282,6 +282,73 @@ const SPRITES = {
     ],
   },
 
+  // ---------- castle & realm guardians ----------
+  sentinel: {
+    mirror: true,
+    pal: { '.': null, o: '#1a2438', a: '#8fb0d8', A: '#5a7db0', e: '#ffe94a', c: '#c8d8f0', y: '#ffd24a' },
+    rows: [
+      '...oaaaa', '..oaaaaa', '..oaeeaa', '..oaaaaa', '.oaaccaa', 'oaaacaaa',
+      'oaacccaa', 'oaaacaaa', 'oAaaaaaa', 'oAaaaaaa', '.oAaaaaa',
+      '.oAaaaay', '..oAaaaa', '..oAAAAA', '...oo.oo', '........',
+    ],
+  },
+  raincaller: {
+    mirror: true,
+    pal: { '.': null, o: '#12303a', r: '#3a7d8a', R: '#2a5a66', h: '#0e2228', e: '#7ce8ff', d: '#5cc9ff' },
+    rows: [
+      '...oooo.', '..orrrro', '.orrrrrr', '.orhhhhr', '.orheehr', '.orhhhhr',
+      '.orrrrrr', 'orrrrrrr', 'orrdrrdr', 'orrrrrrr', 'oRrrdrrr',
+      'oRrrrrrr', 'oRRrrrrr', 'oRRRRRRR', '..d..d..', '.d..d...',
+    ],
+  },
+  herald: {
+    mirror: true,
+    pal: { '.': null, o: '#1a1030', v: '#7a4aba', V: '#54308a', e: '#7ce8ff', t: '#3f2468' },
+    rows: [
+      '...ovvv.', '..ovvvvv', '.ovvvvvv', '.ovveevv', '.ovvvvvv', 'ovvvvvvv',
+      'ovvvvvvv', 'oVvvvvvv', 'ovvvvvvv', 'oVvvvvvv', 'ovtvtvtv',
+      'otvtvtvt', 'tv.tv.tv', '.v..v..v', 't...t...', '........',
+    ],
+  },
+  voidmaw: {
+    mirror: true,
+    pal: { '.': null, o: '#0c0816', b: '#241a3e', B: '#171028', w: '#e8e8f5', e: '#ff5c8a' },
+    rows: [
+      '...ooooo', '..obbbbb', '.obbbbbb', 'obbbebbb', 'obbbbbbb', 'obwbwbwb',
+      'obBBBBBB', 'obBBBBBB', 'obwbwbwb', 'obbbbbbb', '.obbbbbb',
+      '.obbbbbb', '..obbbbb', '...ooooo', '........', '........',
+    ],
+  },
+
+  // ---------- side-quest villagers ----------
+  npc_pip: {
+    mirror: true,
+    pal: { '.': null, o: '#241a30', s: P.sk, S: P.skS, e: P.o, h: '#8a5a2a', g: '#5cb85c', G: '#3f8a3f', b: '#4a6fd0' },
+    rows: [
+      '........', '........', '..ohhh..', '.ohhhhh.', '..osss..', '..oses..',
+      '..osss..', '..oggg..', '.ogggggo', '.oGgggGo', '..oggg..',
+      '..obbb..', '..obbb..', '..ob.b..', '..oo.oo.', '........',
+    ],
+  },
+  npc_baker: {
+    mirror: true,
+    pal: { '.': null, o: '#241a30', s: P.sk, S: P.skS, e: P.o, w: '#f5f5fa', W: '#d8d8e2', a: '#e8e0d0', b: '#8a5a3a' },
+    rows: [
+      '..wwww..', '.owwwwo.', '.owwwwo.', '..osss..', '..oses..', '..osss..',
+      '.oaaaaa.', 'oaaaaaaa', 'oaaWaaao', 'oaaaaaao', '.oaaaaa.',
+      '.oaaaaa.', '.oaaaaa.', '.obbbbb.', '..oo.oo.', '........',
+    ],
+  },
+  npc_willow: {
+    mirror: true,
+    pal: { '.': null, o: '#241a30', s: P.sk, S: P.skS, e: P.o, y: '#e0c86a', Y: '#b8a048', g: '#6faf5f', G: '#4f8a42', f: '#ff9ecb' },
+    rows: [
+      '...yy...', '..yyyy..', '.yyyyyy.', 'yyYYYYyy', '..osss..', '..oses..',
+      '..osss..', '..oggg..', '.ogggggo', '.ogfgggo', '.oGgggGo',
+      '.oggggg.', '.oGgggG.', '.oggggg.', '..oo.oo.', '........',
+    ],
+  },
+
   // a galloping unicorn in side view (faces RIGHT; the fx layer flips it to
   // match travel direction) — gold horn, rainbow mane, trailing tail
   unicorn: {
@@ -411,8 +478,10 @@ const MONSTER_SPRITE = {
   bogmaw: 'bogmaw', voltra: 'voltra', mildew: 'mildew', umbrella: 'umbrella',
   dragon: 'dragon', sognaroth: 'sognaroth',
   gloomtroll: 'gloomtroll', revenant: 'revenant', poltergeist: 'poltergeist',
+  sentinel: 'sentinel', raincaller: 'raincaller', herald: 'herald', voidmaw: 'voidmaw',
 };
-const NPC_SPRITE = { mayor: 'npc_mayor', grandma: 'npc_grandma', foreman: 'npc_foreman' };
+const NPC_SPRITE = { mayor: 'npc_mayor', grandma: 'npc_grandma', foreman: 'npc_foreman',
+  pip: 'npc_pip', baker: 'npc_baker', willow: 'npc_willow' };
 function playerSpriteKey() {
   return 'player_' + (G.state ? G.state.classId : 'mage');
 }

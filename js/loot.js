@@ -174,6 +174,7 @@ function rollMonsterLoot(def) {
   const ilvl = Math.max(1, Math.min(10, Math.round(def.xp / 12)));
   if (def.finalBoss) return rollItem(10, Math.random() < 0.5 ? 'legendary' : 'set');
   if (def.dungeonBoss) return rollItem(10, Math.random() < 0.45 ? (Math.random() < 0.5 ? 'legendary' : 'set') : 'rare');
+  if (def.guardian) return rollItem(10, Math.random() < 0.4 ? (Math.random() < 0.5 ? 'legendary' : 'set') : 'rare');
   if (def.miniboss !== undefined) {
     const r = Math.random();
     return rollItem(ilvl, r < 0.25 ? 'set' : r < 0.45 ? 'legendary' : 'rare');
