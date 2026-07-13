@@ -282,6 +282,31 @@ const SPRITES = {
     ],
   },
 
+  // a galloping unicorn in side view (faces RIGHT; the fx layer flips it to
+  // match travel direction) — gold horn, rainbow mane, trailing tail
+  unicorn: {
+    pal: { '.': null, o: '#4a3a5e', w: '#ffffff', W: '#d8d2ec', y: '#ffd24a', e: '#3a2a4a',
+           m: '#ff6ec7', n: '#b06ee8', c: '#5cc9ff', t: '#ff9ecb', H: '#8a7fa8' },
+    rows: [
+      '............yy..',
+      '...........yy...',
+      '..........owwo..',
+      '.....m...owwww..',
+      '....mn...owwwe..',
+      '....mnc.owwww...',
+      '.....ncowwww....',
+      '...oowwwwwwww...',
+      '..t.owwwwwwwww..',
+      '.tt.owwwwwwwWw..',
+      '.t..oWwwwwwWww..',
+      '....ow.oww.ow...',
+      '...ow..ow...ow..',
+      '...H...H.....H..',
+      '................',
+      '................',
+    ],
+  },
+
   // ---------- environment ----------
   tree: {
     mirror: true,

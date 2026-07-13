@@ -633,7 +633,7 @@ function rideRainbow() {
   G.riding = true;
   const w = window.innerWidth, h = window.innerHeight;
   fxBeam(60, h - 100, w - 80, 80);
-  FX.parts.push({ x: 60, y: h - 100, tx: w - 80, ty: 80, speed: 520, emoji: '🦄', size: 46, life: 6, t: 0, trail: true });
+  FX.parts.push({ x: 60, y: h - 100, tx: w - 80, ty: 80, speed: 520, sprite: 'unicorn', size: 80, life: 6, t: 0, trail: true });
   toast('🌈 You cast the rainbow — your unicorn leaps skyward!');
   setQuest(4);
   G.state.activePact = null;

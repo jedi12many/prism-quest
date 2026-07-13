@@ -82,6 +82,7 @@ function fxFrame(ts) {
         if (p.onArrive) { p.onArrive(); p.onArrive = null; }
         p.t = p.life;
       } else {
+        p.flip = dx < 0; // sprites face right by default; flip when heading left
         p.x += dx / d * step;
         p.y += dy / d * step;
         if (p.trail) spawn.push({
@@ -108,6 +109,8 @@ function fxFrame(ts) {
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.size * (p.t / p.life), 0, Math.PI * 2);
       ctx.stroke();
+    } else if (p.sprite) {
+      drawSprite(ctx, p.sprite, p.x, p.y, p.size, { flip: p.flip });
     } else if (p.emoji) {
       ctx.save();
       ctx.translate(p.x, p.y);
@@ -207,7 +210,7 @@ function fxConfetti(x, y, count = 50) {
 function fxUnicornSummon(at) {
   FX.parts.push({
     x: at.x - 280, y: at.y - 30, tx: at.x + 44, ty: at.y - 10,
-    speed: 430, emoji: '🦄', size: 42, life: 5, t: 0, trail: true,
+    speed: 430, sprite: 'unicorn', size: 64, life: 5, t: 0, trail: true,
     onArrive: () => {
       fxBurst(at.x + 44, at.y - 10, { count: 22, colors: RAINBOW, star: true, speed: 240 });
       fxRise(at.x + 30, at.y, ['💖', '✨', '🌈'], 8);
@@ -218,7 +221,7 @@ function fxUnicornSummon(at) {
 function fxUnicornStrike(from, to) {
   FX.parts.push({
     x: from.x + 30, y: from.y - 10, tx: to.x, ty: to.y,
-    speed: 560, emoji: '🦄', size: 34, life: 4, t: 0, trail: true,
+    speed: 560, sprite: 'unicorn', size: 54, life: 4, t: 0, trail: true,
     onArrive: () => fxBurst(to.x, to.y, { count: 20, colors: RAINBOW, star: true, speed: 280 }),
   });
   fxRise(from.x, from.y, ['💖', '✨'], 5);
