@@ -506,9 +506,15 @@ function villageCelebration() {
     for (let i = 0; i < 4; i++) {
       setTimeout(() => fxConfetti(100 + Math.random() * (window.innerWidth - 200), 120 + Math.random() * 220, 40), i * 250);
     }
-    toast('🌞 Drizzlewick will never forget this day.');
+    toast('🌞 Drizzlewick will never forget this day. (⚙️ Menu → Play Again whenever you like!)');
   };
   acts.appendChild(btn);
+  const again = document.createElement('button');
+  again.className = 'bigBtn';
+  again.style.background = 'linear-gradient(90deg, #39c26d, #4fd8e0)';
+  again.textContent = '🌈 Play Again';
+  again.onclick = () => { sndClick(); resetSave(); }; // fresh hero — nothing to lose, you won!
+  acts.appendChild(again);
   openScreen('dialogScreen');
 }
 
@@ -1059,8 +1065,17 @@ function bindUI() {
   document.getElementById('btnBag').onclick = openBag;
   document.getElementById('btnSpells').onclick = openSpells;
   document.getElementById('btnSkills').onclick = openSkills;
-  document.getElementById('btnMenu').onclick = () => openScreen('menuScreen');
+  document.getElementById('btnMenu').onclick = () => {
+    // reflect a won game: friendly "Play Again" instead of a scary "New Game"
+    const won = G.state && G.state.sunRestored;
+    const ng = document.getElementById('btnNewGame');
+    ng.textContent = won ? '🌈 Play Again' : '🔄 New Game';
+    ng.classList.toggle('danger', !won);
+    openScreen('menuScreen');
+  };
   document.getElementById('btnNewGame').onclick = () => {
+    // once you've won, starting over is a victory lap — no scary warning
+    if (G.state && G.state.sunRestored) { resetSave(); return; }
     if (confirm('Start over? Your current hero will be lost.')) resetSave();
   };
   document.getElementById('btnDeclinePact').onclick = declinePact;
