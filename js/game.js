@@ -909,7 +909,7 @@ function boot() {
   seedRain();
   sndBoot();
   window.addEventListener('resize', resizeCanvas);
-  G.canvas.addEventListener('pointerdown', onTap);
+  G.canvas.addEventListener('pointerdown', onTap, { passive: false });
   window.addEventListener('keydown', onKey);
   bindUI();
 
@@ -957,6 +957,10 @@ function resizeCanvas() {
 function playerTile() { return { x: Math.floor(G.px / TILE), y: Math.floor(G.py / TILE) }; }
 
 function onTap(e) {
+  // suppress the browser's synthesized click/mouse events from this press, so a
+  // modal opened here (an NPC dialog, the forge…) can't be dismissed or
+  // mis-clicked by the trailing click that lands where the modal just appeared
+  if (e.preventDefault) e.preventDefault();
   sndUnlock();
   if (G.lock || !G.state || G.riding) return;
   const cam = camera();
