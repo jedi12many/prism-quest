@@ -108,6 +108,19 @@ function sndWin()     { arp([523, 659, 784, 1046, 1319, 1568], { type: 'triangle
 function sndSummon()  { arp([440, 554, 659, 880, 1109], { type: 'triangle', step: 0.05, dur: 0.25, vol: 0.28 }); }
 function sndDwarves() { arp([196, 262, 330, 262, 196], { type: 'square', step: 0.09, dur: 0.14, vol: 0.24 }); }
 
+// the rainbow ride — a ~1.7s set piece matching the gallop up to the clouds:
+// rising whoosh + ascending sparkle run + hoofbeats + arrival shimmer
+function sndRainbowRide() {
+  noise({ freq: 300, freqTo: 3800, dur: 1.5, vol: 0.22, filter: 'bandpass' });
+  arp([523, 587, 659, 784, 880, 1046, 1175, 1319, 1568, 1760],
+    { type: 'triangle', step: 0.115, dur: 0.3, vol: 0.26 });
+  for (let i = 0; i < 5; i++) { // da-dum, da-dum…
+    tone({ freq: 140, type: 'square', dur: 0.07, vol: 0.16, when: 0.10 + i * 0.24 });
+    tone({ freq: 110, type: 'square', dur: 0.07, vol: 0.14, when: 0.21 + i * 0.24 });
+  }
+  chord([1046, 1319, 1568, 2093], { type: 'sine', dur: 0.9, vol: 0.14, when: 1.35 });
+}
+
 // spell-specific casts
 function sndSpell(id) {
   switch (id) {
