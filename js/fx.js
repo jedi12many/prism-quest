@@ -40,7 +40,11 @@ function fxFrame(ts) {
   FX.last = ts;
   const ctx = FX.ctx;
   const dpr = window.devicePixelRatio || 1;
-  if (FX.canvas.width !== Math.round(window.innerWidth * dpr)) fxResize();
+  // keep in lockstep with the viewport on BOTH axes — mobile Chrome's URL bar
+  // changes innerHeight without innerWidth, which used to leave this canvas the
+  // wrong height and clip effects (e.g. the rainbow ride) off-screen
+  if (FX.canvas.width !== Math.round(window.innerWidth * dpr)
+      || FX.canvas.height !== Math.round(window.innerHeight * dpr)) fxResize();
   ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
 
   // beams (rainbow rays)

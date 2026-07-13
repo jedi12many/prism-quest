@@ -738,6 +738,7 @@ function onGate(g) {
 function rideRainbow() {
   if (G.riding) return;
   G.riding = true;
+  fxResize(); // make sure the effect canvas matches the current viewport first
   const w = window.innerWidth, h = window.innerHeight;
   fxBeam(60, h - 100, w - 80, 80);
   FX.parts.push({ x: 60, y: h - 100, tx: w - 80, ty: 80, speed: 520, sprite: 'unicorn', size: 80, life: 6, t: 0, trail: true });
