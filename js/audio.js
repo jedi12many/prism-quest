@@ -121,6 +121,18 @@ function sndRainbowRide() {
   chord([1046, 1319, 1568, 2093], { type: 'sine', dur: 0.9, vol: 0.14, when: 1.35 });
 }
 
+// forging at the Glassworks — anvil clink, molten hiss, rising fusion chord
+function sndForge(power) {
+  noise({ freq: 2200, dur: 0.08, vol: 0.3, filter: 'highpass' });
+  tone({ freq: 220, type: 'square', dur: 0.15, vol: 0.25 });
+  noise({ freq: 400, freqTo: 1800, dur: 0.5, vol: 0.14, filter: 'bandpass', when: 0.1 });
+  arp([523, 659, 784, 1046].slice(0, Math.max(2, power)), { step: 0.1, dur: 0.35, vol: 0.3, when: 0.2 });
+  if (power >= 4) { // the Prismblade: a triumphant shimmer
+    chord([1046, 1319, 1568, 2093], { type: 'sine', dur: 1.3, vol: 0.2, when: 0.65 });
+    noise({ freq: 600, freqTo: 4200, dur: 0.9, vol: 0.15, filter: 'bandpass', when: 0.6 });
+  }
+}
+
 // spell-specific casts
 function sndSpell(id) {
   switch (id) {

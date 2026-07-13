@@ -298,7 +298,7 @@ function openItemCard(item, where) {
     mk('Equip', 'pri', () => { equipItem(item); });
   }
   if (emptySockets > 0) mk('💎 Facet a gem', 'sec', () => openGemPicker(item));
-  if (!equipped) mk('♻️ Salvage', 'sec', () => salvageItem(item));
+  if (!equipped && !item.facet && !item.facets) mk('♻️ Salvage', 'sec', () => salvageItem(item));
   mk('Close', 'plain', () => closeScreen('itemCardScreen'));
   openScreen('itemCardScreen');
 }
@@ -334,6 +334,7 @@ function unequip(slot) {
 }
 
 function salvageItem(item) {
+  if (item.facet || item.facets) { toast('✨ Far too precious to break. The Glassworks can reforge it.'); return; }
   const s = G.state;
   const i = s.inventory.indexOf(item);
   if (i < 0) return;
@@ -474,6 +475,13 @@ function requireCamp(what) {
 
 // ---------- villagers ----------
 
+// Grandma's whisper about the shattered Prismblade
+function facetHint(s) {
+  const missing = ZONE_IDS.filter(z => !s.facetsFound[z]);
+  if (!missing.length) return '<br><br>✨ You found every shard of the old <b>Prismblade</b>! The Glassworks kiln by the camp can fuse them, dearie.';
+  return `<br><br>✨ Old tale: the <b>Prismblade</b> shattered into four facets, one lost in each land. Watch for a <b>tiny glint</b> in the grass — the ${missing.map(z => ZONES[z].dir).join(', ')} still hide${missing.length === 1 ? 's' : ''} theirs. The <b>Glassworks</b> kiln can fuse any two or more.`;
+}
+
 function npcHasNews(id) {
   const s = G.state;
   if (!s) return false;
@@ -519,8 +527,8 @@ function npcDialog(id) {
       return { text: `Oh, sweetheart, you'll catch your death out there. Here — some quartz from my rock garden, for practice.<br><br>
         Mind the rain: the gloom-things <b>cannot step into sunshine</b>. If they gang up on you, run for the light.` };
     }
-    if (q <= 1) return { text: 'The champions? Nasty things. The toad spits poison, the serpent strikes twice, the mold <i>regrows</i>, and the umbrella… whispers. Bring healing blooms, dearie.' };
-    if (q <= 4) return { text: 'The Rainwyrm hates sunlight — Sunflare, Rainbow Beam, Stardust. My knees ache just thinking about that climb.' };
+    if (q <= 1) return { text: 'The champions? Nasty things. The toad spits poison, the serpent strikes twice, the mold <i>regrows</i>, and the umbrella… whispers. Bring healing blooms, dearie.' + facetHint(s) };
+    if (q <= 4) return { text: 'The Rainwyrm hates sunlight — Sunflare, Rainbow Beam, Stardust. My knees ache just thinking about that climb.' + facetHint(s) };
     if (q <= 6) return { text: "Beyond the portal there are <b>no gems to mine, no way home</b> until it's done. Pack every spell charge you can, dearie, and come back to me in one piece." };
     return { text: 'Sunshine on my rocking chair at last. You wonderful child.' };
   }
@@ -763,6 +771,73 @@ function consumeGems(m, n) {
       if (n <= 0) break;
     }
   }
+}
+
+// ---------- the Glassworks (prism forge) ----------
+
+function openForge() {
+  renderForge();
+  openScreen('forgeScreen');
+}
+
+function renderForge() {
+  const s = G.state;
+  document.getElementById('forgeDots').innerHTML = ZONE_IDS.map(z => {
+    const f = FACETS[z];
+    const found = s.facetsFound[z];
+    return `<div class="facetDot ${found ? 'found' : ''}" style="--fc:${f.color}">
+      <span class="fdGem">◆</span><span class="fdName">${f.name}</span><span class="fdZone">${found ? '✓ found' : ZONES[z].dir + ' — a glint in the grass'}</span></div>`;
+  }).join('');
+  const power = countFacetPower(), loose = looseFacetCount();
+  const tiers = [2, 3, 4].map(n =>
+    `<div class="forgeTier ${power >= n ? 'ok' : ''}">${n === 4 ? '🌈' : '✨'} <b>${PRISM_TIERS[n].name}</b> <small>(${n} facets)</small></div>`).join('');
+  document.getElementById('forgeInfo').innerHTML =
+    `<div class="forgePower">Facet power held: <b>${power}/4</b></div>${tiers}
+     <p class="sub" style="text-align:left">Fusing melts down everything prismatic you carry — including an earlier prism weapon — so finding another facet always lets you reforge stronger. Socketed gems are returned.</p>`;
+  const acts = document.getElementById('forgeActs');
+  acts.innerHTML = '';
+  const btn = document.createElement('button');
+  btn.className = 'bigBtn';
+  const can = power >= 2 && loose >= 1;
+  btn.textContent = can ? `🔥 Fuse into the ${PRISM_TIERS[Math.min(4, power)].name}`
+    : power >= 2 ? 'Nothing new to fuse — find more facets' : 'Bring at least two Prism Facets';
+  btn.disabled = !can;
+  btn.onclick = forgePrism;
+  acts.appendChild(btn);
+}
+
+function forgePrism() {
+  const s = G.state;
+  const power = countFacetPower();
+  if (power < 2 || looseFacetCount() < 1) return;
+  // melt down every prismatic item held (loose facets + any earlier prism weapon)
+  const taken = [];
+  s.inventory = s.inventory.filter(it => {
+    if (it.facet || it.facets) { taken.push(it); return false; }
+    return true;
+  });
+  for (const slot of Object.keys(s.equip)) {
+    const it = s.equip[slot];
+    if (it && (it.facet || it.facets)) { taken.push(it); s.equip[slot] = null; }
+  }
+  for (const it of taken) {
+    for (const g of it.gems || []) { // return socketed gems
+      if (!s.polished[g.mineral]) s.polished[g.mineral] = { rough: 0, fine: 0, brilliant: 0 };
+      s.polished[g.mineral][g.quality]++;
+    }
+  }
+  const weapon = makePrismWeapon(power);
+  if (!s.equip.weapon) s.equip.weapon = weapon; // the slot was just vacated — wield it
+  else s.inventory.push(weapon);
+  calcStats();
+  save();
+  sndForge(power);
+  const pr = document.querySelector('#forgeScreen .panel').getBoundingClientRect();
+  fxConfetti(pr.left + pr.width / 2, pr.top + 120, power >= 4 ? 80 : 40);
+  toast(power >= 4 ? '🌈⚔️ THE PRISMBLADE IS WHOLE. Go blast everything.'
+    : `⚔️ Forged the ${weapon.name}! Another facet would make it stronger — the kiln can always reforge.`);
+  renderForge();
+  renderHUD();
 }
 
 function upgradeBuilding(id) {

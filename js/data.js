@@ -236,6 +236,28 @@ const DUNGEONS = {
 };
 const DUNGEON_TYPES = ['cave', 'ruins', 'house'];
 
+// The shattered Prismblade — four facets, one hidden in each land as a tiny
+// glint in the grass. Fuse them at the village Glassworks: 2, 3, or all 4.
+const FACET_SPAWN_CHANCE = 1; // drop to 0.75 later for true scavenger-hunt runs
+const FACETS = {
+  south: { name: 'Crimson Facet', color: '#ff5c7a', lore: 'A shard of the Prismblade, warm as dawn.',
+           affixes: { atkFlat: 4, spellDmg: 0.12, crit: 0.05 } },
+  east:  { name: 'Amber Facet',   color: '#ffd24a', lore: 'It hums with distant thunder.',
+           affixes: { atkFlat: 5, basicDmg: 0.15, crit: 0.05 } },
+  west:  { name: 'Verdant Facet', color: '#5cff8a', lore: 'Moss cannot grow on it. It tried.',
+           affixes: { magFlat: 4, spellDmg: 0.15, regen: 2 } },
+  north: { name: 'Azure Facet',   color: '#5cc9ff', lore: 'Cold, clear, and impossibly light.',
+           affixes: { magFlat: 5, spellDmg: 0.18, dodge: 0.05 } },
+};
+const PRISM_TIERS = {
+  2: { name: 'Twinlight Prism', sockets: 2, lore: 'Two colors, braided into one edge.',
+       affixes: { atkFlat: 6, magFlat: 4, spellDmg: 0.22, basicDmg: 0.15, crit: 0.08 } },
+  3: { name: 'Trilight Prism',  sockets: 2, lore: 'Almost whole. It aches for the last color.',
+       affixes: { atkFlat: 8, magFlat: 6, spellDmg: 0.35, basicDmg: 0.25, crit: 0.1, chargeSave: 0.12 } },
+  4: { name: 'THE PRISMBLADE',  sockets: 3, lore: 'All colors. One light. Zero survivors.',
+       affixes: { atkFlat: 12, magFlat: 10, spellDmg: 0.7, basicDmg: 0.7, crit: 0.18, chargeSave: 0.25, dodge: 0.06 } },
+};
+
 // Gloom Pacts — a blessing paired with a curse, chosen when you dive into an
 // uncleared zone. Active only while you're in that zone (a fresh choice each dive).
 const PACTS = [

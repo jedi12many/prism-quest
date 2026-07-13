@@ -70,6 +70,12 @@ then open http://localhost:8123 — on your phone, use your computer's LAN IP
   capstone** deep in your Power Tree to cheat death once per life (rebound to 50% HP).
 - **Elite monsters** with coloured auras — Vicious, Armored, Swift, Venomous,
   Cursed, or Radiant (guaranteed rare+ loot) — appear more often the deeper you go.
+- **The shattered Prismblade**: four Prism Facets lie buried, one per land,
+  visible only as a tiny glint in the grass. Each is a fine weapon alone; the
+  village **Glassworks** kiln fuses 2 (Twinlight), 3 (Trilight), or all 4 —
+  **THE PRISMBLADE** — melting down an earlier prism so a late find always
+  upgrades. Facets can't be salvaged; socketed gems are returned on reforge.
+  (`FACET_SPAWN_CHANCE` in data.js drops below 1 for scavenger-hunt runs.)
 - **Special dungeons** hidden in every zone: **Gloom Caves** (organic cave-ins),
   **Sunken Ruins** (rooms and corridors), and **Haunted Houses** (a warren of
   doored rooms) — each a real, procedurally-laid-out interior **2–3 floors deep**,

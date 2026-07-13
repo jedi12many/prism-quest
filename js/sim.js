@@ -14,9 +14,9 @@
 const SIM_SPELL_PRIORITY = ['stardust', 'rainbowbeam', 'sunflare', 'tidepop', 'butterflyswarm', 'glitterbomb'];
 const SIM_CRAFT_ORDER = ['bloomheal', 'unicorn', 'rainbowbeam', 'stardust', 'sunflare', 'tidepop', 'prismshield', 'butterflyswarm', 'glitterbomb'];
 const SIM_PATCH = ['toast', 'renderBattle', 'renderHUD', 'renderBag', 'renderSpells', 'renderSkills',
-  'renderBase', 'renderChar', 'openItemCard', 'fxBurst', 'fxConfetti', 'fxRing', 'fxRise', 'fxFlutter',
-  'fxBeam', 'fxUnicornSummon', 'fxUnicornStrike', 'fxStardust', 'spellFX', 'shakeEl', 'showGameOver',
-  'setMusic', 'addFloater', 'offerPact', 'save'];
+  'renderBase', 'renderChar', 'renderForge', 'openItemCard', 'fxBurst', 'fxConfetti', 'fxRing', 'fxRise',
+  'fxFlutter', 'fxBeam', 'fxUnicornSummon', 'fxUnicornStrike', 'fxStardust', 'spellFX', 'shakeEl',
+  'showGameOver', 'setMusic', 'addFloater', 'offerPact', 'save'];
 
 function simShuffle(arr, rng) {
   const a = [...arr];
@@ -95,8 +95,10 @@ function simEquipAll() {
   }
   let guard = 0;
   while (s.inventory.length > 16 && guard++ < 20) {
-    let worst = s.inventory[0];
-    for (const it of s.inventory) if (simItemScore(it) < simItemScore(worst)) worst = it;
+    const cands = s.inventory.filter(it => !it.facet && !it.facets); // relics can't be salvaged
+    if (!cands.length) break;
+    let worst = cands[0];
+    for (const it of cands) if (simItemScore(it) < simItemScore(worst)) worst = it;
     salvageItem(worst);
   }
 }
@@ -156,6 +158,7 @@ function simCampVisit(rng, build) {
   calcStats();
   s.hp = s.hpMax;
   simRestock(rng, build);
+  if (countFacetPower() >= 2 && looseFacetCount() >= 1) forgePrism(); // fuse at the Glassworks
   // buildings: spend surplus raw, keeping a crafting buffer
   let bought = true, guard = 0;
   while (bought && guard++ < 20) {
@@ -184,6 +187,8 @@ function simZone(zid, rng, ctx, build) {
   }
   calcStats(); s.hp = Math.min(s.hp, s.hpMax);
   for (const n of G.nodes) if (rng() < 0.7) mineNode(n);
+  // a wandering hero spots the buried facet's shy glint only sometimes
+  if (G.treasure && rng() < 0.35) { digTreasure(); ctx.facetsDug++; }
   const share = 0.45 + rng() * 0.3;
   const mobs = G.monsters.filter(m => m.alive && MONSTERS[m.type].miniboss === undefined);
   for (const m of simShuffle(mobs, rng)) {
@@ -246,7 +251,7 @@ function simRunOne(seed) {
   s.mainQuest = 1;
   const build = simShuffle([0, 1, 2], rng);           // seeded branch-priority build
   const ctx = { seed, cls, build: build.join(''), dead: false, deathAt: null, battles: 0, campTrips: 0,
-    dungeons: 0, minHp: 1, fled: 0, pacts: [], endHp: null };
+    dungeons: 0, minHp: 1, fled: 0, pacts: [], endHp: null, facetsDug: 0 };
   try {
     for (const zid of ['south', 'east', 'west', 'north']) {
       simCampVisit(rng, build);
@@ -285,7 +290,9 @@ function simRunOne(seed) {
   else if (ctx.endHp < 0.35 || s.reviveUsed || ctx.minHp < 0.10) outcome = 'close win';
   else if (ctx.endHp >= 0.7 && ctx.minHp >= 0.25) outcome = 'crush'; // never really threatened
   else outcome = 'win';
+  const prismItem = [...s.inventory, ...Object.values(s.equip)].find(it => it && it.facets);
   return { seed, cls, build: ctx.build, outcome, level: s.level, zones, kills: s.kills,
+    facets: ctx.facetsDug, prism: prismItem ? prismItem.facets : 0,
     battles: ctx.battles, dungeons: ctx.dungeons, campTrips: ctx.campTrips, fled: ctx.fled,
     minHp: +ctx.minHp.toFixed(2), endHp: ctx.endHp == null ? null : +ctx.endHp.toFixed(2),
     deathAt: ctx.deathAt, error: ctx.error || null };

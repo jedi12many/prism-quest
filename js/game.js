@@ -197,6 +197,7 @@ function setQuest(n) {
 function buildMap(mapId) {
   G.mapId = mapId;
   G.nodes = []; G.monsters = []; G.npcs = []; G.gates = []; G.wallTiles = [];
+  G.treasure = null;
   if (mapId === 'village') buildVillage();
   else if (ZONE_IDS.includes(mapId)) buildZone(mapId);
   else if (mapId === 'dungeon') buildDungeon();
@@ -227,8 +228,8 @@ function buildVillage() {
     for (let y = BASE_RECT.y0; y <= BASE_RECT.y1; y++)
       if (isWallTile(x, y)) G.wallTiles.push([x, y]);
   G.npcs = Object.entries(NPCS).map(([id, n]) => ({ id, x: n.x, y: n.y }));
-  // a gate to each of the four zones, plus the plaza cloudgate
-  G.gates = [{ x: 18, y: 4, kind: 'cloudgate' }];
+  // a gate to each of the four zones, the plaza cloudgate, and the Glassworks kiln
+  G.gates = [{ x: 18, y: 4, kind: 'cloudgate' }, { x: 11, y: 7, kind: 'forge' }];
   for (const zid of ZONE_IDS) {
     for (const [gx, gy] of ZONES[zid].gate) {
       G.map[gy][gx] = 'grass'; // keep the gate tile clear
@@ -339,6 +340,42 @@ function buildZone(zoneId) {
     G.gates.push({ x, y, kind: 'dungeon', dtype, fromZone: zoneId });
     dp++;
   }
+
+  // a facet of the shattered Prismblade, buried somewhere — just a tiny glint
+  if (!G.state.facetsFound[zoneId] && !G.state.sunRestored && rng() < FACET_SPAWN_CHANCE) {
+    let tg = 0;
+    while (tg++ < 3000) {
+      const x = 3 + ((rng() * (W - 6)) | 0), y = 3 + ((rng() * (H - 6)) | 0);
+      if (G.map[y][x] !== 'grass') continue;
+      if (cheb(x, y, entry.x, entry.y) < 7) continue;
+      if (G.gates.some(g => cheb(g.x, g.y, x, y) < 2)) continue;
+      if (G.nodes.some(n => n.x === x && n.y === y)) continue;
+      if (G.monsters.some(m => m.x === x && m.y === y)) continue;
+      G.treasure = { x, y };
+      break;
+    }
+  }
+}
+
+// unearth the zone's hidden Prism Facet
+function digTreasure() {
+  const zid = G.mapId;
+  if (!FACETS[zid] || !G.treasure) return;
+  if (G.state.inventory.length >= INVENTORY_CAP) {
+    toast('🎒 Your bag is full — the shard stays buried for now.');
+    return;
+  }
+  const item = makeFacet(zid);
+  G.state.inventory.push(item);
+  G.state.facetsFound[zid] = true;
+  const cam = camera();
+  fxConfetti(G.treasure.x * TILE - cam.x + TILE / 2, G.treasure.y * TILE - cam.y, 36);
+  addFloater(G.treasure.x, G.treasure.y, `💎 ${item.name}!`, FACETS[zid].color);
+  G.treasure = null;
+  sndBrilliant(); sndKey();
+  save();
+  const power = countFacetPower();
+  toast(`💎 You unearth the ${item.name}! (${power}/4 facets — the Glassworks can fuse ${power >= 2 ? 'them' : 'two or more'})`);
 }
 
 // ---------- special dungeons ----------
@@ -626,6 +663,8 @@ function onGate(g) {
         }
       }
     }
+  } else if (g.kind === 'forge') {
+    openForge();
   } else if (g.kind === 'cloudgate') {
     if (G.state.mainQuest >= 3) rideRainbow();
     else toast('🌈 A faint shimmer in the stones… the Mayor might know what it means.');
@@ -682,6 +721,7 @@ function save() {
     kills: s.kills, bossDefeated: s.bossDefeated, sunRestored: s.sunRestored, base: s.base,
     mapId: G.mapId, mainQuest: s.mainQuest, zonesCleared: s.zonesCleared, npcFlags: s.npcFlags,
     equip: s.equip, inventory: s.inventory, reviveUsed: s.reviveUsed, activePact: s.activePact, dungeon: s.dungeon,
+    facetsFound: s.facetsFound,
   }));
 }
 
@@ -756,6 +796,7 @@ function newGameWithClass(classId) {
     zonesCleared: { north: false, east: false, west: false, south: false }, npcFlags: {},
     equip: { weapon: rollItem(1, 'common', 'weapon'), helm: null, armor: null, boots: null, charm: null },
     inventory: [], activePact: null, dungeon: null,
+    facetsFound: { north: false, east: false, west: false, south: false },
     x: SPAWN.x, y: SPAWN.y,
   };
   // apply Sanctuary starting grants
@@ -812,6 +853,7 @@ function boot() {
       zonesCleared: { north: false, east: false, west: false, south: false }, npcFlags: {},
       equip: { weapon: null, helm: null, armor: null, boots: null, charm: null },
       inventory: [], activePact: null, dungeon: null,
+      facetsFound: { north: false, east: false, west: false, south: false },
     }, saved);
     calcStats();
     if (G.state.hp <= 0) G.state.hp = G.state.hpMax;
@@ -1009,6 +1051,7 @@ function update(dt) {
       if (mon) { G.path = []; G.pendingMine = null; G.pendingNpc = null; startBattle(mon, false); return; }
       const gate = G.gates.find(g => g.x === target.x && g.y === target.y);
       if (gate && G.gateArmed) { G.path = []; G.pendingMine = null; G.pendingNpc = null; onGate(gate); return; }
+      if (G.treasure && G.treasure.x === target.x && G.treasure.y === target.y) digTreasure();
       if (!G.path.length && G.pendingMine) {
         const n = G.pendingMine; G.pendingMine = null;
         const p = playerTile();
@@ -1288,9 +1331,48 @@ function draw() {
     ctx.fillText(dcfg.name, sx, sy + TILE * 0.5);
   }
 
+  // the Glassworks kiln (village)
+  const forgeGate = G.gates.find(g => g.kind === 'forge');
+  if (forgeGate) {
+    const fx2 = forgeGate.x * TILE - cam.x + TILE / 2, fy2 = forgeGate.y * TILE - cam.y + TILE / 2;
+    if (fx2 > -TILE && fy2 > -TILE && fx2 < w + TILE && fy2 < h + TILE) {
+      drawShadow(ctx, fx2, fy2 + TILE * 0.4, TILE * 0.5);
+      ctx.fillStyle = '#6a6578';
+      ctx.beginPath();
+      ctx.arc(fx2, fy2, TILE * 0.36, Math.PI, 0);
+      ctx.fill();
+      ctx.fillRect(fx2 - TILE * 0.36, fy2, TILE * 0.72, TILE * 0.26);
+      const glow = 0.5 + 0.5 * Math.sin(G.time * 5);
+      ctx.fillStyle = `rgba(255,${(140 + glow * 70) | 0},60,${0.65 + glow * 0.35})`;
+      ctx.fillRect(fx2 - TILE * 0.13, fy2 + TILE * 0.02, TILE * 0.26, TILE * 0.18);
+      // when facets are ready to fuse, the kiln sings in rainbow
+      if (G.state && countFacetPower() >= 2 && looseFacetCount() >= 1) {
+        ctx.globalAlpha = 0.5 + glow * 0.5;
+        drawStar(ctx, fx2, fy2 - TILE * 0.5, 6, RAINBOW[((G.time * 4) | 0) % 6], G.time * 2);
+        ctx.globalAlpha = 1;
+      }
+      ctx.font = 'bold 10px system-ui, sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.75)'; ctx.fillStyle = '#ffd9b0';
+      ctx.strokeText('Glassworks', fx2, fy2 + TILE * 0.52);
+      ctx.fillText('Glassworks', fx2, fy2 + TILE * 0.52);
+    }
+  }
+
+  // a buried facet: nothing but a shy glint in the grass
+  if (G.treasure) {
+    const tx2 = G.treasure.x * TILE - cam.x + TILE / 2, ty2 = G.treasure.y * TILE - cam.y + TILE / 2;
+    if (tx2 > -TILE && ty2 > -TILE && tx2 < w + TILE && ty2 < h + TILE) {
+      const shy = Math.max(0, Math.sin(G.time * 1.1 + 1.7)); // often nearly invisible
+      ctx.globalAlpha = 0.1 + shy * 0.6;
+      drawStar(ctx, tx2, ty2 - 3, 4.5, '#ffe9fb', G.time * 0.8);
+      ctx.globalAlpha = 1;
+    }
+  }
+
   // other gates (cloudgate / portal / dungeon exit)
   for (const g of G.gates) {
-    if (g.kind === 'village' || g.kind === 'zone' || g.kind === 'dungeon') continue;
+    if (g.kind === 'village' || g.kind === 'zone' || g.kind === 'dungeon' || g.kind === 'forge') continue;
     if (g.kind === 'cloudgate' && G.state.mainQuest < 3) continue;
     const sx = g.x * TILE - cam.x + TILE / 2, sy = g.y * TILE - cam.y + TILE / 2;
     if (sx < -TILE || sy < -TILE || sx > w + TILE || sy > h + TILE) continue;

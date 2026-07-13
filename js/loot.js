@@ -14,6 +14,7 @@ const RARITIES = {
   rare:      { name: 'Rare',      color: '#ffd24a', w: 14 },
   legendary: { name: 'Legendary', color: '#ff8a3c', w: 3 },
   set:       { name: 'Set',       color: '#39c26d', w: 1 },
+  prism:     { name: 'Prism Relic', color: '#ffb3ef', w: 0 }, // never drops — found & forged only
 };
 
 // implicit base stat per slot
@@ -180,6 +181,39 @@ function rollMonsterLoot(def) {
   if (def.boss) return rollItem(9, Math.random() < 0.5 ? 'legendary' : 'set'); // the Rainwyrm
   if (Math.random() < 0.25) return rollItem(ilvl);
   return null;
+}
+
+// ---------- the shattered Prismblade ----------
+
+function makeFacet(zoneId) {
+  const f = FACETS[zoneId];
+  return { id: lootUid(), slot: 'weapon', name: f.name, rarity: 'prism', lore: f.lore,
+           base: {}, affixes: { ...f.affixes }, sockets: 1, gems: [], ilvl: 10, facet: zoneId };
+}
+
+function makePrismWeapon(power) {
+  const t = PRISM_TIERS[Math.min(4, power)];
+  return { id: lootUid(), slot: 'weapon', name: t.name, rarity: 'prism', lore: t.lore,
+           base: {}, affixes: { ...t.affixes }, sockets: t.sockets, gems: [], ilvl: 10, facets: Math.min(4, power) };
+}
+
+// total facet-power currently held (loose facets + facets fused into a prism weapon)
+function countFacetPower() {
+  const s = G.state;
+  let p = 0;
+  const tally = it => { if (!it) return; if (it.facet) p += 1; else if (it.facets) p += it.facets; };
+  s.inventory.forEach(tally);
+  Object.values(s.equip || {}).forEach(tally);
+  return Math.min(4, p);
+}
+
+function looseFacetCount() {
+  const s = G.state;
+  let n = 0;
+  const tally = it => { if (it && it.facet) n++; };
+  s.inventory.forEach(tally);
+  Object.values(s.equip || {}).forEach(tally);
+  return n;
 }
 
 const INVENTORY_CAP = 24;

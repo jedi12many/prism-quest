@@ -300,6 +300,23 @@ button.closeBtn:not(.bigBtn) {
 /* ---------- dwarf crew ---------- */
 .bigBtn.dwarf { background: linear-gradient(90deg, #a06a2c, #d99a4e); }
 
+/* ---------- the Glassworks ---------- */
+#forgeDots { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+.facetDot {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 12px; border-radius: 12px;
+  background: rgba(255,255,255,0.05);
+  border: 1.5px solid rgba(255,255,255,0.12);
+  opacity: 0.45;
+}
+.facetDot.found { opacity: 1; border-color: var(--fc); }
+.fdGem { color: var(--fc); font-size: 20px; }
+.fdName { font-weight: 700; font-size: 13.5px; flex: 1; }
+.fdZone { font-size: 12px; opacity: 0.75; }
+.forgePower { font-size: 14.5px; margin-bottom: 8px; }
+.forgeTier { font-size: 13px; padding: 4px 10px; opacity: 0.45; }
+.forgeTier.ok { opacity: 1; color: #ffe9a8; }
+
 /* ---------- spellbook ---------- */
 .spellCard {
   background: rgba(255,255,255,0.05);
