@@ -474,6 +474,44 @@ function requireCamp(what) {
   return false;
 }
 
+// ---------- the homecoming festival ----------
+
+// the Mayor leads the whole village in a cheer when you return from the gloom
+function villageCelebration() {
+  sndCheer();
+  for (let i = 0; i < 6; i++) { // fireworks over the square
+    setTimeout(() => {
+      const x = 60 + Math.random() * (window.innerWidth - 120);
+      const y = 80 + Math.random() * (window.innerHeight * 0.45);
+      fxConfetti(x, y, 36);
+      fxRing(x, y, RAINBOW[i % 6], 70);
+    }, i * 420);
+  }
+  document.getElementById('dEmoji').textContent = NPCS.mayor.emoji;
+  document.getElementById('dName').textContent = NPCS.mayor.name;
+  document.getElementById('dText').innerHTML =
+    `The whole village is packed into the square — Pip is up on Barnaby's shoulders, Grandma is crying into her shawl,
+     and Foreman Flint is pretending very hard that he isn't.<br><br>
+     <b>"THREE CHEERS FOR THE HERO OF RAINYDAY!"</b><br><br>
+     "You walked into the dark that ate a hundred years of mornings… and you carried the SUN home on your back.
+     Drizzlewick will bake about this, sing about this, and absolutely exaggerate about this for generations. HIP HIP—"`;
+  const acts = document.getElementById('dActs');
+  acts.innerHTML = '';
+  const btn = document.createElement('button');
+  btn.className = 'bigBtn';
+  btn.textContent = '🎉 HOORAY!';
+  btn.onclick = () => {
+    closeScreen('dialogScreen');
+    sndCheer();
+    for (let i = 0; i < 4; i++) {
+      setTimeout(() => fxConfetti(100 + Math.random() * (window.innerWidth - 200), 120 + Math.random() * 220, 40), i * 250);
+    }
+    toast('🌞 Drizzlewick will never forget this day.');
+  };
+  acts.appendChild(btn);
+  openScreen('dialogScreen');
+}
+
 // ---------- boss intro cinematic ----------
 
 let BI_TIMER = null;
@@ -1037,7 +1075,7 @@ function bindUI() {
     closeScreen('winBanner');
     if (G.state && G.state.sunRestored && G.mapId === 'realm') {
       travelTo('village', VILLAGE_ENTRY.x, VILLAGE_ENTRY.y);
-      toast('🌞 Drizzlewick throws you the biggest festival Rainyday has ever seen!');
+      setTimeout(villageCelebration, 600); // let the sunny village render, then the square erupts
     }
   };
   document.querySelectorAll('.closeBtn[data-close]').forEach(btn => {

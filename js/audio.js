@@ -121,6 +121,17 @@ function sndRainbowRide() {
   chord([1046, 1319, 1568, 2093], { type: 'sine', dur: 0.9, vol: 0.14, when: 1.35 });
 }
 
+// the whole village cheers — crowd roar, whistles, and a fanfare
+function sndCheer() {
+  for (let i = 0; i < 5; i++) { // overlapping crowd swells
+    noise({ freq: 700 + i * 250, freqTo: 1600 + i * 300, dur: 0.9 + i * 0.1, vol: 0.12, filter: 'bandpass', when: i * 0.12 });
+  }
+  tone({ freq: 1800, type: 'sine', dur: 0.25, vol: 0.12, slideTo: 2600, when: 0.5 });  // whistle up
+  tone({ freq: 2100, type: 'sine', dur: 0.3, vol: 0.1, slideTo: 1400, when: 0.95 });   // whistle down
+  arp([523, 659, 784, 1046], { type: 'square', step: 0.12, dur: 0.3, vol: 0.2, when: 0.2 });
+  chord([523, 659, 784, 1046], { type: 'triangle', dur: 1.3, vol: 0.22, when: 0.8 });
+}
+
 // boss entrances — a signature sting per villain
 function sndBossIntro(type) {
   switch (type) {
