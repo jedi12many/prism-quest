@@ -374,6 +374,62 @@ const SPRITES = {
     ],
   },
 
+  // ---------- world structures (replacing map emojis) ----------
+  castle: {
+    mirror: true,
+    pal: { '.': null, o: '#2f3650', s: '#c6cfe4', S: '#95a0bd', w: '#ffd24a', d: '#443a63', f: '#ff6ec7', p: '#7f5cff' },
+    rows: [
+      '.f......', '.p......', 'ooo...oo', 'oso...os', 'ooo...ss', 'ooooosss',
+      'osssssss', 'oswwssss', 'osssssss', 'osssssdd', 'osssssdd',
+      'osssssdd', 'osssssss', 'oooooooo', '........', '........',
+    ],
+  },
+  dungeon_cave: {
+    mirror: true,
+    pal: { '.': null, o: '#221d29', r: '#5a5560', R: '#403c48', s: '#726d80', k: '#0c0912' },
+    rows: [
+      '..rrrr..', '.rrrrrr.', 'rrrsrrrr', 'rrrkkrrr', 'rrkkkkrr', 'rkkkkkkr',
+      'rkkkkkkr', 'rkkkkkkr', 'rkkkkkkr', 'rrkkkkrr', 'rRrkkrRr',
+      'RRRRRRRR', '..RRRR..', '........', '........', '........',
+    ],
+  },
+  dungeon_ruins: {
+    mirror: true,
+    pal: { '.': null, o: '#2a2a22', s: '#b0a888', S: '#7c745e', m: '#6faf5f', k: '#171712' },
+    rows: [
+      'ss....ss', 'so....os', 'ss....ss', 'so....os', 'sm....ms', 'ss....ss',
+      'so....os', 'ssskksss', 'sSskksSs', 'sskkkkss', 'sskkkkss',
+      'ssssssss', 'oooooooo', '........', '........', '........',
+    ],
+  },
+  dungeon_house: {
+    mirror: true,
+    pal: { '.': null, o: '#160f1c', w: '#584a5c', W: '#3d3346', r: '#3a2a3c', R: '#241a28', g: '#a8e04a', d: '#0d0912' },
+    rows: [
+      '......oo', '.....orr', '....orrr', '...orrrr', '..orrRrr', '.orrrrrr',
+      'orrrrrrr', 'owwwwwww', 'owgwwwww', 'owwwwwWw', 'owwwwwdd',
+      'owwWwwdd', 'owwwwwdd', 'owwwwwdd', 'oooooooo', '........',
+    ],
+  },
+  ladder: {
+    pal: { '.': null, w: '#a86e30', W: '#7c4c1e' },
+    rows: [
+      '.....w....w.....', '.....w....w.....', '.....wwwwww.....', '.....w....w.....',
+      '.....w....w.....', '.....wwwwww.....', '.....w....w.....', '.....w....w.....',
+      '.....wwwwww.....', '.....w....w.....', '.....w....w.....', '.....wwwwww.....',
+      '.....w....w.....', '.....w....w.....', '.....wwwwww.....', '.....W....W.....',
+    ],
+  },
+  stairs: {
+    pal: { '.': null, o: '#241f2e', s: '#9aa4c0', S: '#5a5570', k: '#0e0a16' },
+    rows: [
+      'osso............', 'osso............', 'osskkoo.........', '..ossso.........',
+      '..osSso.........', '..osskkoo.......', '....ossso.......', '....osSso.......',
+      '....osskkoo.....', '......ossso.....', '......osSso.....', '......osskkoo...',
+      '........ossso...', '........osSso...', '........ossso...', '........ooooo...',
+    ],
+  },
+
   // ---------- environment ----------
   tree: {
     mirror: true,

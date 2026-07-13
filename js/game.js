@@ -1370,8 +1370,13 @@ function draw() {
 
   // the Rainycastle keep
   if (G.mapId === 'clouds') {
-    ctx.font = `${TILE * 2.1}px "Segoe UI Emoji", serif`;
-    ctx.fillText('🏰', 18 * TILE - cam.x, 7 * TILE - cam.y - 6);
+    const kx = 18 * TILE - cam.x, ky = 7 * TILE - cam.y;
+    drawShadow(ctx, kx, ky + TILE * 1.1, TILE * 1.3);
+    if (!drawSprite(ctx, 'castle', kx, ky, TILE * 2.7)) {
+      ctx.font = `${TILE * 2.1}px "Segoe UI Emoji", serif`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('🏰', kx, ky - 6);
+    }
   }
 
   // the village landmark — a labelled 2x2 hamlet, drawn once at the block centre
@@ -1404,9 +1409,12 @@ function draw() {
     const sx = g.x * TILE - cam.x + TILE / 2, sy = g.y * TILE - cam.y + TILE / 2;
     if (sx < -TILE || sy < -TILE || sx > w + TILE || sy > h + TILE) continue;
     drawShadow(ctx, sx, sy + TILE * 0.4, TILE * 0.55);
-    ctx.font = `${TILE * 1.05}px "Segoe UI Emoji", serif`;
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(dcfg.emoji, sx, sy - TILE * 0.12 + Math.sin(G.time * 2 + g.x) * 1.5);
+    const bob = Math.sin(G.time * 2 + g.x) * 1.5;
+    if (!drawSprite(ctx, 'dungeon_' + g.dtype, sx, sy - TILE * 0.12 + bob, TILE * 1.2)) {
+      ctx.font = `${TILE * 1.05}px "Segoe UI Emoji", serif`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(dcfg.emoji, sx, sy - TILE * 0.12 + bob);
+    }
     ctx.font = 'bold 10px system-ui, sans-serif';
     ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.75)'; ctx.fillStyle = '#e0c6ff';
     ctx.strokeText(dcfg.name, sx, sy + TILE * 0.5);
@@ -1482,24 +1490,22 @@ function draw() {
     if (g.kind === 'cloudgate' && G.state.mainQuest < 3) continue;
     const sx = g.x * TILE - cam.x + TILE / 2, sy = g.y * TILE - cam.y + TILE / 2;
     if (sx < -TILE || sy < -TILE || sx > w + TILE || sy > h + TILE) continue;
-    const pulse = 1 + Math.sin(G.time * 3 + g.x) * 0.1;
-    ctx.save();
-    ctx.translate(sx, sy);
-    ctx.scale(pulse, pulse);
-    ctx.font = `${TILE * 0.72}px "Segoe UI Emoji", serif`;
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(GATE_EMOJI[g.kind], 0, 0);
-    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.arc(0, 0, TILE * 0.42, 0, Math.PI * 2);
-    ctx.stroke();
+    if (g.kind === 'cloudgate') { drawRainbowGate(ctx, sx, sy); continue; }
+    if (g.kind === 'portal') { drawPortalGate(ctx, sx, sy); continue; }
+    // zoneback (ladder) / stairsdown (stairs) — pixel structures
+    const spr = g.kind === 'zoneback' ? 'ladder' : 'stairs';
+    drawShadow(ctx, sx, sy + TILE * 0.36, TILE * 0.4);
+    if (!drawSprite(ctx, spr, sx, sy, TILE * 0.95)) {
+      ctx.font = `${TILE * 0.72}px "Segoe UI Emoji", serif`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(GATE_EMOJI[g.kind], sx, sy);
+    }
     if (g.kind === 'stairsdown') {
       const locked = !(G.state.dungeon && G.state.dungeon.hasKey);
       ctx.font = `${TILE * 0.4}px "Segoe UI Emoji", serif`;
-      ctx.fillText(locked ? '🔒' : '🗝️', TILE * 0.3, -TILE * 0.3);
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(locked ? '🔒' : '🗝️', sx + TILE * 0.34, sy - TILE * 0.34);
     }
-    ctx.restore();
   }
 
   // mineral nodes
@@ -1777,6 +1783,51 @@ function drawZoneSign(ctx, cx, cy, zid) {
   const label = (cleared ? '✓ ' : '') + z.name;
   ctx.strokeText(label, cx, cy + TILE * 0.5);
   ctx.fillText(label, cx, cy + TILE * 0.5);
+}
+
+// the plaza Cloudgate — a shimmering rainbow arc (drawn, not an emoji)
+function drawRainbowGate(ctx, cx, cy) {
+  const r = TILE * 0.5, lift = Math.sin(G.time * 2.5) * 2;
+  ctx.save();
+  ctx.lineCap = 'round';
+  RAINBOW.forEach((c, i) => {
+    ctx.strokeStyle = c;
+    ctx.lineWidth = 3.4;
+    ctx.globalAlpha = 0.9;
+    ctx.beginPath();
+    ctx.arc(cx, cy + TILE * 0.28 + lift, r - i * 3.4, Math.PI, 0);
+    ctx.stroke();
+  });
+  ctx.globalAlpha = 0.5 + 0.5 * (0.5 + 0.5 * Math.sin(G.time * 5));
+  for (let k = 0; k < 3; k++) drawStar(ctx, cx - r + k * r, cy + TILE * 0.28 + lift, 3.5, '#ffffff', G.time * 2 + k);
+  ctx.restore();
+  ctx.globalAlpha = 1;
+}
+
+// the one-way portal — a swirling violet vortex
+function drawPortalGate(ctx, cx, cy) {
+  const R = TILE * 0.42 * (1 + Math.sin(G.time * 3) * 0.06);
+  ctx.save();
+  ctx.translate(cx, cy);
+  const grad = ctx.createRadialGradient(0, 0, 1, 0, 0, R);
+  grad.addColorStop(0, '#f0d0ff');
+  grad.addColorStop(0.5, '#7a2fb0');
+  grad.addColorStop(1, '#1a0a2a');
+  ctx.fillStyle = grad;
+  ctx.beginPath(); ctx.arc(0, 0, R, 0, Math.PI * 2); ctx.fill();
+  for (let a = 0; a < 3; a++) {
+    ctx.strokeStyle = `rgba(220,180,255,${0.6 - a * 0.15})`;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let t = 0; t < Math.PI * 2.2; t += 0.3) {
+      const rr = (t / (Math.PI * 2.2)) * R;
+      const ang = t + G.time * 2.5 + a * 2.1;
+      const px = Math.cos(ang) * rr, py = Math.sin(ang) * rr;
+      t === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+  }
+  ctx.restore();
 }
 
 let lastFrame = 0;
