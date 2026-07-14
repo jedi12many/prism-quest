@@ -411,6 +411,48 @@ button.closeBtn:not(.bigBtn) {
 }
 @keyframes biIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
 
+/* ---------- rainbow ride cinematic ---------- */
+#rideCinematic {
+  position: fixed; inset: 0; z-index: 130;
+  display: none; overflow: hidden;
+  background: linear-gradient(to top, #4f7fc4 0%, #8fbdf0 45%, #cfe6ff 100%);
+  pointer-events: none;
+}
+#rideCinematic.show { display: block; }
+#rideRainbow {
+  position: absolute;
+  left: -12%; bottom: 10%;
+  width: 132%; height: 46px;
+  border-radius: 23px;
+  background: linear-gradient(to bottom, #ff5c8a 0 16%, #ffb84a 16% 33%, #ffe94a 33% 50%, #5cff8a 50% 66%, #5cc9ff 66% 83%, #b45cff 83% 100%);
+  transform: rotate(-33deg);
+  transform-origin: 12% 50%;
+  box-shadow: 0 0 40px rgba(255,255,255,0.55);
+  animation: rideBridgeIn 0.5s ease-out both;
+}
+@keyframes rideBridgeIn { from { opacity: 0; transform: rotate(-33deg) scaleX(0.15); } to { opacity: 1; transform: rotate(-33deg) scaleX(1); } }
+#rideUnicorn {
+  position: absolute;
+  width: min(130px, 34vw); height: min(130px, 34vw);
+  image-rendering: pixelated;
+  filter: drop-shadow(0 0 18px rgba(255,255,255,0.75)) drop-shadow(0 6px 12px rgba(0,0,0,0.35));
+  animation: rideGallop 1.9s cubic-bezier(.35,.1,.5,1) both, rideBob 0.32s ease-in-out infinite;
+}
+@keyframes rideGallop {
+  0%   { left: 2%;  bottom: 8%;  opacity: 0; }
+  12%  { opacity: 1; }
+  92%  { opacity: 1; }
+  100% { left: 70%; bottom: 66%; opacity: 0.9; }
+}
+@keyframes rideBob { 0%, 100% { margin-top: 0; } 50% { margin-top: -9px; } }
+#rideCaption {
+  position: absolute; left: 0; right: 0; top: 12%;
+  text-align: center; padding: 0 20px;
+  font-size: 18px; font-weight: 800; color: #fff;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  animation: biIn 0.6s 0.3s both;
+}
+
 /* ---------- the Village Ledger ---------- */
 .ledgerQuest { font-size: 14px; font-weight: 600; color: #ffe9a8; padding: 6px 0; }
 .ledgerFavor { font-size: 13px; padding: 3px 0 3px 10px; opacity: 0.9; }

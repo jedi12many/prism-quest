@@ -744,20 +744,25 @@ function onGate(g) {
 function rideRainbow() {
   if (G.riding) return;
   G.riding = true;
-  fxResize(); // make sure the effect canvas matches the current viewport first
-  const w = window.innerWidth, h = window.innerHeight;
-  fxBeam(60, h - 100, w - 80, 80);
-  FX.parts.push({ x: 60, y: h - 100, tx: w - 80, ty: 80, speed: 520, sprite: 'unicorn', size: 80, life: 6, t: 0, trail: true });
+  // a full-screen DOM cinematic (reliable on mobile, unlike the fx canvas)
+  const el = document.getElementById('rideCinematic');
+  const img = document.getElementById('rideUnicorn');
+  const url = spriteDataURL('unicorn');
+  if (url) img.src = url;
+  el.classList.remove('show');
+  void el.offsetWidth; // restart the CSS animations
+  el.classList.add('show');
   sndRainbowRide();
   toast('🌈 You cast the rainbow — your unicorn leaps skyward!');
   setQuest(4);
   G.state.activePact = null;
   G.castleFloor = 1;
   setTimeout(() => {
+    el.classList.remove('show');
     travelTo('clouds', 4, 8);
     G.riding = false;
     toast('☁️ The Rainycastle looms ahead, wrapped in storm…');
-  }, 1700);
+  }, 2000);
 }
 
 function stepOffGate() {
