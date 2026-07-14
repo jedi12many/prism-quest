@@ -45,17 +45,47 @@ function hudVisible(on) {
   document.getElementById('hudBottom').style.display = d;
 }
 
+// the current objective, dungeon location, active pact, and villager favors —
+// shared by the Quest tab and the Village Ledger's journal section
+function questJournalHTML() {
+  const s = G.state;
+  let html = '';
+  if (G.mapId === 'dungeon' && s.dungeon) {
+    const dc = DUNGEONS[s.dungeon.type];
+    html += `<div class="ledgerQuest">${dc.emoji} ${dc.name} — Floor ${s.dungeon.floor}/${s.dungeon.maxFloor}</div>`;
+  }
+  html += `<div class="ledgerQuest">📜 ${questText()}</div>`;
+  if (s.activePact) html += `<div class="ledgerFavor">${s.activePact.icon} Gloom Pact: <b>${s.activePact.name}</b></div>`;
+  const q = s.sideQuests || {};
+  const favor = (id, name, text) => {
+    const st = q[id];
+    if (!st || st.stage === 0) return '';
+    const ready = questFavorReady(id);
+    return `<div class="ledgerFavor">${st.stage >= 2 ? '✅' : ready ? '❗' : '▫️'} <b>${name}</b> — ${text(st)}</div>`;
+  };
+  html += favor('pip', "Pip's frog", st => st.stage >= 2 ? 'Sir Croaksworth is home!' : `scare off monsters in Bogmire (${Math.min(5, st.n)}/5)`);
+  html += favor('baker', "Barnaby's ovens", st => st.stage >= 2 ? 'the ovens glow again' : `bring 4 Sunstone (${Math.min(4, gemStock('sunstone'))}/4)`);
+  html += favor('willow', "Willow's tulips", st => st.stage >= 2 ? 'the tulips bloom!' : `bring 2 Rose Opal (${Math.min(2, gemStock('roseopal'))}/2)`);
+  return html;
+}
+
+function questFavorReady(id) {
+  const q = G.state.sideQuests || {};
+  if (id === 'pip') return q.pip && q.pip.stage === 1 && q.pip.n >= 5;
+  if (id === 'baker') return q.baker && q.baker.stage === 1 && gemStock('sunstone') >= 4;
+  if (id === 'willow') return q.willow && q.willow.stage === 1 && gemStock('roseopal') >= 2;
+  return false;
+}
+function questTurnInReady() { return ['pip', 'baker', 'willow'].some(questFavorReady); }
+
+function openQuest() { switchPanel('questScreen', renderQuest); }
+function renderQuest() { document.getElementById('questJournal').innerHTML = questJournalHTML(); }
+
 function renderHUD() {
   if (!G.state) return;
   const s = G.state;
-  const pact = s.activePact;
-  let line = '📜 ' + questText();
-  if (G.mapId === 'dungeon' && s.dungeon) {
-    const dc = DUNGEONS[s.dungeon.type];
-    line = `${dc.emoji} ${dc.name} — Floor ${s.dungeon.floor}/${s.dungeon.maxFloor}`;
-  }
-  document.getElementById('questLine').innerHTML =
-    line + (pact ? `<br><span class="pactChip">${pact.icon} Pact: ${pact.name}</span>` : '');
+  document.getElementById('questDot').style.display = questTurnInReady() ? 'block' : 'none';
+  if (document.querySelector('#questScreen.open')) renderQuest(); // live-refresh if open
   document.getElementById('hpFill').style.width = Math.max(0, s.hp / s.hpMax * 100) + '%';
   document.getElementById('hpText').textContent = `❤️ ${s.hp} / ${s.hpMax}`;
   const capped = s.level >= LEVEL_CAP;
@@ -154,7 +184,7 @@ function buyMeta(id) {
 
 // the top HUD icons stay live while a panel is open, so tapping one switches
 // straight to that panel (no Close needed). These map screen -> HUD button.
-const PANEL_BUTTONS = { bagScreen: 'btnBag', charScreen: 'btnChar', spellScreen: 'btnSpells', skillScreen: 'btnSkills', baseScreen: 'btnBase', menuScreen: 'btnMenu' };
+const PANEL_BUTTONS = { questScreen: 'btnQuest', bagScreen: 'btnBag', charScreen: 'btnChar', spellScreen: 'btnSpells', skillScreen: 'btnSkills', baseScreen: 'btnBase', menuScreen: 'btnMenu' };
 function switchPanel(id, renderFn) {
   closeAllScreens();      // drop whatever panel/sub-modal was up
   renderFn();
@@ -1111,6 +1141,7 @@ function bindUI() {
   muteBtn.textContent = SND.muted ? '🔇' : '🔊';
   muteBtn.onclick = () => { sndUnlock(); muteBtn.textContent = sndToggleMute() ? '🔇' : '🔊'; };
   // tapping a HUD icon opens its panel; tapping the SAME icon again closes it
+  document.getElementById('btnQuest').onclick = () => togglePanel('questScreen', openQuest);
   document.getElementById('btnBase').onclick = () => togglePanel('baseScreen', openBase);
   document.getElementById('btnChar').onclick = () => togglePanel('charScreen', openChar);
   document.getElementById('btnBag').onclick = () => togglePanel('bagScreen', openBag);

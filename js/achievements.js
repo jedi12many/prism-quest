@@ -112,20 +112,8 @@ function renderBoard() {
   const total = Object.keys(ACHIEVEMENTS).length;
   const done = Object.keys(d.unlocked).length;
 
-  // journal: the main thread + villager favors
-  let journal = `<div class="ledgerQuest">📜 ${questText()}</div>`;
-  const favors = [];
-  const q = s.sideQuests || {};
-  const favorLine = (id, name, text) => {
-    const st2 = q[id];
-    if (!st2 || st2.stage === 0) return;
-    favors.push(`<div class="ledgerFavor">${st2.stage >= 2 ? '✅' : '▫️'} <b>${name}</b> — ${text(st2)}</div>`);
-  };
-  favorLine('pip', 'Pip\'s frog', st2 => st2.stage >= 2 ? 'Sir Croaksworth is home!' : `scare off monsters in Bogmire (${Math.min(5, st2.n)}/5)`);
-  favorLine('baker', 'Barnaby\'s ovens', st2 => st2.stage >= 2 ? 'the ovens glow again' : 'bring 4 Sunstone');
-  favorLine('willow', 'Willow\'s tulips', st2 => st2.stage >= 2 ? 'the tulips bloom!' : 'bring 2 Rose Opal');
-  if (favors.length) journal += favors.join('');
-  document.getElementById('ledgerJournal').innerHTML = journal;
+  // journal: the main thread, dungeon location, pact, and villager favors
+  document.getElementById('ledgerJournal').innerHTML = questJournalHTML();
 
   // deeds: completed only, plus the denominator
   let deeds = `<div class="deedCount">🏆 Deeds: <b>${done}/${total}</b></div>`;

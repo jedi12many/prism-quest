@@ -15,6 +15,7 @@
 <!-- HUD: icons across the top, health/level bars along the bottom -->
 <div id="hud">
   <div id="hudBtns">
+    <button id="btnQuest" title="Quest journal">📜<span id="questDot"></span></button>
     <button id="btnBase" title="Camp">🏰</button>
     <button id="btnChar" title="Character">🧍<span id="upgradeDot"></span></button>
     <button id="btnBag" title="Bag">🎒</button>
@@ -26,7 +27,6 @@
 </div>
 
 <div id="hudBottom">
-  <div id="questLine"></div>
   <div class="bar hp"><div class="fill" id="hpFill"></div><span id="hpText"></span></div>
   <div class="bar xp"><div class="fill" id="xpFill"></div><span id="lvlText"></span></div>
 </div>
@@ -144,6 +144,15 @@
     <p class="sub">Faceting is permanent. Better polish = a stronger gem.</p>
     <div id="gemPickList"></div>
     <button class="closeBtn bigBtn" data-close="gemPickScreen">Cancel</button>
+  </div>
+</div>
+
+<!-- Quest journal (quick view, tab-accessible anywhere) -->
+<div class="screen" id="questScreen">
+  <div class="panel">
+    <h2>📜 Quest Journal</h2>
+    <div id="questJournal"></div>
+    <p class="tapClose">📜 Tap the scroll icon again to close</p>
   </div>
 </div>
 
