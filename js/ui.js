@@ -145,12 +145,18 @@ function buyMeta(id) {
 
 // the top HUD icons stay live while a panel is open, so tapping one switches
 // straight to that panel (no Close needed). These map screen -> HUD button.
-const PANEL_BUTTONS = { bagScreen: 'btnBag', charScreen: 'btnChar', spellScreen: 'btnSpells', skillScreen: 'btnSkills', baseScreen: 'btnBase' };
+const PANEL_BUTTONS = { bagScreen: 'btnBag', charScreen: 'btnChar', spellScreen: 'btnSpells', skillScreen: 'btnSkills', baseScreen: 'btnBase', menuScreen: 'btnMenu' };
 function switchPanel(id, renderFn) {
   closeAllScreens();      // drop whatever panel/sub-modal was up
   renderFn();
   openScreen(id);
   hudActive(id);
+}
+// tap the icon to open its panel; tap the same icon again to close it (and any
+// sub-modal it spawned, like an open item card)
+function togglePanel(id, openFn) {
+  if (document.getElementById(id).classList.contains('open')) closeAllScreens();
+  else openFn();
 }
 function hudActive(id) {
   for (const [scr, btn] of Object.entries(PANEL_BUTTONS)) {
@@ -1095,19 +1101,20 @@ function bindUI() {
   const muteBtn = document.getElementById('btnMute');
   muteBtn.textContent = SND.muted ? '🔇' : '🔊';
   muteBtn.onclick = () => { sndUnlock(); muteBtn.textContent = sndToggleMute() ? '🔇' : '🔊'; };
-  document.getElementById('btnBase').onclick = openBase;
-  document.getElementById('btnChar').onclick = openChar;
-  document.getElementById('btnBag').onclick = openBag;
-  document.getElementById('btnSpells').onclick = openSpells;
-  document.getElementById('btnSkills').onclick = openSkills;
-  document.getElementById('btnMenu').onclick = () => {
+  // tapping a HUD icon opens its panel; tapping the SAME icon again closes it
+  document.getElementById('btnBase').onclick = () => togglePanel('baseScreen', openBase);
+  document.getElementById('btnChar').onclick = () => togglePanel('charScreen', openChar);
+  document.getElementById('btnBag').onclick = () => togglePanel('bagScreen', openBag);
+  document.getElementById('btnSpells').onclick = () => togglePanel('spellScreen', openSpells);
+  document.getElementById('btnSkills').onclick = () => togglePanel('skillScreen', openSkills);
+  document.getElementById('btnMenu').onclick = () => togglePanel('menuScreen', () => {
     // reflect a won game: friendly "Play Again" instead of a scary "New Game"
     const won = G.state && G.state.sunRestored;
     const ng = document.getElementById('btnNewGame');
     ng.textContent = won ? '🌈 Play Again' : '🔄 New Game';
     ng.classList.toggle('danger', !won);
-    openScreen('menuScreen');
-  };
+    switchPanel('menuScreen', () => {});
+  });
   const diffBtn = document.getElementById('btnDifficulty');
   const refreshDiff = () => {
     const key = (G.settings && G.settings.difficulty) || 'normal';

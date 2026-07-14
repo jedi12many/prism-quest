@@ -46,10 +46,21 @@ html, body {
   z-index: 45; /* above the tab panels (40) so the icons stay tappable */
 }
 #hudBtns button.active {
-  border-color: #ffd24a;
-  background: rgba(70,58,26,0.92);
-  box-shadow: 0 0 0 2px rgba(255,210,74,0.4), 0 3px 10px rgba(0,0,0,0.35);
+  border-color: #ff7a90;
+  box-shadow: 0 0 0 2px rgba(255,122,144,0.45), 0 3px 10px rgba(0,0,0,0.35);
 }
+/* the open panel's icon wears a big ✕ — tap again to close */
+#hudBtns button.active::after {
+  content: '✕';
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(24,12,26,0.62);
+  border-radius: 12px;
+  color: #fff; font-size: 24px; font-weight: 900;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+}
+@media (max-width: 480px) { #hudBtns button.active::after { font-size: 18px; } }
+.tapClose { text-align: center; font-size: 12.5px; opacity: 0.6; margin-top: 12px; }
 #hudBars { flex: 1; max-width: 250px; display: flex; flex-direction: column; gap: 5px; pointer-events: none; }
 #hudBtns { display: flex; gap: 8px; pointer-events: auto; }
 #hudBtns button {
