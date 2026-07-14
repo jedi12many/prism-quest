@@ -148,6 +148,15 @@ function npcAt(x, y) {
 
 function gateAt(x, y) { return G.gates.some(g => g.x === x && g.y === y); }
 
+// a gate that would bounce you back rather than let you through right now
+function isLockedGate(x, y) {
+  const g = G.gates.find(gg => gg.x === x && gg.y === y);
+  if (!g) return false;
+  if (g.kind === 'stairsdown') return !(G.state.dungeon && G.state.dungeon.hasKey);
+  if (g.kind === 'castleup' || g.kind === 'riftdown') return G.monsters.some(m => m.alive && m.keyGuard);
+  return false;
+}
+
 function calcStats() {
   const s = G.state, cls = classDef();
   const lvl = s.level;
@@ -1085,6 +1094,8 @@ function findPath(start, goalPred) {
     for (const [dx, dy] of [[0, -1], [0, 1], [-1, 0], [1, 0]]) {
       const nx = cur.x + dx, ny = cur.y + dy;
       if (!walkable(nx, ny) || prev.has(key(nx, ny))) continue;
+      // steer around a locked exit — only path onto it if it's the destination
+      if (isLockedGate(nx, ny) && !goalPred(nx, ny)) continue;
       prev.set(key(nx, ny), cur);
       if (goalPred(nx, ny)) {
         const path = [{ x: nx, y: ny }];
