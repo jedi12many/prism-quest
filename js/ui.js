@@ -210,7 +210,7 @@ function renderChar() {
     cell.className = 'slotCell' + (it ? ' filled' : '');
     if (it) cell.style.borderColor = RARITIES[it.rarity].color;
     cell.innerHTML = it
-      ? `<span class="slotEmoji">${sd.emoji}</span><span class="slotItemName" style="color:${RARITIES[it.rarity].color}">${it.name}</span>${it.sockets ? `<span class="slotSockets">${'◈'.repeat(it.gems.length)}${'◇'.repeat(it.sockets - it.gems.length)}</span>` : ''}`
+      ? `<span class="slotEmoji">${sd.emoji}</span><span class="slotItemName" style="color:${RARITIES[it.rarity].color}">${it.name}</span>${ratingPill(it)}${it.sockets ? `<span class="slotSockets">${'◈'.repeat(it.gems.length)}${'◇'.repeat(it.sockets - it.gems.length)}</span>` : ''}`
       : `<span class="slotEmoji empty">${sd.emoji}</span><span class="slotItemName dim">${sd.name}</span>`;
     cell.onclick = () => it ? openItemCard(it, 'equipped') : toast(`Empty ${sd.name} slot — equip one from your loot below.`);
     doll.appendChild(cell);
@@ -250,6 +250,7 @@ function renderChar() {
       cell.style.borderColor = RARITIES[it.rarity].color;
       cell.innerHTML = `<span class="invEmoji">${SLOTS[it.slot].emoji}</span>
         <span class="invName" style="color:${RARITIES[it.rarity].color}">${it.name}</span>
+        ${ratingPill(it)}
         ${it.sockets ? `<span class="invSock">${'◈'.repeat(it.gems.length)}${'◇'.repeat(it.sockets - it.gems.length)}</span>` : ''}`;
       cell.onclick = () => openItemCard(it, 'inventory');
       inv.appendChild(cell);
@@ -278,11 +279,11 @@ function openItemCard(item, where) {
     <div class="icHead" style="color:${RARITIES[item.rarity].color}">
       ${SLOTS[item.slot].emoji} ${item.name}
     </div>
-    <div class="icSub">${RARITIES[item.rarity].name} ${SLOTS[item.slot].name}${item.setId ? ` · ${PRISM_SET.name}` : ''}</div>
+    <div class="icSub">${RARITIES[item.rarity].name} ${SLOTS[item.slot].name}${item.setId ? ` · ${PRISM_SET.name}` : ''} ${ratingPill(item)}</div>
     ${item.lore ? `<div class="icLore">"${item.lore}"</div>` : ''}
     <div class="icStats">${itemStatLines(item)}</div>
     ${item.sockets ? `<div class="icSockets">Sockets: ${'◈'.repeat(item.gems.length)}${'◇'.repeat(emptySockets)}</div>` : ''}
-    ${compareItem ? `<div class="icCompare">Currently equipped: <b style="color:${RARITIES[compareItem.rarity].color}">${compareItem.name}</b></div>` : ''}
+    ${compareItem ? `<div class="icCompare">Equipped: <b style="color:${RARITIES[compareItem.rarity].color}">${compareItem.name}</b> ${ratingPill(compareItem)}</div>` : ''}
     <div class="icActs" id="icActs"></div>`;
   const acts = document.getElementById('icActs');
   const mk = (label, cls, fn) => {
@@ -1075,6 +1076,13 @@ function bindUI() {
     ng.classList.toggle('danger', !won);
     openScreen('menuScreen');
   };
+  const asBtn = document.getElementById('btnAutoSalvage');
+  const refreshAS = () => { asBtn.textContent = AUTO_SALVAGE_LABELS[(G.settings && G.settings.autoSalvage) || 0]; asBtn.classList.toggle('on', ((G.settings && G.settings.autoSalvage) || 0) > 0); };
+  asBtn.onclick = () => {
+    G.settings.autoSalvage = ((G.settings.autoSalvage || 0) + 1) % AUTO_SALVAGE_LABELS.length;
+    saveSettings(); refreshAS(); sndClick();
+  };
+  refreshAS();
   document.getElementById('btnNewGame').onclick = () => {
     // once you've won, starting over is a victory lap — no scary warning
     if (G.state && G.state.sunRestored) { resetSave(); return; }

@@ -134,6 +134,17 @@ button.closeBtn.plain {
 .slotItemName { font-weight: 700; font-size: 13.5px; flex: 1; }
 .slotItemName.dim { opacity: 0.5; font-weight: 500; }
 .slotSockets, .invSock { font-size: 12px; letter-spacing: 1px; color: #8fd0ff; }
+
+/* item power rating pill (attack / defense) */
+.ratePill {
+  display: inline-flex; align-items: center;
+  border-radius: 999px; overflow: hidden;
+  font-size: 11px; font-weight: 800; line-height: 1;
+  border: 1px solid rgba(255,255,255,0.18);
+  vertical-align: middle; white-space: nowrap;
+}
+.ratePill .rpA { background: rgba(255,120,90,0.22); color: #ffb59e; padding: 3px 5px; }
+.ratePill .rpD { background: rgba(110,160,255,0.22); color: #a9c8ff; padding: 3px 5px; }
 #charStats { display: flex; flex-direction: column; gap: 4px; }
 .statRow {
   display: flex; justify-content: space-between;
@@ -512,6 +523,22 @@ button.closeBtn:not(.bigBtn) {
 .act:active { transform: scale(0.96); }
 
 .howto p { font-size: 13.5px; margin-bottom: 8px; line-height: 1.45; }
+
+/* settings row */
+.settingRow {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 10px 12px; margin: 6px 0;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.12); border-radius: 12px;
+}
+.settingRow > span { font-size: 13.5px; font-weight: 600; display: flex; flex-direction: column; }
+.settingRow small { font-weight: 400; opacity: 0.6; font-size: 11.5px; margin-top: 2px; }
+.settingBtn {
+  flex-shrink: 0; padding: 8px 12px; border-radius: 10px;
+  border: 1.5px solid rgba(255,255,255,0.25); background: rgba(255,255,255,0.08);
+  color: #cfc8e8; font-size: 12.5px; font-weight: 700; cursor: pointer; max-width: 46%;
+}
+.settingBtn.on { border-color: #39c26d; background: rgba(57,194,109,0.18); color: #bff0bf; }
 
 /* sanctuary (meta) */
 #metaScreen { z-index: 50; }

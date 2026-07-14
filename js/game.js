@@ -909,6 +909,7 @@ function boot() {
   fxInit();
   seedRain();
   sndBoot();
+  G.settings = loadSettings();
   window.addEventListener('resize', resizeCanvas);
   G.canvas.addEventListener('pointerdown', onTap, { passive: false });
   window.addEventListener('keydown', onKey);

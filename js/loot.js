@@ -169,6 +169,57 @@ function prismSetCount() {
   return Object.values(G.state.equip).filter(it => it && it.setId === 'prism').length;
 }
 
+// ---------- item power rating ----------
+// roll each item's offensive + defensive stats into two quick-read numbers
+const RATING_ATK = { atkFlat: 3, magFlat: 3, spellDmg: 60, basicDmg: 55, crit: 90, unicornPower: 22, chargeSave: 40 };
+const RATING_DEF = { defFlat: 4, hpMax: 0.5, dodge: 90, regen: 4, healPower: 45 };
+function itemRating(item) {
+  const st = itemStats(item);
+  let atk = 0, def = 0;
+  for (const [k, v] of Object.entries(st)) {
+    if (RATING_ATK[k]) atk += v * RATING_ATK[k];
+    if (RATING_DEF[k]) def += v * RATING_DEF[k];
+  }
+  return { atk: Math.round(atk), def: Math.round(def) };
+}
+function ratingPill(item) {
+  const r = itemRating(item);
+  return `<span class="ratePill"><span class="rpA">⚔${r.atk}</span><span class="rpD">🛡${r.def}</span></span>`;
+}
+
+// ---------- settings (persistent per device) ----------
+const SETTINGS_KEY = 'prismquest_settings_v1';
+const AUTO_SALVAGE_LABELS = ['Off', 'Common', 'Common + Magic', 'Common + Magic + Rare'];
+function loadSettings() {
+  try { return Object.assign({ autoSalvage: 0 }, JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}')); }
+  catch (e) { return { autoSalvage: 0 }; }
+}
+function saveSettings() {
+  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(G.settings || { autoSalvage: 0 })); } catch (e) {}
+}
+
+// auto-salvage: only low rarities, never sets/legendaries/prism relics, and
+// never an item that's actually an upgrade over what you're wearing
+function shouldAutoSalvage(item) {
+  const n = (G.settings && G.settings.autoSalvage) || 0;
+  if (!n) return false;
+  if (item.facet || item.facets) return false;                  // Prism relics are sacred
+  const rank = { common: 0, magic: 1, rare: 2 }[item.rarity];
+  if (rank === undefined) return false;                          // legendary / set / prism — protected
+  if (rank > n - 1) return false;                               // above the chosen threshold
+  const cur = G.state.equip[item.slot];
+  if (!cur) return false;                                        // empty slot — this is an upgrade, keep it
+  const ri = itemRating(item), rc = itemRating(cur);
+  return (ri.atk + ri.def) <= (rc.atk + rc.def);                // keep it if it beats what you wear
+}
+
+function doAutoSalvage(item) {
+  const s = G.state;
+  s.raw.quartz = (s.raw.quartz || 0) + 1;
+  save();
+  toast(`♻️ Auto-salvaged ${item.name} → 1 Quartz`);
+}
+
 // what falls out of a defeated monster
 function rollMonsterLoot(def) {
   const ilvl = Math.max(1, Math.min(10, Math.round(def.xp / 12)));
@@ -221,6 +272,7 @@ const INVENTORY_CAP = 24;
 
 function addItemToInventory(item) {
   const s = G.state;
+  if (shouldAutoSalvage(item)) { doAutoSalvage(item); return false; }
   if (s.inventory.length >= INVENTORY_CAP) {
     s.raw.quartz = (s.raw.quartz || 0) + 2;
     toast('🎒 Bag full! The item crumbled into 2 raw Quartz.');
