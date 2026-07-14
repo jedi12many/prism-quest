@@ -903,7 +903,7 @@ function startGame() {
   G.pendingMine = null; G.pendingNpc = null;
   G.gateArmed = !gateAt(s.x, s.y);
   closeAllScreens();
-  document.getElementById('hud').style.display = 'flex';
+  hudVisible(true);
   G.locatePulse = 1.6;
   setMusic(G.mapId);
   renderHUD();

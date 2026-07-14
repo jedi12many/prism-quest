@@ -39,6 +39,12 @@ function toast(msg) {
 
 // ---------- HUD ----------
 
+function hudVisible(on) {
+  const d = on ? 'flex' : 'none';
+  document.getElementById('hud').style.display = d;
+  document.getElementById('hudBottom').style.display = d;
+}
+
 function renderHUD() {
   if (!G.state) return;
   const s = G.state;
@@ -51,10 +57,13 @@ function renderHUD() {
   document.getElementById('questLine').innerHTML =
     line + (pact ? `<br><span class="pactChip">${pact.icon} Pact: ${pact.name}</span>` : '');
   document.getElementById('hpFill').style.width = Math.max(0, s.hp / s.hpMax * 100) + '%';
-  document.getElementById('hpText').textContent = `❤️ ${s.hp}/${s.hpMax}`;
+  document.getElementById('hpText').textContent = `❤️ ${s.hp} / ${s.hpMax}`;
+  const capped = s.level >= LEVEL_CAP;
   const need = xpNext(s.level);
-  document.getElementById('xpFill').style.width = Math.min(100, s.xp / need * 100) + '%';
-  document.getElementById('lvlText').textContent = `Lv ${s.level}`;
+  document.getElementById('xpFill').style.width = (capped ? 100 : Math.min(100, s.xp / need * 100)) + '%';
+  document.getElementById('lvlText').textContent = capped
+    ? `⭐ Lv ${s.level} · MAX`
+    : `⭐ Lv ${s.level} · ${s.xp}/${need} XP · ${need - s.xp} to next`;
   const dot = document.getElementById('skillDot');
   dot.style.display = s.skillPoints > 0 ? 'block' : 'none';
   document.getElementById('upgradeDot').style.display = hasBaggedUpgrade() ? 'block' : 'none';
@@ -88,7 +97,7 @@ function showClassScreen() {
   const meta = loadMeta();
   const banner = document.getElementById('sanctuaryBanner');
   banner.innerHTML = `✦ <b>${meta.motes}</b> Motes` + (meta.runs ? ` · run #${(meta.runs || 0) + 1}` : '');
-  document.getElementById('hud').style.display = 'none';
+  hudVisible(false);
   openScreen('classScreen');
 }
 
@@ -1145,7 +1154,7 @@ function bindUI() {
   document.getElementById('btnGoSanctuary').onclick = openMeta;
   document.getElementById('btnNewHero').onclick = () => {
     closeScreen('gameOverScreen');
-    document.getElementById('hud').style.display = 'none';
+    hudVisible(false);
     showClassScreen();
   };
   document.getElementById('btnWinClose').onclick = () => {

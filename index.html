@@ -12,13 +12,8 @@
 <canvas id="game"></canvas>
 <canvas id="fx"></canvas>
 
-<!-- HUD -->
+<!-- HUD: icons across the top, health/level bars along the bottom -->
 <div id="hud">
-  <div id="hudBars">
-    <div class="bar hp"><div class="fill" id="hpFill"></div><span id="hpText"></span></div>
-    <div class="bar xp"><div class="fill" id="xpFill"></div><span id="lvlText"></span></div>
-    <div id="questLine"></div>
-  </div>
   <div id="hudBtns">
     <button id="btnBase" title="Camp">🏰</button>
     <button id="btnChar" title="Character">🧍<span id="upgradeDot"></span></button>
@@ -28,6 +23,12 @@
     <button id="btnMute" title="Sound">🔊</button>
     <button id="btnMenu" title="Menu">⚙️</button>
   </div>
+</div>
+
+<div id="hudBottom">
+  <div id="questLine"></div>
+  <div class="bar hp"><div class="fill" id="hpFill"></div><span id="hpText"></span></div>
+  <div class="bar xp"><div class="fill" id="xpFill"></div><span id="lvlText"></span></div>
 </div>
 
 <div id="toastWrap"></div>
