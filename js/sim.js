@@ -331,6 +331,7 @@ function runSim(runs = 30, baseSeed = 1000, difficulty, meta = 'none') {
   const origMuted = SND.muted;
   const origLoadMeta = window.loadMeta;
   const origRecordDeath = window.recordDeath;
+  const origShowBossSpecial = window.showBossSpecial;
   const origSettings = G.settings;
   G.settings = Object.assign({}, G.settings || { autoSalvage: 0 }, { difficulty: difficulty || (G.settings && G.settings.difficulty) || 'normal' });
   const pre = G.state ? { json: JSON.stringify(G.state) } : null;
@@ -338,6 +339,10 @@ function runSim(runs = 30, baseSeed = 1000, difficulty, meta = 'none') {
   const metaUpg = meta === 'max' ? simMaxUpgrades() : {}; // fresh vs fully-invested account
   window.loadMeta = () => ({ motes: 0, upgrades: metaUpg });
   window.recordDeath = () => ({ level: 0, zones: 0, kills: 0, earned: 0, best: {} });
+  // boss specials normally land via a setTimeout'd cutscene callback — but the sim
+  // stubs setTimeout, so run the special synchronously (its damage is real; the
+  // cutscene isn't). Without this the fight stalls with B.busy stuck true.
+  window.showBossSpecial = (type, sp, onDone) => { if (onDone) onDone(); };
   window.setTimeout = () => 0; // don't queue cosmetic timers (game-over screens, toasts) during sim
   SND.muted = true;
   const results = [];
@@ -349,6 +354,7 @@ function runSim(runs = 30, baseSeed = 1000, difficulty, meta = 'none') {
     for (const n of SIM_PATCH) window[n] = origFns[n];
     window.loadMeta = origLoadMeta;
     window.recordDeath = origRecordDeath;
+    window.showBossSpecial = origShowBossSpecial;
     SND.muted = origMuted;
     G.settings = origSettings;
     closeAllScreens();
