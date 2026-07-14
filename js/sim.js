@@ -316,7 +316,15 @@ function simRunOne(seed) {
 
 // ---------- harness ----------
 
-function runSim(runs = 30, baseSeed = 1000, difficulty) {
+// every Sanctuary upgrade at max rank — a fully-invested account
+function simMaxUpgrades() {
+  const u = {};
+  for (const [id, def] of Object.entries(META_UPGRADES)) u[id] = def.max;
+  return u;
+}
+
+// meta: 'none' (fresh account, default) | 'max' (all permanent upgrades unlocked)
+function runSim(runs = 30, baseSeed = 1000, difficulty, meta = 'none') {
   const origRandom = Math.random;
   const origTimeout = window.setTimeout;
   const origFns = {};
@@ -327,7 +335,8 @@ function runSim(runs = 30, baseSeed = 1000, difficulty) {
   G.settings = Object.assign({}, G.settings || { autoSalvage: 0 }, { difficulty: difficulty || (G.settings && G.settings.difficulty) || 'normal' });
   const pre = G.state ? { json: JSON.stringify(G.state) } : null;
   for (const n of SIM_PATCH) { origFns[n] = window[n]; window[n] = () => {}; }
-  window.loadMeta = () => ({ motes: 0, upgrades: {} }); // baseline heroes, deterministic
+  const metaUpg = meta === 'max' ? simMaxUpgrades() : {}; // fresh vs fully-invested account
+  window.loadMeta = () => ({ motes: 0, upgrades: metaUpg });
   window.recordDeath = () => ({ level: 0, zones: 0, kills: 0, earned: 0, best: {} });
   window.setTimeout = () => 0; // don't queue cosmetic timers (game-over screens, toasts) during sim
   SND.muted = true;
@@ -361,17 +370,22 @@ function runSim(runs = 30, baseSeed = 1000, difficulty) {
   const topDeaths = Object.entries(deaths).sort((a, b) => b[1] - a[1]).slice(0, 8)
     .map(([k, v]) => `${v}x ${k}`);
   window.SIM_LAST = results;
-  return { runs, baseSeed, difficulty: G.settings && G.settings.difficulty, pct, mix, byClass,
+  return { runs, baseSeed, difficulty: G.settings && G.settings.difficulty, meta, pct, mix, byClass,
     avgLevel: +(lvlSum / runs).toFixed(1), avgBattles: +(batSum / runs).toFixed(1),
     avgZones: +(zoneSum / runs).toFixed(1), topDeaths, errors: results.filter(r => r.error).length };
 }
 
 // run every difficulty over the SAME seeds and report the outcome mix for each
-function tuneDifficulty(runs = 80, baseSeed = 5000) {
+function tuneDifficulty(runs = 80, baseSeed = 5000, meta = 'none') {
   const out = {};
   for (const d of DIFFICULTY_ORDER) {
-    const a = runSim(runs, baseSeed, d);
+    const a = runSim(runs, baseSeed, d, meta);
     out[d] = Object.assign({ mult: `hp ${DIFFICULTIES[d].hp}× dmg ${DIFFICULTIES[d].dmg}×`, avgLevel: a.avgLevel }, a.pct);
   }
   return out;
+}
+
+// side-by-side: fresh account vs all upgrades unlocked, for each difficulty
+function tuneMeta(runs = 120, baseSeed = 5000) {
+  return { fresh: tuneDifficulty(runs, baseSeed, 'none'), maxUpgrades: tuneDifficulty(runs, baseSeed, 'max') };
 }
