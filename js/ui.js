@@ -552,7 +552,7 @@ function countPolished(mineralId) {
 }
 
 function requireCamp(what) {
-  if (atBase()) return true;
+  if (homeBase()) return true;
   toast(`🌧️ Too dangerous out here! Return to Drizzlewick to ${what}.`);
   return false;
 }

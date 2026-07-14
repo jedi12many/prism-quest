@@ -91,6 +91,10 @@ function eff(key) {
 }
 
 function atBase() { return G.mapId === 'village'; }
+// once claimed, the Rainycastle throne is a forward base: rest, train, and craft
+// there so you needn't return to town before braving the gloom
+function castleHome() { return G.mapId === 'clouds' && G.state && G.state.castleClaimed && (G.castleFloor || 1) >= 3; }
+function homeBase() { return atBase() || castleHome(); }
 
 function inZone() { return ZONE_IDS.includes(G.mapId); }
 
@@ -204,7 +208,7 @@ function setQuest(n) {
 function buildMap(mapId) {
   G.mapId = mapId;
   G.nodes = []; G.monsters = []; G.npcs = []; G.gates = []; G.wallTiles = [];
-  G.treasure = null;
+  G.treasure = null; G.castleChest = null;
   if (mapId === 'village') buildVillage();
   else if (ZONE_IDS.includes(mapId)) buildZone(mapId);
   else if (mapId === 'dungeon') buildDungeon();
@@ -554,9 +558,13 @@ function buildClouds() {
     for (const [hx, hy] of [[8, 5], [13, 4], [6, 9], [12, 10]]) G.map[hy][hx] = 'sky';
     for (const [kx, ky] of [[17, 6], [18, 6], [17, 7], [18, 7]]) G.map[ky][kx] = 'keep';
     G.gates = [{ x: 3, y: 7, kind: 'village' }];
-    // the tear in the sky seals for good once the sun returns
-    if (G.state.bossDefeated && !G.state.sunRestored) G.gates.push({ x: 16, y: 9, kind: 'portal' });
-    else if (!G.state.bossDefeated) G.monsters.push({ x: 15, y: 7, type: 'dragon', alive: true, respawnAt: 0, home: { x: 15, y: 7 }, moveAt: Infinity });
+    if (!G.state.bossDefeated) {
+      G.monsters.push({ x: 15, y: 7, type: 'dragon', alive: true, respawnAt: 0, home: { x: 15, y: 7 }, moveAt: Infinity });
+    } else if (!G.state.sunRestored) {
+      // the Rainwyrm's fallen — its hoard, then (once claimed) the portal
+      if (!G.state.castleClaimed) G.castleChest = { x: 15, y: 7 };
+      else G.gates.push({ x: 15, y: 8, kind: 'portal' });
+    }
   }
 }
 
@@ -742,6 +750,31 @@ function onGate(g) {
   }
 }
 
+// loot the Rainwyrm's hoard and claim the Rainycastle as your own
+function claimCastle() {
+  const s = G.state;
+  // big gems
+  const hoard = { prismatite: 3, roseopal: 2, emerald: 2, aquamarine: 2, sunstone: 2, amethyst: 2 };
+  for (const [m, n] of Object.entries(hoard)) {
+    if (!s.polished[m]) s.polished[m] = { rough: 0, fine: 0, brilliant: 0 };
+    s.polished[m].brilliant += n;
+  }
+  // and loot — a guaranteed legendary plus a legendary/set
+  addItemToInventory(rollItem(10, 'legendary'));
+  addItemToInventory(rollItem(10, Math.random() < 0.5 ? 'legendary' : 'set'));
+  s.castleClaimed = true;
+  G.castleChest = null;
+  const cam = camera();
+  fxConfetti(15 * TILE - cam.x + TILE / 2, 7 * TILE - cam.y, 70);
+  fxRing(15 * TILE - cam.x + TILE / 2, 7 * TILE - cam.y, '#ffd24a', 120);
+  sndWin();
+  save();
+  toast('👑 You claim the Rainwyrm\'s hoard — and the RAINYCASTLE itself!');
+  setTimeout(() => toast('🏰 This keep is yours now. Rest, train, and craft here before you brave the dark. (A fine seat for a Prism Hero…)'), 1400);
+  buildMap('clouds'); // rebuild the throne — the portal opens
+  renderHUD();
+}
+
 // the rainbow drops you at the lowest castle floor whose guardian still stands
 function resumeCastleFloor() {
   const c = (G.state && G.state.castleCleared) || {};
@@ -808,7 +841,7 @@ function save() {
     mapId: G.mapId, mainQuest: s.mainQuest, zonesCleared: s.zonesCleared, npcFlags: s.npcFlags,
     equip: s.equip, inventory: s.inventory, reviveUsed: s.reviveUsed, activePact: s.activePact, dungeon: s.dungeon,
     facetsFound: s.facetsFound, playSec: s.playSec, lowHp: s.lowHp, questBonuses: s.questBonuses, sideQuests: s.sideQuests,
-    difficulty: s.difficulty, castleCleared: s.castleCleared,
+    difficulty: s.difficulty, castleCleared: s.castleCleared, castleClaimed: s.castleClaimed,
   }));
 }
 
@@ -888,7 +921,7 @@ function newGameWithClass(classId) {
     playSec: 0, lowHp: 1, questBonuses: {},
     sideQuests: { pip: { stage: 0, n: 0 }, baker: { stage: 0 }, willow: { stage: 0 } },
     difficulty: (G.settings && G.settings.difficulty) || 'normal', // locked for this run
-    castleCleared: {},
+    castleCleared: {}, castleClaimed: false,
     x: SPAWN.x, y: SPAWN.y,
   };
   // apply Sanctuary starting grants
@@ -949,7 +982,7 @@ function boot() {
       facetsFound: { north: false, east: false, west: false, south: false },
       playSec: 0, lowHp: 1, questBonuses: {},
       sideQuests: { pip: { stage: 0, n: 0 }, baker: { stage: 0 }, willow: { stage: 0 } },
-      difficulty: 'normal', castleCleared: {},
+      difficulty: 'normal', castleCleared: {}, castleClaimed: false,
     }, saved);
     calcStats();
     if (G.state.hp <= 0) G.state.hp = G.state.hpMax;
@@ -1127,7 +1160,7 @@ function update(dt) {
   if (!G.state || G.lock || G.riding) return;
 
   // resting in the village heals (house and kitchen make it heartier)
-  if (atBase() && G.state.hp < G.state.hpMax && G.time >= (G.healAt || 0)) {
+  if (homeBase() && G.state.hp < G.state.hpMax && G.time >= (G.healAt || 0)) {
     G.healAt = G.time + 2;
     const amt = 2 + (G.state.base.house || 0) + (G.state.base.kitchen || 0) * 2;
     G.state.hp = Math.min(G.state.hpMax, G.state.hp + amt);
@@ -1155,6 +1188,7 @@ function update(dt) {
       const gate = G.gates.find(g => g.x === target.x && g.y === target.y);
       if (gate && G.gateArmed) { G.path = []; G.pendingMine = null; G.pendingNpc = null; onGate(gate); return; }
       if (G.treasure && G.treasure.x === target.x && G.treasure.y === target.y) digTreasure();
+      if (G.castleChest && G.castleChest.x === target.x && G.castleChest.y === target.y) claimCastle();
       // walking over a gem node scoops it up — no tap required
       const stepNode = G.nodes.find(n => n.x === target.x && n.y === target.y && n.respawnAt <= G.time);
       if (stepNode) mineNode(stepNode);
@@ -1508,6 +1542,12 @@ function draw() {
     }
   }
 
+  // the Rainwyrm's hoard chest, waiting to be claimed
+  if (G.castleChest) {
+    const cxp = G.castleChest.x * TILE - cam.x + TILE / 2, cyp = G.castleChest.y * TILE - cam.y + TILE / 2;
+    if (cxp > -TILE && cyp > -TILE && cxp < w + TILE && cyp < h + TILE) drawChest(ctx, cxp, cyp);
+  }
+
   // other gates (cloudgate / portal / dungeon exit)
   for (const g of G.gates) {
     if (g.kind === 'village' || g.kind === 'zone' || g.kind === 'dungeon' || g.kind === 'forge' || g.kind === 'board') continue;
@@ -1828,30 +1868,80 @@ function drawRainbowGate(ctx, cx, cy) {
   ctx.globalAlpha = 1;
 }
 
-// the one-way portal — a swirling violet vortex
+// the one-way portal — a big swirling violet vortex
 function drawPortalGate(ctx, cx, cy) {
-  const R = TILE * 0.42 * (1 + Math.sin(G.time * 3) * 0.06);
+  const R = TILE * 0.85 * (1 + Math.sin(G.time * 3) * 0.05);
   ctx.save();
   ctx.translate(cx, cy);
+  // outer glow
+  const glow = ctx.createRadialGradient(0, 0, R * 0.5, 0, 0, R * 1.5);
+  glow.addColorStop(0, 'rgba(180,92,255,0.45)');
+  glow.addColorStop(1, 'rgba(180,92,255,0)');
+  ctx.fillStyle = glow;
+  ctx.beginPath(); ctx.arc(0, 0, R * 1.5, 0, Math.PI * 2); ctx.fill();
+  // the vortex mouth
   const grad = ctx.createRadialGradient(0, 0, 1, 0, 0, R);
-  grad.addColorStop(0, '#f0d0ff');
-  grad.addColorStop(0.5, '#7a2fb0');
-  grad.addColorStop(1, '#1a0a2a');
+  grad.addColorStop(0, '#f6e0ff');
+  grad.addColorStop(0.45, '#7a2fb0');
+  grad.addColorStop(1, '#12081f');
   ctx.fillStyle = grad;
   ctx.beginPath(); ctx.arc(0, 0, R, 0, Math.PI * 2); ctx.fill();
-  for (let a = 0; a < 3; a++) {
-    ctx.strokeStyle = `rgba(220,180,255,${0.6 - a * 0.15})`;
-    ctx.lineWidth = 2;
+  ctx.strokeStyle = 'rgba(230,190,255,0.8)';
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+  // swirling arms
+  for (let a = 0; a < 4; a++) {
+    ctx.strokeStyle = `rgba(226,186,255,${0.6 - a * 0.12})`;
+    ctx.lineWidth = 2.5;
     ctx.beginPath();
-    for (let t = 0; t < Math.PI * 2.2; t += 0.3) {
-      const rr = (t / (Math.PI * 2.2)) * R;
-      const ang = t + G.time * 2.5 + a * 2.1;
+    for (let t = 0; t < Math.PI * 2.6; t += 0.28) {
+      const rr = (t / (Math.PI * 2.6)) * R;
+      const ang = t + G.time * 2.5 + a * 1.57;
       const px = Math.cos(ang) * rr, py = Math.sin(ang) * rr;
       t === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
     }
     ctx.stroke();
   }
   ctx.restore();
+}
+
+// the Rainwyrm's hoard — a glowing treasure chest on the throne floor
+function drawChest(ctx, cx, cy) {
+  const s = TILE * 0.5, bob = Math.sin(G.time * 2.5) * 1.5;
+  cy += bob;
+  // pulsing gold glow
+  const gl = ctx.createRadialGradient(cx, cy, 3, cx, cy, TILE);
+  gl.addColorStop(0, `rgba(255,220,120,${0.35 + 0.2 * Math.sin(G.time * 4)})`);
+  gl.addColorStop(1, 'rgba(255,220,120,0)');
+  ctx.fillStyle = gl;
+  ctx.fillRect(cx - TILE, cy - TILE, TILE * 2, TILE * 2);
+  drawShadow(ctx, cx, cy + s * 0.85, s * 1.1);
+  // body
+  ctx.fillStyle = '#7a4a24';
+  ctx.fillRect(cx - s * 0.9, cy - s * 0.05, s * 1.8, s * 0.95);
+  // lid (arced)
+  ctx.fillStyle = '#8a5a2a';
+  ctx.beginPath();
+  ctx.moveTo(cx - s * 0.9, cy - s * 0.05);
+  ctx.quadraticCurveTo(cx, cy - s * 1.0, cx + s * 0.9, cy - s * 0.05);
+  ctx.closePath(); ctx.fill();
+  // gold bands + lock
+  ctx.fillStyle = '#ffd24a';
+  ctx.fillRect(cx - s * 0.9, cy - s * 0.1, s * 1.8, s * 0.18);
+  ctx.fillRect(cx - s * 0.13, cy - s * 0.5, s * 0.26, s * 1.4);
+  ctx.fillStyle = '#ffe98a';
+  ctx.fillRect(cx - s * 0.16, cy + s * 0.18, s * 0.32, s * 0.34);
+  // sparkles
+  for (let k = 0; k < 3; k++) {
+    ctx.globalAlpha = 0.4 + 0.6 * (0.5 + 0.5 * Math.sin(G.time * 5 + k * 2));
+    drawStar(ctx, cx - s + k * s, cy - s * (0.8 + 0.2 * k), 4, '#fff6c8', G.time * 2 + k);
+  }
+  ctx.globalAlpha = 1;
+  ctx.font = 'bold 10px system-ui, sans-serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.75)'; ctx.fillStyle = '#ffe9a8';
+  ctx.strokeText("The Wyrm's Hoard", cx, cy + s * 1.15);
+  ctx.fillText("The Wyrm's Hoard", cx, cy + s * 1.15);
 }
 
 let lastFrame = 0;

@@ -380,12 +380,12 @@ function victory() {
     }
   } else if (B.monster.type === 'dragon' && !s.bossDefeated) {
     s.bossDefeated = true;
-    G.gates.push({ x: 16, y: 9, kind: 'portal' });
+    G.castleChest = { x: 15, y: 7 }; // its hoard settles where it fell
     achEvent('wyrm');
-    setTimeout(() => toast('🌊 The Rainwyrm bursts into mist — and the sky itself tears open…'), 900);
+    setTimeout(() => toast('🌊 The Rainwyrm bursts into mist — leaving a great chest amid the clouds.'), 900);
     setTimeout(() => {
       setQuest(5);
-      toast('🌀 Beyond the tear: a deeper dark, and something enormous in it. A portal swirls beside the castle.');
+      toast('👑 Loot the Wyrm\'s Hoard to claim the Rainycastle — and open the way to the dark below.');
     }, 3600);
   }
   renderBattle(true);

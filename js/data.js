@@ -400,7 +400,7 @@ const QUEST_TEXT = [
   'The land shines! Report to Mayor Puddle.',
   'Step onto the Cloudgate 🌈 in the plaza and ride to the Rainycastle.',
   'Climb the Rainycastle and face whatever brews the storm!',
-  'A portal has opened in the Rainycastle. Prepare, then enter — there is no way back.',
+  'Claim the Wyrm\'s Hoard, then step through the portal — but there is no way back.',
   'Descend to the heart of the gloom and destroy it. No retreat, no resupply.',
   'Rainyday is saved! Bask in the sunshine.',
 ];
