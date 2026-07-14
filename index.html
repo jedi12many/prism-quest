@@ -216,20 +216,7 @@
 <div class="screen" id="menuScreen">
   <div class="panel">
     <h2>⚙️ Menu</h2>
-    <div class="howto">
-      <p>🚶 <b>Tap the ground</b> to walk (or WASD/arrows on desktop). Tap villagers to talk — they drive the story.</p>
-      <p>🏘️ <b>Drizzlewick</b> is your home: always sunny, always safe. Rest to heal, build up your camp, and open the <b>Power Tree and Spellbook</b> here. The south gate leads to the wilds.</p>
-      <p>🌧️ The <b>wilds of Rainyday</b> redraw themselves every trip. Four <b>gloom champions</b> rule its regions — defeat one and sunlight floods that region for good.</p>
-      <p>⛏️ <b>Tap gem nodes</b> to mine. <b>Polish all</b> in your Bag turns raw minerals into gems (luck-based — the Factory and dwarf crews ⛏️ raise the odds). Gems fuel spells, camp upgrades, AND item sockets.</p>
-      <p>🧍 <b>Character sheet</b>: monsters drop randomized loot (Common → Magic → Rare → Legendary → Set). Equip 5 slots — Weapon, Helm, Armor, Boots, Charm — to boost your attack, defense, HP, crit, dodge, and more. <b>Facet</b> polished gems into item sockets for permanent power, and collect the <b>Rainbow Raiment</b> set for big 3-piece and 5-piece bonuses. Each item shows an <b>⚔/🛡 power rating</b> and an <b>▲/▼ verdict</b> vs your equipped gear; salvage what you don't need, or flip on <b>Auto-salvage</b> in the ⚙️ menu.</p>
-      <p>⛰️ Watch for <b>dungeon entrances</b> hidden in each zone — Gloom Caves, Sunken Ruins, and Haunted Houses. Each is a real interior <b>2–3 floors deep</b>, getting deadlier as you descend. The stairs down are <b>locked 🔒</b> — defeat the floor's <b>Warden 🗝️</b> for the key. The keeper of the final floor guards <b>legendary loot</b>. Climb back out at any entrance; die and it's permanent.</p>
-      <p>💎 The old <b>Prismblade</b> lies shattered — one facet hidden in each land as a <b>tiny glint in the grass</b>. Each is a fine weapon alone; the village <b>Glassworks</b> fuses 2–4 into something far greater. All four? Total devastation.</p>
-      <p>🌈 Restore all four regions and the <b>Rainycastle</b> rises in the rainclouds. Step onto the plaza <b>Cloudgate</b> to ride your unicorn up and climb it, floor by guarded floor — <i>something up there brews the storm</i>.</p>
-      <p>🌀 Past the castle waits a <b>one-way door</b>: no village, no gems, just the skills and charges you carry, and the truth at the bottom of the dark. Win, and the sun returns forever.</p>
-      <p>📖 The <b>Village Ledger</b> by the plaza keeps your journal: quests, villager favors, your deeds (some remain secret — Grandma drops hints), and your fastest suns.</p>
-      <p>💀 <b>One life.</b> If you fall, your hero is gone for good and you begin a new one. Fights get harder the further out you push (North is deadliest). Flee when you're outmatched, rest at camp, and take a <b>revive capstone</b> deep in your Power Tree for one cheat-death per life.</p>
-      <p>🌳 <b>Level cap 12.</b> You can't learn every skill — you'll only reach two of your three branch capstones. Build deliberately.</p>
-    </div>
+    <button id="btnGuide" class="bigBtn">📖 How to Play</button>
     <h3>⚙️ Settings</h3>
     <div class="settingRow">
       <span>🌧️ Difficulty <small id="difficultyBlurb">Applies to your next hero.</small></span>
@@ -288,6 +275,19 @@
     <p class="sub" style="color:#ffe9a8"><b>The valley gives you a new name.</b> For standing between the world and the thing beneath it, you are the first <b>Gloombreaker</b> — the one who holds back the dark. Others will come after. The gloom is patient, and there is always more of it, somewhere below.</p>
     <p class="sub" id="winTime" style="color:#ffe9a8"></p>
     <button id="btnWinClose" class="bigBtn">Keep adventuring ➜</button>
+  </div>
+</div>
+
+<!-- How to Play — paged walkthrough (auto-shows for a new hero, re-open from the Menu) -->
+<div class="screen" id="guideScreen">
+  <div class="panel guidePanel">
+    <button id="guideSkip" class="guideSkip" title="Close">✕</button>
+    <div id="guideBody"></div>
+    <div class="guideNav">
+      <button id="guideBack" class="plain">‹ Back</button>
+      <div id="guideDots" class="guideDots"></div>
+      <button id="guideNext" class="bigBtn">Next ›</button>
+    </div>
   </div>
 </div>
 

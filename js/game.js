@@ -942,6 +942,10 @@ function newGameWithClass(classId) {
   G.state.hp = G.state.hpMax; // start full (meta HP included)
   startGame();
   toast(`Welcome to Drizzlewick, ${cls.name}! The Mayor 🎩 is waiting to speak with you.`);
+  // first hero ever on this device: walk them through how the game works
+  if (G.settings && !G.settings.seenGuide && typeof openGuide === 'function') {
+    setTimeout(() => openGuide(true), 450);
+  }
 }
 
 function startGame() {

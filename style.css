@@ -636,6 +636,33 @@ button.closeBtn:not(.bigBtn) {
 
 /* sanctuary (meta) */
 #metaScreen, #classScreen, #gameOverScreen, #winBanner { z-index: 50; } /* terminal screens cover the HUD */
+
+/* How to Play walkthrough */
+#guideScreen { z-index: 60; }
+.guidePanel { position: relative; max-width: 460px; text-align: center; }
+.guideSkip {
+  position: absolute; top: 8px; right: 8px;
+  width: 30px; height: 30px; padding: 0;
+  border-radius: 50%; border: 1px solid #4a4668;
+  background: rgba(255,255,255,0.06); color: #cfc9e6;
+  font-size: 15px; line-height: 1; cursor: pointer;
+}
+.guideSkip:hover { background: rgba(255,255,255,0.14); color: #fff; }
+.guideIcon { font-size: 52px; line-height: 1; margin: 6px 0 4px; }
+.guideTitle { margin: 0 0 10px; font-size: 20px; }
+.guideText { text-align: left; font-size: 14px; line-height: 1.5; color: #ded9f0; min-height: 150px; }
+.guideText b { color: #fff; }
+.guideTabs { display: grid; gap: 7px; margin: 2px 0 12px; }
+.guideTabs > div { display: flex; align-items: baseline; gap: 8px; }
+.guideTabs > div > span { font-size: 18px; width: 24px; text-align: center; flex: 0 0 auto; }
+.guideTabs small { color: #a49fc0; }
+.guideNav { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 8px; }
+.guideNav .bigBtn { margin: 0; width: auto; min-width: 130px; }
+.guideNav .plain { background: none; border: none; color: #b7b1d6; cursor: pointer; font-size: 14px; padding: 8px; }
+.guideNav .plain:hover { color: #fff; }
+.guideDots { display: flex; gap: 6px; flex: 1; justify-content: center; flex-wrap: wrap; }
+.guideDots .gd { width: 7px; height: 7px; border-radius: 50%; background: #4a4668; transition: background 0.2s; }
+.guideDots .gd.on { background: #b79bff; box-shadow: 0 0 6px rgba(150,110,255,0.7); }
 .sanctuaryBtn {
   display: block; width: 100%; margin: 4px 0 10px;
   padding: 10px; border-radius: 12px;

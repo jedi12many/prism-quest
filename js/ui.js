@@ -27,6 +27,65 @@ function syncHudActive() {
   if (typeof hudActive === 'function') hudActive(open || null);
 }
 
+// ---------- How to Play: a paged walkthrough ----------
+const GUIDE_PAGES = [
+  { icon: '☀️', title: 'A hundred years of rain', html: `Rainyday hasn't seen the sun in a century. Under the endless storm, <b>gloom-things</b> have crept into the land. You're the hero who will drive back the dark and bring the morning home.<br><br>Here's how it works — tap <b>Next</b> to flip through.` },
+  { icon: '🚶', title: 'Getting around', html: `<b>Tap the ground</b> to walk there (or use <b>WASD / arrow keys</b>). <b>Tap a villager</b> to talk — they hand out quests and tell the story. <b>Tap a monster</b> to fight it.` },
+  { icon: '🏘️', title: 'Drizzlewick, your home', html: `The village is always sunny and safe. <b>Rest</b> to heal for free, <b>build up your camp</b>, and study your <b>🌳 Power Tree</b> and <b>✨ Spellbook</b> here. The <b>south gate</b> leads out into the wilds.` },
+  { icon: '🌧️', title: 'The wilds & the champions', html: `The <b>wilds redraw themselves every trip</b> — a fresh layout each time you head out. Four <b>gloom champions</b> rule the north, east, west and south. Beat one and <b>sunlight floods that whole region for good</b>. The <b>north is deadliest</b> — work your way up to it.` },
+  { icon: '⛏️', title: 'Gems are everything', html: `<b>Tap gem nodes</b> to mine raw minerals. In your <b>🎒 Bag</b>, <b>Polish All</b> turns them into gems — it's luck-based, and the camp <b>Factory</b> and dwarf crews raise your odds. Gems fuel <b>spells</b>, <b>camp upgrades</b>, and <b>item sockets</b>.` },
+  { icon: '🧍', title: 'Gear & loot', html: `Monsters drop random loot: <b>Common → Magic → Rare → Legendary → Set</b>. Fill <b>5 slots</b> — Weapon, Helm, Armor, Boots, Charm. <b>Facet</b> polished gems into item sockets for permanent power, and collect the <b>Rainbow Raiment</b> set for big bonuses. Each item shows a <b>⚔/🛡 rating</b> and an <b>▲/▼ verdict</b> vs what you're wearing. Salvage the rest — or flip on <b>Auto-salvage</b> in the menu.` },
+  { icon: '⛰️', title: 'Dungeons', html: `Each zone hides a <b>dungeon entrance</b> — Gloom Caves, Sunken Ruins, Haunted Houses — <b>2–3 floors deep</b> and deadlier as you descend. Stairs down are <b>locked 🔒</b> until you beat the floor's <b>Warden 🗝️</b> for the key. The <b>final keeper</b> guards legendary loot. Climb out any time — but <b>die inside and it's permanent</b>.` },
+  { icon: '💎', title: 'The shattered Prismblade', html: `The legendary <b>Prismblade</b> lies broken — one facet hidden in each land as a <b>tiny glint in the grass</b>. Each facet is a fine weapon alone; the village <b>Glassworks</b> fuses 2–4 into something far greater. Find all four for total devastation.` },
+  { icon: '🌈', title: 'The castle & the dark below', html: `Restore all four regions and the <b>Rainycastle</b> rises in the clouds. Ride your unicorn up the <b>Cloudgate</b> and climb it floor by guarded floor. Past the top waits a <b>one-way door</b> — no village, no resupply, just the truth at the bottom of the dark. Win, and the sun returns <b>forever</b>.` },
+  { icon: '💀', title: 'One life', html: `This is a <b>roguelike — one life</b>. Fall, and your hero is gone for good; you begin a new one (keeping <b>✦ Motes</b> for permanent Sanctuary upgrades). Flee when you're outmatched, rest at camp, and grab the <b>revive capstone</b> deep in your Power Tree for one cheat-death. <b>Level cap is 12</b> — you can't learn everything, so build deliberately.` },
+  { icon: '🧭', title: 'Your tabs', html: `<div class="guideTabs">
+    <div><span>📜</span><b>Quest</b> — your current goal &amp; villager favors</div>
+    <div><span>🏰</span><b>Camp</b> — rest to heal &amp; build the village <small>(in town)</small></div>
+    <div><span>🧍</span><b>Character</b> — gear, stats, loot &amp; salvaging</div>
+    <div><span>🎒</span><b>Bag</b> — minerals, gems &amp; Polish All</div>
+    <div><span>✨</span><b>Spellbook</b> — craft &amp; study spells <small>(in town)</small></div>
+    <div><span>🌳</span><b>Skills</b> — spend points on your Power Tree</div>
+    <div><span>🔊</span><b>Sound</b> — mute / unmute</div>
+    <div><span>⚙️</span><b>Menu</b> — difficulty, settings &amp; this guide</div>
+  </div>
+  A <b>glowing dot</b> on a tab means there's something new to do there.` },
+];
+
+function openGuide(firstRun) {
+  G.guidePage = 0;
+  G.guideFirstRun = !!firstRun;
+  renderGuidePage();
+  openScreen('guideScreen');
+}
+
+function renderGuidePage() {
+  const n = GUIDE_PAGES.length;
+  let i = Math.min(Math.max(G.guidePage || 0, 0), n - 1);
+  G.guidePage = i;
+  const p = GUIDE_PAGES[i];
+  document.getElementById('guideBody').innerHTML =
+    `<div class="guideIcon">${p.icon}</div><h2 class="guideTitle">${p.title}</h2><div class="guideText">${p.html}</div>`;
+  document.getElementById('guideDots').innerHTML =
+    GUIDE_PAGES.map((_, k) => `<span class="gd${k === i ? ' on' : ''}"></span>`).join('');
+  document.getElementById('guideBack').style.visibility = i === 0 ? 'hidden' : 'visible';
+  const next = document.getElementById('guideNext');
+  next.textContent = i === n - 1 ? (G.guideFirstRun ? "Let's play! ✨" : 'Done ✓') : 'Next ›';
+}
+
+function guideNav(d) {
+  if ((G.guidePage || 0) + d >= GUIDE_PAGES.length) { closeGuide(); return; }
+  G.guidePage = Math.max(0, (G.guidePage || 0) + d);
+  renderGuidePage();
+  if (typeof sndClick === 'function') sndClick();
+}
+
+function closeGuide() {
+  // remember we've shown it, so it never auto-opens again
+  if (G.settings) { G.settings.seenGuide = true; if (typeof saveSettings === 'function') saveSettings(); }
+  closeScreen('guideScreen');
+}
+
 function toast(msg) {
   const wrap = document.getElementById('toastWrap');
   const el = document.createElement('div');
@@ -1190,6 +1249,11 @@ function bindUI() {
     if (G.state && G.state.sunRestored) { resetSave(); return; }
     if (confirm('Start over? Your current hero will be lost.')) resetSave();
   };
+  // How to Play guide
+  document.getElementById('btnGuide').onclick = () => { closeAllScreens(); openGuide(false); };
+  document.getElementById('guideNext').onclick = () => guideNav(1);
+  document.getElementById('guideBack').onclick = () => guideNav(-1);
+  document.getElementById('guideSkip').onclick = closeGuide;
   document.getElementById('btnDeclinePact').onclick = declinePact;
   document.getElementById('btnSanctuary').onclick = openMeta;
   document.getElementById('btnGoSanctuary').onclick = openMeta;
