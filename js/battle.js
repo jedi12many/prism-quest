@@ -339,6 +339,11 @@ function victory() {
     s.dungeon.hasKey = true;
     setTimeout(() => { toast('🗝️ The Warden drops a heavy key — the stair is open!'); fxConfetti(mpos.x, mpos.y, 24); sndKey(); }, 600);
   }
+  if (B.monster.keyGuard && G.mapId === 'clouds') {
+    // a Rainycastle guardian falls — that floor stays cleared for good
+    s.castleCleared = s.castleCleared || {};
+    s.castleCleared[G.castleFloor] = true;
+  }
 
   if (def.finalBoss && !s.sunRestored) {
     // the sun returns to Rainyday — gloom-things cannot exist beneath it

@@ -528,12 +528,13 @@ function buildDungeon() {
 function buildClouds() {
   const floor = G.castleFloor || 1;
   const peaceful = G.state.sunRestored;
+  const cleared = G.state.castleCleared || {}; // guardians you've already beaten stay dead
   blankMap(22, 14, 'sky', 'sky');
   for (let y = 3; y <= 11; y++) for (let x = 2; x <= 19; x++) G.map[y][x] = 'cloud';
   if (floor === 1) {
     for (const [hx, hy] of [[7, 4], [12, 9], [15, 4], [5, 8]]) G.map[hy][hx] = 'sky';
     G.gates = [{ x: 3, y: 7, kind: 'village' }, { x: 19, y: 7, kind: 'castleup' }];
-    if (!peaceful) {
+    if (!peaceful && !cleared[1]) {
       G.monsters.push({ x: 16, y: 7, type: 'sentinel', keyGuard: true, alive: true, respawnAt: 0, home: { x: 16, y: 7 }, moveAt: Infinity });
       for (const [mx, my, t] of [[8, 5, 'bat'], [11, 9, 'bat'], [13, 5, 'gazer']]) {
         G.monsters.push({ x: mx, y: my, type: t, elite: 'swift', alive: true, respawnAt: 0, home: { x: mx, y: my }, moveAt: 1.5 });
@@ -542,7 +543,7 @@ function buildClouds() {
   } else if (floor === 2) {
     for (const [kx, ky] of [[7, 5], [7, 9], [11, 4], [11, 10], [15, 5], [15, 9]]) G.map[ky][kx] = 'keep';
     G.gates = [{ x: 3, y: 7, kind: 'village' }, { x: 19, y: 7, kind: 'castleup' }];
-    if (!peaceful) {
+    if (!peaceful && !cleared[2]) {
       G.monsters.push({ x: 16, y: 7, type: 'raincaller', keyGuard: true, alive: true, respawnAt: 0, home: { x: 16, y: 7 }, moveAt: Infinity });
       for (const [mx, my, t] of [[8, 4, 'gazer'], [9, 10, 'bat'], [13, 7, 'gazer']]) {
         G.monsters.push({ x: mx, y: my, type: t, elite: 'cursed', alive: true, respawnAt: 0, home: { x: mx, y: my }, moveAt: 1.5 });
@@ -741,6 +742,12 @@ function onGate(g) {
   }
 }
 
+// the rainbow drops you at the lowest castle floor whose guardian still stands
+function resumeCastleFloor() {
+  const c = (G.state && G.state.castleCleared) || {};
+  return c[1] ? (c[2] ? 3 : 2) : 1;
+}
+
 function rideRainbow() {
   if (G.riding) return;
   G.riding = true;
@@ -756,7 +763,7 @@ function rideRainbow() {
   toast('🌈 You cast the rainbow — your unicorn leaps skyward!');
   setQuest(4);
   G.state.activePact = null;
-  G.castleFloor = 1;
+  G.castleFloor = resumeCastleFloor(); // resume, don't restart the climb
   setTimeout(() => {
     el.classList.remove('show');
     travelTo('clouds', 4, 8);
@@ -801,7 +808,7 @@ function save() {
     mapId: G.mapId, mainQuest: s.mainQuest, zonesCleared: s.zonesCleared, npcFlags: s.npcFlags,
     equip: s.equip, inventory: s.inventory, reviveUsed: s.reviveUsed, activePact: s.activePact, dungeon: s.dungeon,
     facetsFound: s.facetsFound, playSec: s.playSec, lowHp: s.lowHp, questBonuses: s.questBonuses, sideQuests: s.sideQuests,
-    difficulty: s.difficulty,
+    difficulty: s.difficulty, castleCleared: s.castleCleared,
   }));
 }
 
@@ -881,6 +888,7 @@ function newGameWithClass(classId) {
     playSec: 0, lowHp: 1, questBonuses: {},
     sideQuests: { pip: { stage: 0, n: 0 }, baker: { stage: 0 }, willow: { stage: 0 } },
     difficulty: (G.settings && G.settings.difficulty) || 'normal', // locked for this run
+    castleCleared: {},
     x: SPAWN.x, y: SPAWN.y,
   };
   // apply Sanctuary starting grants
@@ -941,7 +949,7 @@ function boot() {
       facetsFound: { north: false, east: false, west: false, south: false },
       playSec: 0, lowHp: 1, questBonuses: {},
       sideQuests: { pip: { stage: 0, n: 0 }, baker: { stage: 0 }, willow: { stage: 0 } },
-      difficulty: 'normal',
+      difficulty: 'normal', castleCleared: {},
     }, saved);
     calcStats();
     if (G.state.hp <= 0) G.state.hp = G.state.hpMax;
@@ -951,6 +959,7 @@ function boot() {
     G.mapId = G.state.mapId;
     if (ZONE_IDS.includes(G.state.mapId)) { const sp = zoneSpawn(G.state.mapId); G.state.x = sp.x; G.state.y = sp.y; }
     if (G.state.mapId === 'realm') { G.state.x = 3; G.state.y = 12; }
+    if (G.state.mapId === 'clouds') { G.castleFloor = resumeCastleFloor(); G.state.x = 4; G.state.y = 8; }
     startGame();
     toast('Welcome back! Your quest continues.');
   } else {
