@@ -49,6 +49,14 @@ function renderHUD() {
   document.getElementById('lvlText').textContent = `Lv ${s.level}`;
   const dot = document.getElementById('skillDot');
   dot.style.display = s.skillPoints > 0 ? 'block' : 'none';
+  document.getElementById('upgradeDot').style.display = hasBaggedUpgrade() ? 'block' : 'none';
+}
+
+// is any unequipped item in the bag a straight upgrade for its slot?
+function hasBaggedUpgrade() {
+  const s = G.state;
+  if (!s || !s.inventory) return false;
+  return s.inventory.some(it => itemUpgradeDelta(it).total > 0);
 }
 
 // ---------- class select ----------
@@ -363,6 +371,7 @@ function salvageItem(item) {
   toast(`♻️ Salvaged ${item.name} → ${q} Quartz${item.gems.length ? ' + recovered gems' : ''}.`);
   closeScreen('itemCardScreen');
   renderChar();
+  renderHUD();
 }
 
 function openGemPicker(item) {

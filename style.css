@@ -67,13 +67,18 @@ html, body {
   #hudBtns button { width: 36px; height: 36px; font-size: 17px; }
   #hudBars { max-width: 108px; }
 }
-#skillDot {
+#skillDot, #upgradeDot {
   display: none;
   position: absolute; top: -4px; right: -4px;
   width: 14px; height: 14px; border-radius: 50%;
   background: #ffd24a;
   border: 2px solid #25203a;
 }
+#upgradeDot {
+  background: #39c26d;
+  animation: upgPulse 1.4s ease-in-out infinite;
+}
+@keyframes upgPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.25); } }
 
 .bar {
   position: relative;
