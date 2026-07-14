@@ -351,6 +351,9 @@ const ACHIEVEMENTS = {
   'triple-crown':  { name: 'Triple Crown',     desc: 'Restore the sun with every class.',          hint: 'Mage, knight, whisperer — the sun loves all three the same.' },
   'deep-delver':   { name: 'Bottom Floor',     desc: 'Reach the third floor of a dungeon.',        hint: 'Some holes go down, and down, and down again.' },
   'wall-builder':  { name: 'Castle Doctrine',  desc: 'Raise the camp walls.',                      hint: 'Good walls make the gloom sulk outside.' },
+  'sun-hard':      { name: 'Storm-Tested',     desc: 'Restore the sun on Hard difficulty.',        hint: 'When the storm bites back, bite harder. (Settings → Difficulty)' },
+  'sun-monsoon':   { name: 'Deluge Defier',    desc: 'Restore the sun on Monsoon difficulty.',     hint: 'A hundred-year deluge, and one hero who would not drown.' },
+  'sun-all-diffs': { name: 'Every Weather',    desc: 'Restore the sun on Easy, Normal, Hard, and Monsoon.', hint: 'Rain or shine or worse — win in every weather Rainyday has.' },
 };
 
 // The four directional zones out of Drizzlewick — one champion boss each.

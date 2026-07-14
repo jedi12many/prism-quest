@@ -345,7 +345,7 @@ function victory() {
     s.sunRestored = true;
     s.mainQuest = 7;
     for (const m of G.monsters) { m.alive = false; m.respawnAt = Infinity; }
-    achEvent('runEnd', { won: true, cls: s.classId, sec: s.playSec, lowHp: s.lowHp == null ? 1 : s.lowHp });
+    achEvent('runEnd', { won: true, cls: s.classId, sec: s.playSec, lowHp: s.lowHp == null ? 1 : s.lowHp, diff: s.difficulty });
     setTimeout(() => {
       closeScreen('battleScreen');
       const wt = document.getElementById('winTime');

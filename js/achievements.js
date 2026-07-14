@@ -8,9 +8,13 @@ function achData() {
   try {
     const d = JSON.parse(localStorage.getItem(ACH_KEY) || '{}');
     d.unlocked = d.unlocked || {};
-    d.stats = d.stats || { runs: 0, wins: 0, losses: 0, elites: 0, keepers: {}, winsByClass: {}, bestByClass: {} };
+    d.stats = d.stats || {};
+    const st = d.stats;
+    st.runs = st.runs || 0; st.wins = st.wins || 0; st.losses = st.losses || 0; st.elites = st.elites || 0;
+    st.keepers = st.keepers || {}; st.winsByClass = st.winsByClass || {}; st.bestByClass = st.bestByClass || {};
+    st.winsByDifficulty = st.winsByDifficulty || {};
     return d;
-  } catch (e) { return { unlocked: {}, stats: { runs: 0, wins: 0, losses: 0, elites: 0, keepers: {}, winsByClass: {}, bestByClass: {} } }; }
+  } catch (e) { return { unlocked: {}, stats: { runs: 0, wins: 0, losses: 0, elites: 0, keepers: {}, winsByClass: {}, bestByClass: {}, winsByDifficulty: {} } }; }
 }
 
 function achSave(d) {
@@ -68,10 +72,15 @@ function achEvent(type, data = {}) {
         st.winsByClass[data.cls] = (st.winsByClass[data.cls] || 0) + 1;
         const best = st.bestByClass[data.cls];
         if (!best || data.sec < best) st.bestByClass[data.cls] = Math.round(data.sec);
+        const diff = data.diff || 'normal';
+        st.winsByDifficulty[diff] = (st.winsByDifficulty[diff] || 0) + 1;
         achUnlock(d, 'sunbringer');
         if (data.sec < 2400) achUnlock(d, 'speed-sun');
         if (data.lowHp >= 0.3) achUnlock(d, 'untouchable');
         if (['mage', 'knight', 'whisperer'].every(c => st.winsByClass[c])) achUnlock(d, 'triple-crown');
+        if (st.winsByDifficulty.hard || st.winsByDifficulty.monsoon) achUnlock(d, 'sun-hard');
+        if (st.winsByDifficulty.monsoon) achUnlock(d, 'sun-monsoon');
+        if (['easy', 'normal', 'hard', 'monsoon'].every(k => st.winsByDifficulty[k])) achUnlock(d, 'sun-all-diffs');
       } else {
         st.losses++;
       }
@@ -137,6 +146,8 @@ function renderBoard() {
   for (const [cls, sec] of Object.entries(st.bestByClass || {})) {
     chron += `<div class="chronRow">Fastest sun — ${classNames[cls] || cls}: <b>${fmtRunTime(sec)}</b></div>`;
   }
+  const wonDiffs = DIFFICULTY_ORDER.filter(k => (st.winsByDifficulty || {})[k]).map(k => DIFFICULTIES[k].name);
+  if (wonDiffs.length) chron += `<div class="chronRow">Suns restored on: <b>${wonDiffs.join(', ')}</b></div>`;
   if (s && s.playSec != null) chron += `<div class="chronRow dim">This run: ${fmtRunTime(s.playSec)}</div>`;
   document.getElementById('ledgerChron').innerHTML = chron;
 }

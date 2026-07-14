@@ -851,7 +851,7 @@ function recordDeath() {
   meta.bestZones = Math.max(meta.bestZones || 0, zones);
   meta.bestKills = Math.max(meta.bestKills || 0, s.kills);
   saveMeta(meta);
-  achEvent('runEnd', { won: false, cls: s.classId, sec: s.playSec });
+  achEvent('runEnd', { won: false, cls: s.classId, sec: s.playSec, diff: s.difficulty });
   localStorage.removeItem(SAVE_KEY); // the hero is lost
   return { level: s.level, zones, kills: s.kills, earned, best: meta };
 }
