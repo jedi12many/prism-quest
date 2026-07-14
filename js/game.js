@@ -4,7 +4,11 @@
 
 const TILE = 44;
 const SPAWN = { x: 6, y: 6 };                        // new-hero spot in the village
-const VILLAGE_ENTRY = { x: 14, y: 13 };              // where travel drops you at home
+const VILLAGE_ENTRY = { x: 14, y: 13 };              // default drop (from the clouds/realm)
+// coming home from a wild, land beside THAT zone's gate — not always the south one
+const VILLAGE_ZONE_ENTRY = {
+  south: { x: 14, y: 14 }, east: { x: 24, y: 8 }, west: { x: 3, y: 13 }, north: { x: 14, y: 3 },
+};
 const ZONE_IDS = ['north', 'east', 'west', 'south'];
 const FLOOR_TILES = new Set(['grass', 'cloud', 'gloomstone', 'cavefloor', 'ruinfloor', 'housefloor']);
 const ZONE_W = 34, ZONE_H = 26;                      // each zone map's size
@@ -679,7 +683,8 @@ function onGate(g) {
   if (g.kind === 'village') {
     G.state.activePact = null;
     G.zoneReturn = null;
-    travelTo('village', VILLAGE_ENTRY.x, VILLAGE_ENTRY.y);
+    const entry = VILLAGE_ZONE_ENTRY[G.mapId] || VILLAGE_ENTRY; // arrive by the gate you came home through
+    travelTo('village', entry.x, entry.y);
     toast('🏘️ Home sweet Drizzlewick.');
   } else if (g.kind === 'zone') {
     const z = ZONES[g.zone];
