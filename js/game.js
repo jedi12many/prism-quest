@@ -1551,30 +1551,33 @@ function draw() {
     }
   }
 
-  // a buried facet: a sparkle in the grass that glows brighter the nearer you get
+  // a buried facet: a shy glint in the rain — but once the champion falls and the
+  // sun breaks over this land, the shard catches the light and glints plainly
   if (G.treasure) {
     const tx2 = G.treasure.x * TILE - cam.x + TILE / 2, ty2 = G.treasure.y * TILE - cam.y + TILE / 2;
     if (tx2 > -TILE && ty2 > -TILE && tx2 < w + TILE && ty2 < h + TILE) {
-      const pt = playerTile();
-      const dist = Math.hypot(G.treasure.x - pt.x, G.treasure.y - pt.y);
-      const near = Math.max(0, 1 - dist / 7);          // 0 far … 1 right on top of it — "getting warmer"
-      const tw = 0.55 + 0.45 * Math.sin(G.time * 2.6); // steady twinkle
-      const fc = (FACETS[G.mapId] && FACETS[G.mapId].color) || '#ffe9fb';
-      const hx = fc.replace('#', '');
-      const cr = parseInt(hx.substr(0, 2), 16), cg = parseInt(hx.substr(2, 2), 16), cb = parseInt(hx.substr(4, 2), 16);
-      // proximity halo — wider and brighter as you close in
-      if (near > 0.02) {
-        const R = TILE * (0.45 + near * 0.75);
+      if (inSun(G.treasure.x, G.treasure.y)) {
+        // sun's out — a clear, sun-caught glint with a soft facet-coloured halo
+        const tw = 0.6 + 0.4 * Math.sin(G.time * 2.4);
+        const fc = (FACETS[G.mapId] && FACETS[G.mapId].color) || '#ffe9fb';
+        const hx = fc.replace('#', '');
+        const cr = parseInt(hx.substr(0, 2), 16), cg = parseInt(hx.substr(2, 2), 16), cb = parseInt(hx.substr(4, 2), 16);
+        const R = TILE * 0.6;
         const glow = ctx.createRadialGradient(tx2, ty2 - 3, 0, tx2, ty2 - 3, R);
-        glow.addColorStop(0, `rgba(${cr},${cg},${cb},${(0.10 + near * 0.5) * tw})`);
+        glow.addColorStop(0, `rgba(${cr},${cg},${cb},${0.35 * tw})`);
         glow.addColorStop(1, `rgba(${cr},${cg},${cb},0)`);
         ctx.fillStyle = glow;
         ctx.beginPath(); ctx.arc(tx2, ty2 - 3, R, 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha = 0.55 + tw * 0.4;
+        drawStar(ctx, tx2, ty2 - 3, 6 + tw * 2, '#ffffff', G.time * 0.9);
+        ctx.globalAlpha = 1;
+      } else {
+        // still raining — a shy glint, often nearly invisible
+        const shy = Math.max(0, Math.sin(G.time * 1.1 + 1.7));
+        ctx.globalAlpha = 0.1 + shy * 0.6;
+        drawStar(ctx, tx2, ty2 - 3, 4.5, '#ffe9fb', G.time * 0.8);
+        ctx.globalAlpha = 1;
       }
-      // the glint itself — always softly visible now, bigger and whiter up close
-      ctx.globalAlpha = 0.35 + near * 0.5 + tw * 0.12;
-      drawStar(ctx, tx2, ty2 - 3, 4.5 + near * 4 + tw * 1.2, near > 0.5 ? '#ffffff' : '#ffe9fb', G.time * 0.9);
-      ctx.globalAlpha = 1;
     }
   }
 
