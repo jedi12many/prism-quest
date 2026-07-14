@@ -141,6 +141,20 @@ button.closeBtn.plain {
 }
 
 /* ---------- character sheet ---------- */
+.charTitle { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 0 0 12px; }
+.charIdent { font-weight: 800; font-size: 16px; color: #ffe9a8; }
+.charEpithet {
+  font-weight: 800; font-size: 13px; color: #fff;
+  padding: 3px 10px; border-radius: 999px;
+  background: linear-gradient(90deg, #3a2d5c, #6c4bb0);
+  border: 1px solid #b79bff;
+  box-shadow: 0 0 10px rgba(150, 110, 255, 0.55);
+  animation: epithetPulse 2.4s ease-in-out infinite;
+}
+@keyframes epithetPulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(150, 110, 255, 0.45); }
+  50% { box-shadow: 0 0 16px rgba(150, 110, 255, 0.8); }
+}
 .charGrid { display: flex; gap: 14px; flex-wrap: wrap; }
 .charCol { flex: 1 1 200px; min-width: 180px; }
 #charDoll { display: flex; flex-direction: column; gap: 6px; }

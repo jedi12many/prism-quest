@@ -271,6 +271,16 @@ function dodgePct() { return Math.round(Math.min(0.6, eff('dodge')) * 100); }
 
 function renderChar() {
   const s = G.state;
+  // identity — class, and the title you earn by holding back the dark
+  const cls = CLASSES[s.classId];
+  const titleEl = document.getElementById('charTitle');
+  if (titleEl) {
+    const earned = s.sunRestored;
+    titleEl.innerHTML = `<span class="charIdent">${cls.emoji} Lv ${s.level} ${cls.name}</span>`
+      + (earned
+        ? `<span class="charEpithet" title="Earned for restoring the sun to Rainyday">🌑 the Gloombreaker</span>`
+        : '');
+  }
   // equipment doll
   const doll = document.getElementById('charDoll');
   doll.innerHTML = '';
