@@ -1108,6 +1108,19 @@ function bindUI() {
     ng.classList.toggle('danger', !won);
     openScreen('menuScreen');
   };
+  const diffBtn = document.getElementById('btnDifficulty');
+  const refreshDiff = () => {
+    const key = (G.settings && G.settings.difficulty) || 'normal';
+    diffBtn.textContent = DIFFICULTIES[key].name;
+    diffBtn.classList.toggle('on', key !== 'normal');
+    document.getElementById('difficultyBlurb').textContent = DIFFICULTIES[key].blurb + ' (applies to your next hero)';
+  };
+  diffBtn.onclick = () => {
+    const i = DIFFICULTY_ORDER.indexOf((G.settings && G.settings.difficulty) || 'normal');
+    G.settings.difficulty = DIFFICULTY_ORDER[(i + 1) % DIFFICULTY_ORDER.length];
+    saveSettings(); refreshDiff(); sndClick();
+  };
+  refreshDiff();
   const asBtn = document.getElementById('btnAutoSalvage');
   const refreshAS = () => { asBtn.textContent = AUTO_SALVAGE_LABELS[(G.settings && G.settings.autoSalvage) || 0]; asBtn.classList.toggle('on', ((G.settings && G.settings.autoSalvage) || 0) > 0); };
   asBtn.onclick = () => {

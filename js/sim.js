@@ -316,13 +316,15 @@ function simRunOne(seed) {
 
 // ---------- harness ----------
 
-function runSim(runs = 30, baseSeed = 1000) {
+function runSim(runs = 30, baseSeed = 1000, difficulty) {
   const origRandom = Math.random;
   const origTimeout = window.setTimeout;
   const origFns = {};
   const origMuted = SND.muted;
   const origLoadMeta = window.loadMeta;
   const origRecordDeath = window.recordDeath;
+  const origSettings = G.settings;
+  G.settings = Object.assign({}, G.settings || { autoSalvage: 0 }, { difficulty: difficulty || (G.settings && G.settings.difficulty) || 'normal' });
   const pre = G.state ? { json: JSON.stringify(G.state) } : null;
   for (const n of SIM_PATCH) { origFns[n] = window[n]; window[n] = () => {}; }
   window.loadMeta = () => ({ motes: 0, upgrades: {} }); // baseline heroes, deterministic
@@ -339,6 +341,7 @@ function runSim(runs = 30, baseSeed = 1000) {
     window.loadMeta = origLoadMeta;
     window.recordDeath = origRecordDeath;
     SND.muted = origMuted;
+    G.settings = origSettings;
     closeAllScreens();
     if (pre) { G.state = JSON.parse(pre.json); startGame(); }
     else { G.state = null; showClassScreen(); }
@@ -358,7 +361,17 @@ function runSim(runs = 30, baseSeed = 1000) {
   const topDeaths = Object.entries(deaths).sort((a, b) => b[1] - a[1]).slice(0, 8)
     .map(([k, v]) => `${v}x ${k}`);
   window.SIM_LAST = results;
-  return { runs, baseSeed, pct, mix, byClass, avgLevel: +(lvlSum / runs).toFixed(1),
-    avgBattles: +(batSum / runs).toFixed(1), avgZones: +(zoneSum / runs).toFixed(1),
-    topDeaths, errors: results.filter(r => r.error).length };
+  return { runs, baseSeed, difficulty: G.settings && G.settings.difficulty, pct, mix, byClass,
+    avgLevel: +(lvlSum / runs).toFixed(1), avgBattles: +(batSum / runs).toFixed(1),
+    avgZones: +(zoneSum / runs).toFixed(1), topDeaths, errors: results.filter(r => r.error).length };
+}
+
+// run every difficulty over the SAME seeds and report the outcome mix for each
+function tuneDifficulty(runs = 80, baseSeed = 5000) {
+  const out = {};
+  for (const d of DIFFICULTY_ORDER) {
+    const a = runSim(runs, baseSeed, d);
+    out[d] = Object.assign({ mult: `hp ${DIFFICULTIES[d].hp}× dmg ${DIFFICULTIES[d].dmg}×`, avgLevel: a.avgLevel }, a.pct);
+  }
+  return out;
 }

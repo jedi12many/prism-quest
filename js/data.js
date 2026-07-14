@@ -208,6 +208,17 @@ const MONSTERS = {
             drops: { prismatite: 1 } },
 };
 
+// Difficulty — chosen for your next hero and locked into the run. Scales every
+// monster's HP and damage. Normal is 1.0 (the tuned baseline). Values get
+// dialed in by the balance sim (runSim / tuneDifficulty).
+const DIFFICULTIES = {
+  easy:    { name: 'Easy',    hp: 0.88, dmg: 0.78, blurb: 'A gentle drizzle — for the story and the sights.' },
+  normal:  { name: 'Normal',  hp: 1.00, dmg: 1.00, blurb: 'Rainyday as intended: a fair, deadly rogue-like.' },
+  hard:    { name: 'Hard',    hp: 1.08, dmg: 1.15, blurb: 'The storm bites back. For veterans of the gloom.' },
+  monsoon: { name: 'Monsoon', hp: 1.16, dmg: 1.32, blurb: 'A hundred-year deluge. Most heroes drown.' },
+};
+const DIFFICULTY_ORDER = ['easy', 'normal', 'hard', 'monsoon'];
+
 // The six real villains get a cinematic entrance: sprite slam, quote, sting.
 const BOSS_INTROS = {
   bogmaw:    { color: '#6fae4a', quote: '“GLORP. This swamp has drowned ninety-nine heroes. You make it a nice round number.”' },

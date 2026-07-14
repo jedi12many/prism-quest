@@ -130,7 +130,9 @@ function renderBoard() {
 
   // chronicle: runs and record times
   const st = d.stats;
-  let chron = `<div class="chronRow">Runs <b>${st.runs}</b> · Suns restored <b>${st.wins}</b> · Heroes lost <b>${st.losses}</b></div>`;
+  const diffName = (s && s.difficulty && DIFFICULTIES[s.difficulty]) ? DIFFICULTIES[s.difficulty].name : 'Normal';
+  let chron = `<div class="chronRow">This hero's difficulty: <b>🌧️ ${diffName}</b></div>`;
+  chron += `<div class="chronRow">Runs <b>${st.runs}</b> · Suns restored <b>${st.wins}</b> · Heroes lost <b>${st.losses}</b></div>`;
   const classNames = { mage: 'Prism Mage', knight: 'Crystal Knight', whisperer: 'Unicorn Whisperer' };
   for (const [cls, sec] of Object.entries(st.bestByClass || {})) {
     chron += `<div class="chronRow">Fastest sun — ${classNames[cls] || cls}: <b>${fmtRunTime(sec)}</b></div>`;

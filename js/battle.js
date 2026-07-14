@@ -21,8 +21,9 @@ function startBattle(monster, ambush) {
   const tier = combatTier();
   const em = monster.elite ? ELITE_MODS[monster.elite] : null;
   const warden = !!monster.warden;
-  const hpMult = (1 + (tier - 1) * 0.4) * (em ? em.hpMul : 1) * (warden ? 1.6 : 1);
-  const atkScale = (1 + (tier - 1) * 0.22) * (em ? (em.atkMul || 1) : 1) * (warden ? 1.15 : 1);
+  const diff = difficultyMult();
+  const hpMult = (1 + (tier - 1) * 0.4) * (em ? em.hpMul : 1) * (warden ? 1.6 : 1) * diff.hp;
+  const atkScale = (1 + (tier - 1) * 0.22) * (em ? (em.atkMul || 1) : 1) * (warden ? 1.15 : 1) * diff.dmg;
   const hp = Math.round(def.hp * hpMult);
   B = {
     monster, def, tier, atkScale, elite: em, warden,

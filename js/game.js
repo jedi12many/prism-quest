@@ -95,6 +95,12 @@ function atBase() { return G.mapId === 'village'; }
 function inZone() { return ZONE_IDS.includes(G.mapId); }
 
 // difficulty scaling by where you're fighting: zone tier 1-4, clouds/realm higher
+// the difficulty multipliers for the current run (locked in at hero creation)
+function difficultyMult() {
+  const key = (G.state && G.state.difficulty) || (G.settings && G.settings.difficulty) || 'normal';
+  return DIFFICULTIES[key] || DIFFICULTIES.normal;
+}
+
 function combatTier() {
   if (inZone()) return ZONES[G.mapId].tier;
   if (G.mapId === 'dungeon') return (G.state.dungeon ? G.state.dungeon.tier : 1) + 1; // deadlier than its zone
@@ -790,6 +796,7 @@ function save() {
     mapId: G.mapId, mainQuest: s.mainQuest, zonesCleared: s.zonesCleared, npcFlags: s.npcFlags,
     equip: s.equip, inventory: s.inventory, reviveUsed: s.reviveUsed, activePact: s.activePact, dungeon: s.dungeon,
     facetsFound: s.facetsFound, playSec: s.playSec, lowHp: s.lowHp, questBonuses: s.questBonuses, sideQuests: s.sideQuests,
+    difficulty: s.difficulty,
   }));
 }
 
@@ -868,6 +875,7 @@ function newGameWithClass(classId) {
     facetsFound: { north: false, east: false, west: false, south: false },
     playSec: 0, lowHp: 1, questBonuses: {},
     sideQuests: { pip: { stage: 0, n: 0 }, baker: { stage: 0 }, willow: { stage: 0 } },
+    difficulty: (G.settings && G.settings.difficulty) || 'normal', // locked for this run
     x: SPAWN.x, y: SPAWN.y,
   };
   // apply Sanctuary starting grants
@@ -928,6 +936,7 @@ function boot() {
       facetsFound: { north: false, east: false, west: false, south: false },
       playSec: 0, lowHp: 1, questBonuses: {},
       sideQuests: { pip: { stage: 0, n: 0 }, baker: { stage: 0 }, willow: { stage: 0 } },
+      difficulty: 'normal',
     }, saved);
     calcStats();
     if (G.state.hp <= 0) G.state.hp = G.state.hpMax;

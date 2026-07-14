@@ -208,8 +208,8 @@ function verdictBadge(item) {
 const SETTINGS_KEY = 'prismquest_settings_v1';
 const AUTO_SALVAGE_LABELS = ['Off', 'Common', 'Common + Magic', 'Common + Magic + Rare'];
 function loadSettings() {
-  try { return Object.assign({ autoSalvage: 0 }, JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}')); }
-  catch (e) { return { autoSalvage: 0 }; }
+  try { return Object.assign({ autoSalvage: 0, difficulty: 'normal' }, JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}')); }
+  catch (e) { return { autoSalvage: 0, difficulty: 'normal' }; }
 }
 function saveSettings() {
   try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(G.settings || { autoSalvage: 0 })); } catch (e) {}
