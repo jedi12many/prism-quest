@@ -187,6 +187,23 @@ function ratingPill(item) {
   return `<span class="ratePill"><span class="rpA">⚔${r.atk}</span><span class="rpD">🛡${r.def}</span></span>`;
 }
 
+// how equipping this item would change your loadout vs the slot's current item
+function itemUpgradeDelta(item) {
+  const cur = G.state.equip[item.slot];
+  const ni = itemRating(item);
+  const ci = cur ? itemRating(cur) : { atk: 0, def: 0 };
+  return { atk: ni.atk - ci.atk, def: ni.def - ci.def, total: (ni.atk + ni.def) - (ci.atk + ci.def), empty: !cur };
+}
+function signed(n) { return (n >= 0 ? '+' : '') + n; }
+// compact ▲/▼ badge for inventory rows
+function verdictBadge(item) {
+  const d = itemUpgradeDelta(item);
+  if (d.empty) return `<span class="verdict up">▲ new</span>`;
+  if (d.total > 0) return `<span class="verdict up">▲ ${signed(d.total)}</span>`;
+  if (d.total < 0) return `<span class="verdict down">▼ ${d.total}</span>`;
+  return `<span class="verdict even">= even</span>`;
+}
+
 // ---------- settings (persistent per device) ----------
 const SETTINGS_KEY = 'prismquest_settings_v1';
 const AUTO_SALVAGE_LABELS = ['Off', 'Common', 'Common + Magic', 'Common + Magic + Rare'];

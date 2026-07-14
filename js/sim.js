@@ -27,11 +27,11 @@ function simShuffle(arr, rng) {
   return a;
 }
 
+// sim gear decisions use the SAME power rating the player sees (ATK + DEF), so
+// the simulation equips upgrades exactly the way the in-game verdict says to
 function simItemScore(it) {
-  const st = itemStats(it);
-  return (st.atkFlat || 0) * 3 + (st.magFlat || 0) * 3 + (st.defFlat || 0) * 3 + (st.hpMax || 0) * 0.5
-    + ((st.spellDmg || 0) + (st.basicDmg || 0)) * 40 + (st.crit || 0) * 30 + (st.dodge || 0) * 30
-    + ((st.unicornPower || 0) + (st.healPower || 0)) * 15 + (st.regen || 0) * 4 + (it.setId ? 12 : 0);
+  const r = itemRating(it);
+  return r.atk + r.def + (it.setId ? 15 : 0); // value set pieces for their 3/5 bonus
 }
 
 // ---------- the scripted player ----------

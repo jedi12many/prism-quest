@@ -145,6 +145,20 @@ button.closeBtn.plain {
 }
 .ratePill .rpA { background: rgba(255,120,90,0.22); color: #ffb59e; padding: 3px 5px; }
 .ratePill .rpD { background: rgba(110,160,255,0.22); color: #a9c8ff; padding: 3px 5px; }
+
+/* equip verdict */
+.verdict {
+  display: inline-block; font-size: 11px; font-weight: 800;
+  padding: 2px 6px; border-radius: 999px; vertical-align: middle; white-space: nowrap;
+}
+.verdict.up { background: rgba(57,194,109,0.22); color: #7bf59b; }
+.verdict.down { background: rgba(255,92,122,0.2); color: #ff9eae; }
+.verdict.even { background: rgba(255,255,255,0.1); color: #cfc8e8; }
+.icVerdict { font-size: 13.5px; font-weight: 700; padding: 8px 10px; border-radius: 10px; margin-top: 8px; }
+.icVerdict small { font-weight: 600; opacity: 0.85; margin-left: 6px; }
+.icVerdict.up { background: rgba(57,194,109,0.16); color: #9cf0b8; }
+.icVerdict.down { background: rgba(255,92,122,0.14); color: #ffabb8; }
+.icVerdict.even { background: rgba(255,255,255,0.07); color: #cfc8e8; }
 #charStats { display: flex; flex-direction: column; gap: 4px; }
 .statRow {
   display: flex; justify-content: space-between;

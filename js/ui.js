@@ -250,7 +250,7 @@ function renderChar() {
       cell.style.borderColor = RARITIES[it.rarity].color;
       cell.innerHTML = `<span class="invEmoji">${SLOTS[it.slot].emoji}</span>
         <span class="invName" style="color:${RARITIES[it.rarity].color}">${it.name}</span>
-        ${ratingPill(it)}
+        ${ratingPill(it)} ${verdictBadge(it)}
         ${it.sockets ? `<span class="invSock">${'◈'.repeat(it.gems.length)}${'◇'.repeat(it.sockets - it.gems.length)}</span>` : ''}`;
       cell.onclick = () => openItemCard(it, 'inventory');
       inv.appendChild(cell);
@@ -269,6 +269,16 @@ function itemStatLines(item) {
   return lines.join('');
 }
 
+// spelled-out equip verdict for the item card
+function verdictLine(item) {
+  const d = itemUpgradeDelta(item);
+  const dd = `<small>⚔ ${signed(d.atk)} · 🛡 ${signed(d.def)}</small>`;
+  if (d.empty) return `<div class="icVerdict up">▲ Equip — fills an empty slot (+${d.total} power) ${dd}</div>`;
+  if (d.total > 0) return `<div class="icVerdict up">▲ Upgrade — ${signed(d.total)} power ${dd}</div>`;
+  if (d.total < 0) return `<div class="icVerdict down">▼ Downgrade — ${d.total} power ${dd}</div>`;
+  return `<div class="icVerdict even">= Sidegrade — same power ${dd}</div>`;
+}
+
 function openItemCard(item, where) {
   const emptySockets = (item.sockets || 0) - item.gems.length;
   const card = document.getElementById('itemCard');
@@ -283,6 +293,7 @@ function openItemCard(item, where) {
     ${item.lore ? `<div class="icLore">"${item.lore}"</div>` : ''}
     <div class="icStats">${itemStatLines(item)}</div>
     ${item.sockets ? `<div class="icSockets">Sockets: ${'◈'.repeat(item.gems.length)}${'◇'.repeat(emptySockets)}</div>` : ''}
+    ${!equipped ? verdictLine(item) : ''}
     ${compareItem ? `<div class="icCompare">Equipped: <b style="color:${RARITIES[compareItem.rarity].color}">${compareItem.name}</b> ${ratingPill(compareItem)}</div>` : ''}
     <div class="icActs" id="icActs"></div>`;
   const acts = document.getElementById('icActs');
