@@ -43,6 +43,12 @@ html, body {
   padding: max(10px, env(safe-area-inset-top)) 12px 0;
   pointer-events: none;
   gap: 10px;
+  z-index: 45; /* above the tab panels (40) so the icons stay tappable */
+}
+#hudBtns button.active {
+  border-color: #ffd24a;
+  background: rgba(70,58,26,0.92);
+  box-shadow: 0 0 0 2px rgba(255,210,74,0.4), 0 3px 10px rgba(0,0,0,0.35);
 }
 #hudBars { flex: 1; max-width: 250px; display: flex; flex-direction: column; gap: 5px; pointer-events: none; }
 #hudBtns { display: flex; gap: 8px; pointer-events: auto; }
@@ -560,7 +566,7 @@ button.closeBtn:not(.bigBtn) {
 .settingBtn.on { border-color: #39c26d; background: rgba(57,194,109,0.18); color: #bff0bf; }
 
 /* sanctuary (meta) */
-#metaScreen { z-index: 50; }
+#metaScreen, #classScreen, #gameOverScreen, #winBanner { z-index: 50; } /* terminal screens cover the HUD */
 .sanctuaryBtn {
   display: block; width: 100%; margin: 4px 0 10px;
   padding: 10px; border-radius: 12px;

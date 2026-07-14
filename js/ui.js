@@ -12,11 +12,19 @@ function openScreen(id) {
 function closeScreen(id) {
   document.getElementById(id).classList.remove('open');
   G.lock = document.querySelector('.screen.open') !== null;
+  syncHudActive();
 }
 
 function closeAllScreens() {
   document.querySelectorAll('.screen.open').forEach(el => el.classList.remove('open'));
   G.lock = false;
+  syncHudActive();
+}
+
+// keep the highlighted HUD icon in step with whichever panel (if any) is open
+function syncHudActive() {
+  const open = Object.keys(PANEL_BUTTONS || {}).find(id => document.getElementById(id).classList.contains('open'));
+  if (typeof hudActive === 'function') hudActive(open || null);
 }
 
 function toast(msg) {
@@ -135,10 +143,22 @@ function buyMeta(id) {
 
 // ---------- bag ----------
 
-function openBag() {
-  renderBag();
-  openScreen('bagScreen');
+// the top HUD icons stay live while a panel is open, so tapping one switches
+// straight to that panel (no Close needed). These map screen -> HUD button.
+const PANEL_BUTTONS = { bagScreen: 'btnBag', charScreen: 'btnChar', spellScreen: 'btnSpells', skillScreen: 'btnSkills', baseScreen: 'btnBase' };
+function switchPanel(id, renderFn) {
+  closeAllScreens();      // drop whatever panel/sub-modal was up
+  renderFn();
+  openScreen(id);
+  hudActive(id);
 }
+function hudActive(id) {
+  for (const [scr, btn] of Object.entries(PANEL_BUTTONS)) {
+    document.getElementById(btn).classList.toggle('active', scr === id);
+  }
+}
+
+function openBag() { switchPanel('bagScreen', renderBag); }
 
 function renderBag() {
   const s = G.state;
@@ -199,10 +219,7 @@ function renderBag() {
 
 // ---------- character sheet ----------
 
-function openChar() {
-  renderChar();
-  openScreen('charScreen');
-}
+function openChar() { switchPanel('charScreen', renderChar); }
 
 function critPct() { return Math.round((0.05 + eff('crit')) * 100); }
 function dodgePct() { return Math.round(Math.min(0.6, eff('dodge')) * 100); }
@@ -793,8 +810,7 @@ function openNpc(id) {
 
 function openSpells() {
   if (!requireCamp('craft spells')) return;
-  renderSpells();
-  openScreen('spellScreen');
+  switchPanel('spellScreen', renderSpells);
 }
 
 function renderSpells() {
@@ -863,16 +879,12 @@ function craftSpell(id) {
 
 function openSkills() {
   if (!requireCamp('train your powers')) return;
-  renderSkills();
-  openScreen('skillScreen');
+  switchPanel('skillScreen', renderSkills);
 }
 
 // ---------- camp / base building ----------
 
-function openBase() {
-  renderBase();
-  openScreen('baseScreen');
-}
+function openBase() { switchPanel('baseScreen', renderBase); }
 
 function renderBase() {
   const s = G.state;
