@@ -34,6 +34,9 @@ function startBattle(monster, ambush) {
     unicorn: null,        // {turns, power}
     lastStandUsed: false,
     over: false,
+    turns: 0,             // enemy turns taken — paces boss specials
+    enraged: false,       // has the wounded-boss special fired yet
+    busy: false,          // a special cutscene is mid-play; player can't act
     log: [],
   };
   openScreen('battleScreen');
@@ -86,7 +89,7 @@ function hitMonster(dmg, label) {
 }
 
 function playerAction(action, spellId) {
-  if (!B || B.over) return;
+  if (!B || B.over || B.busy) return;
   const s = G.state;
   const fxFrom = bPos('bPlayerEmoji'), fxTo = bPos('bMonEmoji');
 
@@ -178,6 +181,15 @@ function playerAction(action, spellId) {
   const regen = eff('regen');
   if (regen > 0 && s.hp < s.hpMax) s.hp = Math.min(s.hpMax, s.hp + regen);
 
+  enemyTurn();
+}
+
+// the monster's turn — a boss may unleash its signature special instead of a
+// normal swing; otherwise it attacks (and fast foes may strike twice).
+function enemyTurn() {
+  if (!B || B.over) return;
+  B.turns++;
+  if (bossSpecialDue()) { runBossSpecial(); return; } // takes over the whole turn (async cutscene)
   monsterHit();
   const extraHit = (B.def.doubleHit || 0) + (B.elite ? (B.elite.extraHit || 0) : 0);
   if (!B.over && extraHit && Math.random() < extraHit) {
@@ -185,6 +197,70 @@ function playerAction(action, spellId) {
     monsterHit();
   }
   if (!B.over) renderBattle();
+}
+
+// is it time for this boss's special? every 3rd turn, and always the first time
+// it's wounded past half — so every named boss lands at least one.
+function bossSpecialDue() {
+  if (!B || B.over) return false;
+  if (!BOSS_SPECIALS[B.monster.type]) return false;
+  if (!B.enraged && B.mhp <= B.mhpMax * 0.5) { B.enraged = true; return true; }
+  return B.turns % 3 === 0;
+}
+
+// cut back to the cutscene for a battlecry; the blow lands when it's dismissed
+function runBossSpecial() {
+  const sp = BOSS_SPECIALS[B.monster.type];
+  B.busy = true;
+  blog(`⚠️ ${B.def.emoji} ${B.def.name} gathers its power…`);
+  renderBattle();
+  if (typeof showBossSpecial === 'function') {
+    showBossSpecial(B.monster.type, sp, () => resolveBossSpecial(sp));
+  } else {
+    resolveBossSpecial(sp); // fallback: no cutscene, just hit
+  }
+}
+
+function resolveBossSpecial(sp) {
+  if (!B || B.over) { if (B) B.busy = false; return; }
+  const s = G.state;
+  const ppos = bPos('bPlayerEmoji');
+  const accent = (BOSS_INTROS[B.monster.type] && BOSS_INTROS[B.monster.type].color) || '#ff5c7a';
+  const hits = sp.hits || 1;
+  const mult = sp.mult || 2.4;
+
+  let total = 0;
+  for (let i = 0; i < hits; i++) {
+    let atk = B.def.atk * (B.atkScale || 1) * mult;
+    if (B.mStatus.weaken && B.mStatus.weaken.turns > 0 && B.mStatus.weaken.mult) atk *= B.mStatus.weaken.mult;
+    let dmg = Math.max(1, Math.round(atk * variance() - s.def * 0.5));
+    if (B.pStatus.shield && B.pStatus.shield.turns > 0) dmg = Math.max(1, Math.round(dmg * (1 - B.pStatus.shield.reduce)));
+    total += dmg;
+  }
+  if (B.pStatus.shield && B.pStatus.shield.turns > 0) { B.pStatus.shield.turns--; blog('🛡️ Your shield buckles under the blow!'); }
+
+  shakeEl('bPlayerEmoji');
+  sndHurt();
+  fxBurst(ppos.x, ppos.y, { count: 24, colors: [accent, '#ffffff'], star: true, speed: 320, life: 0.75 });
+  fxRing(ppos.x, ppos.y, accent, 95);
+  blog(`${B.def.emoji} <b>${sp.name}</b> — ${total} damage!`);
+  applyPlayerDamage(total);
+  if (B.over) return; // hero fell — defeat() is handling the rest
+
+  if (sp.poison) { B.pStatus.poison = { turns: 3, dmg: sp.poison }; blog('🟣 Its venom courses through you!'); }
+  if (sp.dread) { B.pStatus.dread = { turns: 2 }; blog('😰 Dread grips you — your damage is sapped!'); }
+  if (sp.lifesteal) {
+    const h = Math.round(total * sp.lifesteal);
+    if (h > 0) { B.mhp = Math.min(B.mhpMax, B.mhp + h); blog(`🩸 ${B.def.name} drinks the light from your wounds (+${h}).`); }
+  }
+  if (sp.heal) {
+    const h = Math.round(B.mhpMax * sp.heal);
+    if (h > 0) { B.mhp = Math.min(B.mhpMax, B.mhp + h); blog(`🌧️ ${B.def.name} knits itself back together (+${h}).`); }
+  }
+
+  B.busy = false;
+  renderBattle();
+  renderHUD();
 }
 
 function monsterHit() {
@@ -466,6 +542,13 @@ function renderBattle(won, lost) {
 
   const acts = document.getElementById('bActs');
   acts.innerHTML = '';
+  if (B.busy && !B.over) {
+    const n = document.createElement('div');
+    n.className = 'braceNote';
+    n.textContent = '⚡ Brace yourself…';
+    acts.appendChild(n);
+    return;
+  }
   if (B.over) {
     if (lost) {
       const dead = document.createElement('div');

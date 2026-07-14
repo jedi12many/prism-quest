@@ -240,6 +240,31 @@ const BOSS_INTROS = {
   poltergeist: { tag: 'DUNGEON KEEPER', color: '#e8e8f5', quote: '“Ahaha— a VISITOR! Stay. Stay forever. Everyone here does.”' },
 };
 
+// Boss special attacks. Every named villain (each BOSS_INTROS entry) has one:
+// on a cadence — and always once it's wounded past half — the fight cuts BACK to
+// the cutscene overlay for a battlecry, then the boss lands this signature blow.
+//   mult: damage multiplier vs a normal hit's base   hits: number of strikes
+//   poison/dread: status riders   heal: self-heal (frac of max)   lifesteal: heal from dmg dealt
+const BOSS_SPECIALS = {
+  // the four gloom champions
+  bogmaw:   { name: 'Tidal Gulp',       cry: '“GLORP — straight down the gullet! The swamp always comes back for seconds.”', mult: 2.6, heal: 0.08 },
+  voltra:   { name: 'Chain Lightning',  cry: '“The sky ANSWERS me — and it is screaming your name in thunder!”', mult: 1.15, hits: 3 },
+  mildew:   { name: 'Spore Bloom',      cry: '“Breathe deep, little sunbeam. Let the rot bloom inside you.”', mult: 1.9, poison: 5 },
+  umbrella: { name: 'Endless Downpour', cry: '“Beneath my canopy the sun has never once touched the ground. Now drown.”', mult: 1.5, hits: 2 },
+  // dungeon keepers
+  gloomtroll:  { name: 'Cave-In',    cry: '“HRRN. Roof come DOWN. Cave keep hero, keep shiny, keep ALL.”', mult: 2.7 },
+  revenant:    { name: 'Grave Weight', cry: '“Kneel. The centuries I have carried, I lay now upon your shoulders.”', mult: 1.9, dread: true },
+  poltergeist: { name: 'The Haunting', cry: '“Ahaha! Round and round and round — you will NEVER find the door!”', mult: 1.1, hits: 3, dread: true },
+  // stairway guardians
+  sentinel:   { name: 'Bulwark Slam',     cry: '“NONE climb past me. I am the storm’s locked and bolted door.”', mult: 2.7 },
+  raincaller: { name: 'Cloudburst',       cry: '“I called this hundred-year rain. Now I call every drop of it down on YOU.”', mult: 1.8, poison: 4 },
+  herald:     { name: 'Dread Knell',      cry: '“Listen — the mouth below is opening. It has already heard you coming.”', mult: 1.7, dread: true },
+  voidmaw:    { name: 'Devour the Light', cry: '“Everything bright ends in me. Give me that little glow of yours.”', mult: 2.2, lifesteal: 0.6 },
+  // the wyrm and the end of the world
+  dragon:    { name: 'Storm Breath', cry: '“I AM THE STORM’S TOOTH — and I bite the very sky in HALF!”', mult: 2.8, poison: 4 },
+  sognaroth: { name: 'Drowned Dawn', cry: '“witness the tide that has no morning. it is very old, and it is very, very hungry.”', mult: 1.6, hits: 2, dread: true },
+};
+
 // Elite monster affixes — a rare mob spawns "elite" with a modifier, more HP,
 // better XP/loot, and a coloured aura. (Champions/bosses are never elite.)
 const ELITE_MODS = {

@@ -425,6 +425,20 @@ button.closeBtn:not(.bigBtn) {
 }
 @keyframes biIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
 
+/* boss special-attack variant of the cutscene — hotter, angrier vignette */
+#bossIntro.special {
+  background: radial-gradient(ellipse at center, rgba(120,16,24,0.90), rgba(14,4,10,0.97));
+}
+#bossIntro.special #biTag { color: #ffd24a; letter-spacing: 3px; }
+#bossIntro.special #biSprite {
+  filter: drop-shadow(0 0 30px rgba(255, 70, 70, 0.65)) drop-shadow(0 6px 18px rgba(0,0,0,0.6));
+}
+.braceNote {
+  padding: 12px; text-align: center; font-weight: 800; color: #ffd24a;
+  letter-spacing: 2px; animation: bracePulse 0.6s ease-in-out infinite;
+}
+@keyframes bracePulse { 0%,100% { opacity: 0.55; } 50% { opacity: 1; } }
+
 /* ---------- rainbow ride cinematic ---------- */
 #rideCinematic {
   position: fixed; inset: 0; z-index: 130;

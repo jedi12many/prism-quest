@@ -699,6 +699,42 @@ function showBossIntro(type) {
   el.onclick = dismiss;
 }
 
+// A boss unleashes its signature move: cut back to the cutscene for a battlecry,
+// then run onDone (which applies the hit) once the card is dismissed.
+function showBossSpecial(type, sp, onDone) {
+  const intro = BOSS_INTROS[type];
+  const def = MONSTERS[type];
+  const el = document.getElementById('bossIntro');
+  const key = MONSTER_SPRITE[type];
+  const url = key && hasSprite(key) ? spriteDataURL(key) : null;
+  const img = document.getElementById('biSprite');
+  if (url) { img.src = url; img.style.display = 'block'; } else { img.style.display = 'none'; }
+  document.getElementById('biTag').textContent = `— ✦ SPECIAL · ${sp.name} ✦ —`;
+  const nameEl = document.getElementById('biName');
+  nameEl.textContent = def.name;
+  nameEl.style.color = (intro && intro.color) || '#ff8a9e';
+  document.getElementById('biQuote').textContent = sp.cry;
+  document.getElementById('biSkip').textContent = 'tap to brace';
+  el.classList.add('special');
+  el.classList.remove('show');
+  void el.offsetWidth; // restart the animations
+  el.classList.add('show');
+  if (typeof sndBossIntro === 'function') sndBossIntro(type);
+  clearTimeout(BI_TIMER);
+  let done = false;
+  const finish = () => {
+    if (done) return;
+    done = true;
+    el.classList.remove('show', 'special');
+    el.onclick = null;
+    document.getElementById('biSkip').textContent = 'tap to face them';
+    clearTimeout(BI_TIMER);
+    if (onDone) onDone();
+  };
+  BI_TIMER = setTimeout(finish, 2000);
+  el.onclick = finish;
+}
+
 // ---------- villagers ----------
 
 // Grandma's whisper about the shattered Prismblade
