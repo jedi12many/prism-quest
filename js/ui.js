@@ -793,10 +793,16 @@ function npcDialog(id) {
       return { text: `Oh, sweetheart, you'll catch your death out there. Here — some quartz from my rock garden, for practice.<br><br>
         Mind the rain: the gloom-things <b>cannot step into sunshine</b>. If they gang up on you, run for the light.` };
     }
-    if (q <= 1) return { text: 'The champions? Nasty things. The toad spits poison, the serpent strikes twice, the mold <i>regrows</i>, and the umbrella… whispers. Bring healing blooms, dearie.' + facetHint(s) + achHintLine() };
-    if (q <= 4) return { text: 'Whatever rules that castle fears pure sunlight — Sunflare, Rainbow Beam, Stardust. My knees ache just thinking about that climb.' + facetHint(s) + achHintLine() };
-    if (q <= 6) return { text: "Beyond the portal there are <b>no gems to mine, no way home</b> until it's done. Pack every spell charge you can, dearie, and come back to me in one piece." + achHintLine() };
-    return { text: 'Sunshine on my rocking chair at last. You wonderful child.' + achHintLine() };
+    const cleared = ZONE_IDS.filter(z => s.zonesCleared[z]).length;
+    if (q <= 1) {
+      const mem = cleared === 0
+        ? 'You asked me once why it rains. I was a girl when the sun went out — and it didn\'t sink, child, and it didn\'t dim. It was <i>there</i>, and then it was gone into something\'s mouth. We\'ve lived under the drip of that mouth ever since.'
+        : 'Mark an old woman\'s words: every land you free, the rain leans harder toward the middle of the world — like a breath being drawn in. I don\'t think we\'re ending this storm, dearie. I think we\'re <b>waking what makes it</b>.';
+      return { text: 'The champions? Nasty things — the toad spits poison, the serpent strikes twice, the mold <i>regrows</i>, and the umbrella… whispers. Bring healing blooms.<br><br>' + mem + facetHint(s) + achHintLine() };
+    }
+    if (q <= 4) return { text: 'The rain\'s climbing back into the sky now — see it? That is not the weather breaking, child. That is something <b>inhaling</b>. Whatever\'s been drinking our sun for a hundred years is sitting up to see who\'s been pestering it. It fears pure light — Sunflare, Rainbow Beam, Stardust.' + facetHint(s) + achHintLine() };
+    if (q <= 6) return { text: 'Beyond the portal there are <b>no gems, no way home</b> until it\'s done. Down there is the thing itself, dearie — and it has no morning. Take the blade that outshines the sun, and give it one.' + achHintLine() };
+    return { text: 'Sunshine on my rocking chair at last, and I lived to feel it. You wonderful child.' + achHintLine() };
   }
   if (id === 'pip') {
     const qp = s.sideQuests.pip;

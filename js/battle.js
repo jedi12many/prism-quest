@@ -449,12 +449,15 @@ function victory() {
       toast(`🌞 Sunlight floods ${ZONES[zid].name}! The gloom-things melt into dew.`);
       fxConfetti(window.innerWidth / 2, 200, 50);
     }, 800);
+    const clearedNow = ZONE_IDS.filter(z => s.zonesCleared[z]).length;
     if (ZONE_IDS.every(z => s.zonesCleared[z])) {
       setTimeout(() => {
         setQuest(2);
-        toast('🏰 Far above, thunder rolls… the RAINYCASTLE has risen in the rainclouds!');
+        toast('🏰 The last land brightens — and all the rain rushes UP at once, into a castle of cloud. The RAINYCASTLE has risen. That was not the storm ending, hero. That was it inhaling.');
       }, 3000);
     } else {
+      // the freed land's rain doesn't just stop — it retreats toward one point
+      if (ZONE_DREAD[clearedNow - 1]) setTimeout(() => toast('🌧️ ' + ZONE_DREAD[clearedNow - 1]), 2200);
       renderHUD();
     }
   } else if (B.monster.type === 'dragon' && !s.bossDefeated) {

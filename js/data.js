@@ -419,6 +419,22 @@ const ZONES = {
   },
 };
 
+// "Earn the reveal" — the slow-drip mystery. As you unearth each Prismblade
+// facet, the shard tells you a little more of the truth beneath the rain.
+const FACET_WHISPERS = [
+  'You hold the shard to your ear. The rain isn\'t rain — it\'s slow, and wet, and it is breathing.',
+  'Two shards now, and they hum to one another — a thin, frightened note, like they remember the light they were cut from.',
+  'Three. The hum sharpens into a warning: the sun did not set a hundred years ago. It did not leave. It was swallowed.',
+  'Four. In your hands they know each other and blaze — and far below the world, something vast and patient flinches from the glare.',
+];
+
+// as each land is freed, the retreating rain betrays that the storm has a centre
+const ZONE_DREAD = [
+  'Where the sun breaks through, the rest of the rain shrinks away — leaning, all of it, toward one low and distant point.',
+  'Two lands bright now, and the rain drains toward the same place every time. The storm has a middle. A throat.',
+  'Three freed. You can feel it plainly now: every drop on this whole world, reeling in toward one hungry spot below.',
+];
+
 // Main quest stages (index = state.mainQuest)
 const QUEST_TEXT = [
   'Talk to Mayor Puddle in Drizzlewick.',

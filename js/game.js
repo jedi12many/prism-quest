@@ -401,6 +401,10 @@ function digTreasure() {
   save();
   const power = countFacetPower();
   toast(`💎 You unearth the ${item.name}! (${power}/4 facets — the Glassworks can fuse ${power >= 2 ? 'them' : 'two or more'})`);
+  // the shard tells you a little more of the truth beneath the rain
+  const found = ZONE_IDS.filter(z => G.state.facetsFound[z]).length;
+  const whisper = FACET_WHISPERS[found - 1];
+  if (whisper) setTimeout(() => toast('🔮 ' + whisper), 1500);
   if (ZONE_IDS.every(z => G.state.facetsFound[z])) achEvent('facets');
 }
 
@@ -840,6 +844,8 @@ function enterPortal() {
   G.realmDepth = 1;
   travelTo('realm', 3, 12);
   toast('🌀 The portal seals behind you. The rain here falls in colors that have no names.');
+  // you have felt this coming since the first shard sang — now you go to meet it
+  setTimeout(() => toast('🐙 You knew, in the end. Something vast, and patient, and hungry, in the dark that has no morning. You have come to give it one.'), 2000);
 }
 
 // ---------- save / load ----------
