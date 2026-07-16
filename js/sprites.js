@@ -84,13 +84,14 @@ const SPRITES = {
       '..orrrrr', '.orrrrrr', '.orRrrrr', '.oRRRRRR', '..oo....',
     ],
   },
+  // a manlike diamond golem: faceted crystal, glowing eyes, a chest core gem
   player_knight: {
     mirror: true,
-    pal: { '.': null, o: P.o, e: P.o, a: '#9fb7d8', A: '#6d84a8', b: '#7fd0ff', g: '#ffd24a' },
+    pal: { '.': null, o: P.o, i: '#eaffff', a: '#bfe9ff', A: '#7fb8e6', d: '#4a78b0', e: '#66f7ff' },
     rows: [
-      '.....gg.', '....gaag', '...oaaaa', '...oaeaa', '...oaaaa', '..oaaaaa',
-      '..oaAaaa', '.oaaaaaa', '.oaAaaaa', '.oaaaaaa', '.oaaaaaa',
-      '.obaaaab', '.oaaaaaa', '.oaAAaaa', '..oaaaaa', '..oo....',
+      '.......i', '......ia', '.....iaA', '....iaeA', '....oaAA', '.....odA',
+      '.oaaAAaA', '.oaAdAAa', '.oaAdaii', '.oaAdaaA', '.oaAAAaA',
+      '..oaAAaA', '...oaAa.', '...oaAa.', '...odAa.', '...oaao.',
     ],
   },
   player_whisperer: {
