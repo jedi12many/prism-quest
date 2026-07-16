@@ -266,6 +266,30 @@ const BOSS_SPECIALS = {
   sognaroth: { name: 'Drowned Dawn', cry: '“witness the tide that has no morning. it is very old, and it is very, very hungry.”', mult: 1.6, hits: 2, dread: true },
 };
 
+// Dying revelations. As each named villain falls, it shows who they were before
+// the rain drowned them — and how the gloom below made or wore them. Each fight
+// ends on a truth that points back to the thing at the bottom of the dark.
+const BOSS_EULOGY = {
+  // the four gloom champions — each a drowned soul the gloom kept working
+  bogmaw:   '🐸 …the lantern. I kept it lit so long. Ninety-nine I ferried down, and could not carry one back up. …thank you, hero. Thank you for finally letting it go out.',
+  voltra:   '🐍 I rang the warning-bell the night the sky broke. No one came. The lightning found me first… and never let go. Tell them I rang it. I DID ring it—',
+  mildew:   '🦠 I only wanted to keep one green thing alive under all that rain. The rot came in through my fingernails. …I am so very tired of blooming.',
+  umbrella: '☂️ A hundred years I held it over an empty chair. They were gone before the first storm — and still I kept them dry. …I can put it down now? I can finally put it down.',
+  // the storm\'s tooth — a thing the gloom made of a longing, and a warning of the maker
+  dragon:   '🐉 I was the last cloud that still remembered being sky. It fed on me, and fed, and made a serpent of my longing. The mouth below made ALL of us, groundling — and it is still hungry. Climb down. See.',
+  // the stairway guardians — each a step closer to naming the dread
+  sentinel:   '🌩️ I kept the stair so no one would ever have to see what waits at the top of it. …go on, then. Someone finally has to.',
+  raincaller: '🌧️ I called the rain down a hundred years — it swore it would stop if I served. It lied. It always, always lied.',
+  herald:     '🦑 I heard it first, and hearing it, I could never be silent again. You are almost close enough now. …soon you will hear it too.',
+  voidmaw:    '🕳️ I am the last dark before the dark. Past me there is no more "before." …you are the first light to reach this deep in a hundred years. It felt you arrive. It is glad.',
+  // dungeon keepers — hoarders and haunts in the deep places
+  gloomtroll:  '🧌 Cave lonely now. Hero was shiniest thing… stay? …no. …oh. Cave so lonely.',
+  revenant:    '🗿 Before your sun there was another, and I guarded these stones then too. The dark is older than the light here, child. …remember that, down below.',
+  poltergeist: '👻 Everyone who dies here stays to play. But you — you are LEAVING. Oh, lucky thing, lucky thing. Run, before you learn why the rest of us stay.',
+  // the heart of the gloom — its last, astonished breath (shown in the win banner)
+  sognaroth:   'so. a morning, after all. how it… stings. there will be other darks — there is always more. but this one dawn is yours, little light. it actually h—',
+};
+
 // Elite monster affixes — a rare mob spawns "elite" with a modifier, more HP,
 // better XP/loot, and a coloured aura. (Champions/bosses are never elite.)
 const ELITE_MODS = {

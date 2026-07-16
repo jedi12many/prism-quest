@@ -361,6 +361,9 @@ function victory() {
   setTimeout(() => fxConfetti(mpos.x, mpos.y + 60, 40), 420);
   const foeName = B.elite ? `${B.elite.name} ${def.name}` : def.name;
   blog(`🎉 ${foeName} is defeated!`);
+  // a named villain's dying revelation (Sog'naroth's lands in the win banner instead)
+  const eulogy = BOSS_EULOGY[B.monster.type];
+  if (eulogy && !def.finalBoss) blog(eulogy);
   const gained = gainXp(Math.round(def.xp * (1 + ((B.tier || 1) - 1) * 0.3) * (B.elite ? B.elite.xpMul : 1)));
   blog(`⭐ +${gained} XP`);
 
@@ -432,6 +435,8 @@ function victory() {
     achEvent('runEnd', { won: true, cls: s.classId, sec: s.playSec, lowHp: s.lowHp == null ? 1 : s.lowHp, diff: s.difficulty });
     setTimeout(() => {
       closeScreen('battleScreen');
+      const we = document.getElementById('winEulogy');
+      if (we) we.textContent = '“' + BOSS_EULOGY.sognaroth + '”';
       const wt = document.getElementById('winTime');
       if (wt) wt.textContent = `Sun restored in ${fmtRunTime(s.playSec)} · recorded in the Village Ledger`;
       openScreen('winBanner');
