@@ -132,7 +132,8 @@ const CLASSES = {
   whisperer: {
     name: 'Unicorn Whisperer', emoji: '🦄', hp: 38, atk: 5, mag: 6, def: 3, defGrow: 0.5, difficulty: 'Gentle ★',
     perk: { unicornPower: 0.35 },
-    perkDesc: 'Unicorns are 35% stronger; starts with Summon Unicorn',
+    freeUnicorn: true, // their bonded companion — casts Summon Unicorn free, at will
+    perkDesc: 'Unicorns 35% stronger; your bonded unicorn answers free, at will',
     perkSpells: { unicorn: 2 },
     blurb: 'Speaks fluent sparkle. Unicorns answer the call.',
     tree: [

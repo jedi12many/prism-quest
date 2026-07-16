@@ -115,9 +115,10 @@ function playerAction(action, spellId) {
   } else if (action === 'spell') {
     if (!s.spells[spellId] || s.spells[spellId] <= 0) return;
     const sp = SPELLS[spellId];
-    const free = Math.random() < eff('chargeSave');
+    const petFree = spellId === 'unicorn' && classDef().freeUnicorn; // Whisperer's bonded companion — never costs a charge
+    const free = petFree || Math.random() < eff('chargeSave');
     if (!free) s.spells[spellId]--;
-    else blog('⛓️ Chain Light — the charge is refunded!');
+    else if (!petFree) blog('⛓️ Chain Light — the charge is refunded!');
     spellFX(spellId, fxFrom, fxTo);
     sndSpell(spellId);
     if (sp.power > 0 && spellId !== 'unicorn') shakeEl('bMonEmoji');
@@ -134,7 +135,9 @@ function playerAction(action, spellId) {
       const turns = 4 + eff('summonTurns');
       B.unicorn = { turns, power: 1 + eff('unicornPower') };
       achEvent('unicorn');
-      blog(`🦄 A radiant unicorn gallops to your side! (${turns} turns)`);
+      blog(petFree
+        ? `🦄 Your bonded unicorn gallops to your side! (${turns} turns)`
+        : `🦄 A radiant unicorn gallops to your side! (${turns} turns)`);
     } else {
       const sunSpell = B.def.finalBoss && ['sunflare', 'rainbowbeam', 'stardust'].includes(spellId);
       const { dmg, crit } = spellDamage(sp.power * (sunSpell ? 1.5 : 1));
