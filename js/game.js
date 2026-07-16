@@ -251,7 +251,7 @@ function buildVillage() {
   for (let x = BASE_RECT.x0; x <= BASE_RECT.x1; x++)
     for (let y = BASE_RECT.y0; y <= BASE_RECT.y1; y++)
       if (isWallTile(x, y)) G.wallTiles.push([x, y]);
-  G.npcs = Object.entries(NPCS).map(([id, n]) => ({ id, x: n.x, y: n.y }));
+  G.npcs = Object.entries(NPCS).map(([id, n]) => ({ id, x: n.x, y: n.y, home: { x: n.x, y: n.y }, moveAt: 1 + Math.random() * 3, faceLeft: false }));
   // zone gates, the plaza cloudgate, the Glassworks kiln (outside the walls —
   // fire safety!), and the Village Ledger
   G.gates = [{ x: 18, y: 4, kind: 'cloudgate' }, { x: 12, y: 7, kind: 'forge' }, { x: 15, y: 4, kind: 'board' }];
@@ -1268,6 +1268,26 @@ function update(dt) {
     }
   }
 
+  // villagers mill about their spots — a living town, not a diorama
+  if (G.mapId === 'village') {
+    for (const n of G.npcs) {
+      n.moveAt -= dt;
+      if (n.moveAt > 0) continue;
+      n.moveAt = 1.6 + Math.random() * 3.4;                 // gentle, unhurried
+      if (cheb(n.x, n.y, p.x, p.y) <= 1) continue;          // pause to face a hero who's come to talk
+      if (Math.random() < 0.4) continue;                    // often just stand and stretch
+      const [dx, dy] = [[0, -1], [0, 1], [-1, 0], [1, 0]][Math.floor(Math.random() * 4)];
+      const nx = n.x + dx, ny = n.y + dy;
+      if (cheb(nx, ny, n.home.x, n.home.y) > 2) continue;   // never stray far from their post
+      if (nx === p.x && ny === p.y) continue;               // don't shove the hero
+      if (gateAt(nx, ny) || buildingAt(nx, ny)) continue;   // stay off gates and building tiles
+      if (walkable(nx, ny) && !G.npcs.some(o => o !== n && o.x === nx && o.y === ny)) {
+        if (dx) n.faceLeft = dx < 0;
+        n.x = nx; n.y = ny;
+      }
+    }
+  }
+
   for (const f of G.floaters) f.t += dt;
   G.floaters = G.floaters.filter(f => f.t < 1.4);
 
@@ -1411,6 +1431,9 @@ function draw() {
       }
     }
   }
+
+  // village ground: puddles while the storm holds, flower beds as the land heals
+  if (G.mapId === 'village') drawVillageDecor(ctx, cam, w, h);
 
   // camp buildings + walls (village only)
   if (G.mapId === 'village') {
@@ -1662,7 +1685,7 @@ function draw() {
     const nbr = Math.sin(G.time * 2.5 + n.x);
     const nbob = nbr * 1.2;
     drawShadow(ctx, sx, sy + TILE * 0.42, TILE * 0.46);
-    if (!drawSprite(ctx, NPC_SPRITE[n.id], sx, sy - 2, TILE * 1.02, { bob: nbob, squashY: 1 + nbr * 0.02, squashX: 1 - nbr * 0.015 })) {
+    if (!drawSprite(ctx, NPC_SPRITE[n.id], sx, sy - 2, TILE * 1.02, { bob: nbob, flip: n.faceLeft, squashY: 1 + nbr * 0.02, squashX: 1 - nbr * 0.015 })) {
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.font = `${TILE * 0.78}px "Segoe UI Emoji", serif`;
       ctx.fillText(NPCS[n.id].emoji, sx, sy);
@@ -1827,6 +1850,52 @@ function draw() {
 }
 
 // a 2x2 hamlet landmark marking the way home, with a waving flag and label
+// The village's mood follows the war on the gloom: puddles from the endless
+// rain while the storm holds, blooming flower beds as each land is freed.
+const VILLAGE_DECOR = [[16, 10], [19, 11], [22, 8], [24, 12], [14, 12], [18, 13], [21, 14], [12, 13]];
+function drawVillageDecor(ctx, cam, w, h) {
+  const s = G.state; if (!s) return;
+  // each land you free blooms two beds and dries two puddles; a full sun blooms all
+  const bloom = s.sunRestored ? VILLAGE_DECOR.length : ZONE_IDS.filter(z => s.zonesCleared[z]).length * 2;
+  for (let i = 0; i < VILLAGE_DECOR.length; i++) {
+    const cx = (VILLAGE_DECOR[i][0] + 0.5) * TILE - cam.x, cy = (VILLAGE_DECOR[i][1] + 0.6) * TILE - cam.y;
+    if (cx < -TILE || cy < -TILE || cx > w + TILE || cy > h + TILE) continue;
+    if (i < bloom) drawFlowerBed(ctx, cx, cy, i); else drawPuddle(ctx, cx, cy, i);
+  }
+}
+
+function drawPuddle(ctx, cx, cy, seed) {
+  const rw = TILE * 0.42, rh = TILE * 0.2;
+  const sh = Math.sin(G.time * 1.4 + seed * 1.7) * 0.5 + 0.5;
+  ctx.save();
+  ctx.fillStyle = 'rgba(84,112,158,0.55)';
+  ctx.beginPath(); ctx.ellipse(cx, cy, rw, rh, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = `rgba(200,224,255,${0.22 + sh * 0.18})`; // sky sheen
+  ctx.beginPath(); ctx.ellipse(cx - rw * 0.22, cy - rh * 0.18, rw * 0.5, rh * 0.4, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = `rgba(210,230,255,${0.16 * sh})`; ctx.lineWidth = 1.5; // a slow ripple
+  ctx.beginPath(); ctx.ellipse(cx, cy, rw * (0.4 + sh * 0.5), rh * (0.4 + sh * 0.5), 0, 0, Math.PI * 2); ctx.stroke();
+  ctx.restore();
+}
+
+function drawFlowerBed(ctx, cx, cy, seed) {
+  const cols = ['#ff6ec7', '#ffd24a', '#7ec8ff', '#ff8a5c', '#c78bff'];
+  ctx.save();
+  ctx.fillStyle = 'rgba(72,150,62,0.5)'; // a soft grassy mound
+  ctx.beginPath(); ctx.ellipse(cx, cy + 2, TILE * 0.4, TILE * 0.16, 0, 0, Math.PI * 2); ctx.fill();
+  for (let k = 0; k < 5; k++) {
+    const ang = (k / 5) * Math.PI * 2 + seed;
+    const fx = cx + Math.cos(ang) * TILE * 0.22, fy = cy + Math.sin(ang) * TILE * 0.1 - TILE * 0.06;
+    const sway = Math.sin(G.time * 2 + seed + k) * 1.5;
+    ctx.strokeStyle = '#3ea54a'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(fx, cy); ctx.lineTo(fx + sway, fy - 3); ctx.stroke();
+    ctx.fillStyle = cols[(k + seed) % cols.length];
+    ctx.beginPath(); ctx.arc(fx + sway, fy - 4, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#fff6c0';
+    ctx.beginPath(); ctx.arc(fx + sway, fy - 4, 1.2, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.restore();
+}
+
 function drawVillageLandmark(ctx, cx, cy) {
   const s = TILE;
   // eye-catching pulse ring at the base

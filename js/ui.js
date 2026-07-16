@@ -823,6 +823,9 @@ function npcDialog(id) {
         checkGoodNeighbor();
       } },
     };
+    if (s.sunRestored) return { text: 'The sun\'s OUT and Sir Croaksworth won\'t stop hopping! A hundred adventures, starting NOW. You saved EVERYTHING, hero!' };
+    if (q >= 5) return { text: 'Sir Croaksworth\'s hiding under my bed. He says something down below is looking back up at us… You\'re not scared, are you? …Okay. Then I\'m not either.' };
+    if (ZONE_IDS.some(z => s.zonesCleared[z])) return { text: 'Since you scared off the monsters, the puddles by our house keep shrinking! Sir Croaksworth misses splashing. I don\'t. Not one bit.' };
     return { text: 'Sir Croaksworth and me are gonna be knights when we grow up. Like YOU!' };
   }
   if (id === 'baker') {
@@ -846,6 +849,9 @@ function npcDialog(id) {
         renderHUD();
       } },
     };
+    if (s.sunRestored) return { text: 'Every oven in Drizzlewick is roaring — the whole town smells of Sunshine Buns. THIS is what a hundred years of waiting tastes like. Thank you, friend.' };
+    if (q >= 5) return { text: 'Here — a bag of buns for the road down. I don\'t know what waits past that portal, but nobody should face it on an empty stomach.' };
+    if (ZONE_IDS.some(z => s.zonesCleared[z])) return { text: 'Every land you brighten, my dough rises a little higher. Feels like the whole town exhaling at once.' };
     return { text: 'Smell that? THAT is what sunshine tastes like. Come back any time, friend.' };
   }
   if (id === 'willow') {
@@ -868,6 +874,9 @@ function npcDialog(id) {
         renderHUD();
       } },
     };
+    if (s.sunRestored) return { text: 'Look at the beds now — every colour at once, drinking real sun. A century of drizzle, and they never forgot how to bloom. Neither did we.' };
+    if (q >= 5) return { text: '*presses a dried tulip into your hand* Take this down with you, love. So you remember there\'s colour up here worth climbing back for.' };
+    if (ZONE_IDS.some(z => s.zonesCleared[z])) return { text: 'The puddles are drying and the beds are waking. You\'re not just felling monsters, love — you\'re giving the valley back its spring.' };
     return { text: 'The tulips turn to follow you when you walk past. They remember.' };
   }
   // foreman
