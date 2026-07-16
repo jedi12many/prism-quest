@@ -222,6 +222,26 @@ function renderMeta() {
     card.appendChild(btn);
     list.appendChild(card);
   }
+  renderMemorial(meta);
+}
+
+// the roll of the fallen (and the Gloombreakers who came before)
+function renderMemorial(meta) {
+  const el = document.getElementById('metaMemorial');
+  if (!el) return;
+  const fallen = meta.fallen || [];
+  let html = '';
+  if (meta.suns) html += `<div class="memSuns">☀️ Suns restored by those before you: <b>${meta.suns}</b> — the valley calls them Gloombreakers.</div>`;
+  if (fallen.length) {
+    html += '<h3 class="memTitle">🕯️ The Roll of the Fallen</h3><div class="memList">';
+    for (const f of fallen.slice(-10).reverse()) {
+      const c = CLASSES[f.cls] || { emoji: '🗡️', name: 'a hero' };
+      html += `<div class="memRow"><span class="memWho">${c.emoji} ${c.name}</span><span class="memWhere">Lv ${f.level} · fell in ${f.where}${f.zones ? ` · ${f.zones}/4 freed` : ''}</span></div>`;
+    }
+    html += '</div>';
+  }
+  if (!html) html = '<div class="memNone">No hero has fallen yet, and none has yet seen the sun. Be the first the village remembers.</div>';
+  el.innerHTML = html;
 }
 
 function buyMeta(id) {
@@ -790,8 +810,15 @@ function npcDialog(id) {
       s.raw.quartz = (s.raw.quartz || 0) + 4;
       save();
       toast('🎁 Grandma Nimbus gave you 4 raw Quartz!');
+      const meta = loadMeta();
+      let lineage = '';
+      if (meta.suns > 0) {
+        lineage = `<br><br>…oh. <i>Oh.</i> I know that look. ${meta.suns === 1 ? 'A hero already' : `${meta.suns} heroes have`} walked out of that dark with the sun on their shoulders — and still you came back for more. Rainyday makes them, and Rainyday keeps them. Welcome home, whoever you are this time.`;
+      } else if (meta.runs > 0) {
+        lineage = `<br><br>…have we met, dearie? You've the eyes of the last one. And the one before. ${meta.runs === 1 ? 'One brave soul' : `${meta.runs} brave souls`} this valley has sent into the gloom — and it remembers every single one. Come home this time.`;
+      }
       return { text: `Oh, sweetheart, you'll catch your death out there. Here — some quartz from my rock garden, for practice.<br><br>
-        Mind the rain: the gloom-things <b>cannot step into sunshine</b>. If they gang up on you, run for the light.` };
+        Mind the rain: the gloom-things <b>cannot step into sunshine</b>. If they gang up on you, run for the light.${lineage}` };
     }
     const cleared = ZONE_IDS.filter(z => s.zonesCleared[z]).length;
     if (q <= 1) {
@@ -943,10 +970,12 @@ function declinePact() {
 function showGameOver(summary) {
   closeAllScreens();
   const b = summary.best;
+  const fell = b.runs || 1;
   document.getElementById('goStats').innerHTML = `
     <div class="goRun">This hero: <b>Level ${summary.level}</b> · ${summary.zones}/4 lands freed · ${summary.kills} kills</div>
     <div class="goMotes">✦ Earned <b>${summary.earned}</b> Motes — ${b.motes} banked</div>
-    <div class="goBest">Best ever: Level ${b.bestLevel || 0} · ${b.bestZones || 0}/4 lands · run #${b.runs || 1}</div>`;
+    <div class="goBest">Best ever: Level ${b.bestLevel || 0} · ${b.bestZones || 0}/4 lands · run #${fell}</div>
+    <div class="goLineage">${fell === 1 ? 'You are the first to fall to the gloom' : `${fell} heroes have now fallen to the gloom`}. Drizzlewick will light a candle for you in the Sanctuary — and send the next.</div>`;
   openScreen('gameOverScreen');
 }
 

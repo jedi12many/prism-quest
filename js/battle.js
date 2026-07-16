@@ -433,6 +433,7 @@ function victory() {
     s.mainQuest = 7;
     for (const m of G.monsters) { m.alive = false; m.respawnAt = Infinity; }
     achEvent('runEnd', { won: true, cls: s.classId, sec: s.playSec, lowHp: s.lowHp == null ? 1 : s.lowHp, diff: s.difficulty });
+    const _m = loadMeta(); _m.suns = (_m.suns || 0) + 1; saveMeta(_m); // a Gloombreaker the village will remember
     setTimeout(() => {
       closeScreen('battleScreen');
       const we = document.getElementById('winEulogy');

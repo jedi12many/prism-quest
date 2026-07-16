@@ -720,6 +720,21 @@ button.closeBtn:not(.bigBtn) {
 #goStats { text-align: center; margin: 10px 0 4px; }
 .goRun { font-size: 15px; font-weight: 700; color: #ffe9a8; margin-bottom: 6px; }
 .goBest { font-size: 13px; opacity: 0.8; }
+.goLineage { font-size: 13px; font-style: italic; color: #c9b8ff; margin-top: 10px; line-height: 1.4; }
+
+/* the roll of the fallen, in the Sanctuary */
+.metaMemorial { margin-top: 16px; }
+.memSuns { text-align: center; color: #ffe9a8; font-size: 13px; margin: 6px 0 10px; }
+.memTitle { text-align: center; font-size: 15px; color: #c9b8ff; margin: 8px 0; }
+.memList { display: flex; flex-direction: column; gap: 4px; max-height: 190px; overflow-y: auto; }
+.memRow {
+  display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+  padding: 5px 10px; border-radius: 8px; background: rgba(255,255,255,0.04);
+  border-left: 2px solid rgba(180,140,255,0.5); font-size: 12px;
+}
+.memWho { font-weight: 700; color: #e6def7; }
+.memWhere { color: #a49fc0; }
+.memNone { text-align: center; font-size: 13px; font-style: italic; color: #a49fc0; margin-top: 8px; }
 .deathNote {
   flex: 1 1 100%;
   text-align: center;

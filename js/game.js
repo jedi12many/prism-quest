@@ -904,6 +904,17 @@ function motesForRun(s) {
   return s.kills * 2 + zones * 15 + s.level * 3 + (s.sunRestored ? 100 : 0);
 }
 
+// a readable name for wherever a hero met their end — for the roll of the fallen
+function deathPlace() {
+  const d = G.state && G.state.dungeon;
+  if (d) return `${DUNGEONS[d.type] ? DUNGEONS[d.type].name : 'the deep'} (floor ${d.floor})`;
+  const id = G.mapId;
+  if (ZONE_IDS.includes(id)) return ZONES[id].name;
+  if (id === 'clouds') return 'the Rainycastle';
+  if (id === 'realm') return 'the dark below';
+  return 'the wilds of Rainyday';
+}
+
 // rogue-like: on death the hero is gone. Bank Motes, record the run, wipe save.
 function recordDeath() {
   const s = G.state;
@@ -915,6 +926,10 @@ function recordDeath() {
   meta.bestLevel = Math.max(meta.bestLevel || 0, s.level);
   meta.bestZones = Math.max(meta.bestZones || 0, zones);
   meta.bestKills = Math.max(meta.bestKills || 0, s.kills);
+  // the village remembers its dead — a roll of the fallen the next hero inherits
+  meta.fallen = meta.fallen || [];
+  meta.fallen.push({ cls: s.classId, level: s.level, zones, where: deathPlace(), run: meta.runs });
+  if (meta.fallen.length > 20) meta.fallen = meta.fallen.slice(-20);
   saveMeta(meta);
   achEvent('runEnd', { won: false, cls: s.classId, sec: s.playSec, diff: s.difficulty });
   localStorage.removeItem(SAVE_KEY); // the hero is lost
