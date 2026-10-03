@@ -15,8 +15,8 @@ void calc_stats(void)
     const ClassDef *c = &classes[P.cls];
     u8 l = P.level - 1;
     P.hpmax = c->hp + 6 * l + 10 /* camp house, level 1 */ + P.bonus_hp + eff(E_HPMAX);
-    P.atk = c->atk + l;
-    P.mag = c->mag + l;
+    P.atk = c->atk + l + eff(E_ATKFLAT);
+    P.mag = c->mag + l + eff(E_MAGFLAT);
     P.def = (c->def * 2 + l * c->def_grow2) / 2 + eff(E_DEFFLAT);
     if (P.hp > P.hpmax) P.hp = P.hpmax;
 }
@@ -45,19 +45,22 @@ u16 gain_xp(u16 n)
 
 void new_game(u8 cls)
 {
+    u8 c;
     memset(&P, 0, sizeof(P));
     P.cls = cls;
     P.level = 1;
     P.skill_points = 1;
     P.spells[SP_GLITTER] = 4;
     if (cls == CL_WHISPERER) P.spells[SP_UNICORN] = 2;
+    P.x = 6; P.y = 6;
+    P.map = MAP_VILLAGE;
+    for (c = 0; c < NSLOT; ++c) P.equip[c].kind = 0xFF;
+    roll_item(&P.equip[SL_WEAPON], 1, R_COMMON, SL_WEAPON);   /* a humble starter weapon */
 #ifdef TEST_SETUP
     TEST_SETUP
 #endif
     calc_stats();
     P.hp = P.hpmax;
-    P.x = 6; P.y = 6;
-    P.map = MAP_VILLAGE;
 }
 
 /* ---------- title ---------- */

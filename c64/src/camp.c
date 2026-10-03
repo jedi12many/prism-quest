@@ -16,6 +16,7 @@ i16 eff(u8 key)
     const Eff *e;
     for (k = 0; k < 2; ++k)
         if (class_perk[P.cls][k].key == key) v += class_perk[P.cls][k].val;
+    v += gear_eff(key);
     if (!P.skills) return v;
     for (b = 0; b < 3; ++b)
         for (t = 0; t < 5; ++t) {
@@ -372,17 +373,18 @@ void show_tree(void)
 
 /* ---------- the camp menu (fire in the world) ---------- */
 
-static const char *const camp_items[6] = { "Bag & polishing", "Spellbook", "Power Tree", "Village Ledger", "Save game", "Back" };
+static const char *const camp_items[7] = { "Bag & polishing", "Gear", "Spellbook", "Power Tree", "Village Ledger", "Save game", "Back" };
 
 void camp_menu(void)
 {
     u8 sel;
     POKE(0xD015, 0);
     msg_clear();
-    sel = menu_pick(1, MSG_ROW - 2, camp_items, 6, 0);
+    sel = menu_pick(1, MSG_ROW - 3, camp_items, 7, 0);
     if (sel == 0) show_bag();
-    else if (sel == 1) show_spellbook();
-    else if (sel == 2) show_tree();
-    else if (sel == 3) show_ledger();
-    else if (sel == 4) { clear_rows(MSG_ROW - 2, 24); save_game(); wait_fire(); }
+    else if (sel == 1) show_gear();
+    else if (sel == 2) show_spellbook();
+    else if (sel == 3) show_tree();
+    else if (sel == 4) show_ledger();
+    else if (sel == 5) { clear_rows(MSG_ROW - 3, 24); save_game(); wait_fire(); }
 }

@@ -7,6 +7,7 @@
 ;   u8 __fastcall__ disk_op(u8 op);
 ;     op 0  SAVE   disk_name -> file, data disk_start..disk_end (exclusive)
 ;     op 1  LOAD   file disk_name -> disk_start (secondary address 0)
+;     op 3  LOAD   file disk_name -> the address in its header (secondary address 1)
 ;     op 2  CMD    send disk_name as a DOS command on channel 15
 ;   Every op then reads the drive's error channel into disk_status.
 ;   Returns 0 if the KERNAL call succeeded, else its error code
@@ -35,6 +36,7 @@ _disk_start:    .word 0
 _disk_end:      .word 0
 _disk_status:   .res 40, 0      ; "00, OK,00,00" from the drive, 0-terminated
 result:         .byte 0
+loadsa:         .byte 0
 saved01:        .byte 0
 savedptr:       .word 0
 
@@ -55,7 +57,11 @@ _disk_op:
         sta result
         sta _disk_status
 
+        ldy #0
         cpx #1
+        beq do_load
+        ldy #1
+        cpx #3
         beq do_load
         cpx #2
         beq do_cmd
@@ -79,9 +85,10 @@ do_save:
         jmp done
 
 do_load:
+        sty loadsa              ; 0: load to X/Y, 1: to the file's own address
         lda #1
         ldx _disk_dev
-        ldy #0                  ; secondary address 0: load to X/Y
+        ldy loadsa
         jsr SETLFS
         jsr setname
         lda #0                  ; 0 = load (not verify)

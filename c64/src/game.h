@@ -16,9 +16,12 @@ typedef int i16;
 /* ---------- memory map ----------
  * VIC bank 3, in the RAM under the (banked-out) KERNAL; see prismquest.cfg */
 #define SCREEN    ((u8 *)0xE000)
-#define SPRITES   0xE400          /* 16 sprite slots */
+#define SPRITES   0xE400          /* sprite slots (6 used) */
 #define SPR_BASE  0x90            /* sprite pointer value of slot 0 */
-#define CHARSET   0xE800
+#define CHARSET   0xD000          /* under the I/O chips; only the VIC reads it */
+#define HIRAM     0xE580          /* code + data loaded from PQ.HI */
+#define LOWSCRATCH 0x0400         /* scratch: save buffer / map view buffers */
+#define LOWSCRATCH_LEN 0x01F0
 #define COLORRAM  ((u8 *)0xD800)
 #define SPR_PTR   ((u8 *)0xE3F8)
 #define SPR_SLOT(n) ((u8 *)(SPRITES + (n) * 64))
@@ -52,6 +55,7 @@ enum { BLACK, WHITE, RED, CYAN, PURPLE, GREEN, BLUE, YELLOW,
 #define K_I 0x21
 #define K_C 0x14
 #define K_T 0x16
+#define K_G 0x1A
 #define K_R 0x11
 #define K_1 0x38
 #define K_2 0x3B
@@ -175,6 +179,39 @@ extern const u8 npc_home[NNPC][2];
 extern const u16 xp_next[13];
 #define LEVEL_CAP 12
 
+/* ---------- loot (loot.c, in PQ.HI) ---------- */
+#define NSLOT 5
+enum { SL_WEAPON, SL_HELM, SL_ARMOR, SL_BOOTS, SL_CHARM };
+enum { R_COMMON, R_MAGIC, R_RARE, R_LEGEND, R_SET };
+#define INV_CAP 24
+typedef struct {
+    u8 kind;               /* slot | rarity << 4; 0xFF = no item */
+    u8 name;               /* base-name index, or the slot for legendaries/sets */
+    u8 key[3], val[3];     /* affixes: effect key (E_*, 0 = none) and value */
+    u8 base;               /* implicit stat (which one depends on the slot) */
+    u8 sockets;            /* 0-2 */
+    u8 gem[2];             /* faceted gem: mineral | quality << 4; 0xFF = empty */
+} Item;
+#define ITEM_SLOT(it)   ((it)->kind & 15)
+#define ITEM_RARITY(it) ((it)->kind >> 4)
+extern const char *const slot_name[NSLOT];
+extern const char *const rarity_name[5];
+extern const u8 rarity_color[5];
+extern const char *const legend_lore[NSLOT];
+extern const u8 gem_key[NMIN];
+extern const u8 gem_val[NMIN][3];
+void roll_item(Item *it, u8 ilvl, u8 rarity, u8 slot);   /* 0xFF = random */
+i16 item_stat(const Item *it, u8 key);
+i16 gear_eff(u8 key);
+u8 set_count(void);
+u16 item_power(const Item *it);
+void sb_item_name(const Item *it);
+void sb_stat(u8 key, i16 v);
+u8 item_lines(const Item *it, u8 *keys, i16 *vals);
+u8 give_item(const Item *it);
+void monster_loot(u8 type);
+void show_gear(void);                  /* gear.c */
+
 /* ---------- player state ---------- */
 typedef struct {
     u8 cls;
@@ -197,6 +234,9 @@ typedef struct {
     u8 baker_stage, willow_stage;
     u8 x, y;
     u8 map;                /* MAP_VILLAGE or a zone id */
+    Item equip[NSLOT];
+    Item inv[INV_CAP];
+    u8 ninv;
 } Player;
 extern Player P;
 
@@ -267,6 +307,9 @@ void game_over(void);
 
 /* disk (save.c) */
 void disk_init(void);
+u8 hi_present(void);
+u8 load_hi(void);
+void unpack_hi(void);
 u8 save_game(void);
 u8 load_game(void);
 void erase_save(void);

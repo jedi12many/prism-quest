@@ -26,8 +26,8 @@ void hw_init(void)
     POKE(0xDD00, PEEK(0xDD00) & 0xFC);      /* VIC bank 3: $C000-$FFFF */
 
     POKE(0xD011, 0x0B);                     /* blank while we set up */
-    memcpy((void *)CHARSET, charset, 2048);
-    POKE(0xD018, 0x8A);                     /* screen $E000, chars $E800 */
+    /* the character set is already under the I/O chips (unpack_hi) */
+    POKE(0xD018, 0x84);                     /* screen $E000, chars $D000 */
     POKE(0xD016, 0x18);                     /* multicolour text */
     POKE(0xD020, BLACK);
     POKE(0xD021, BLACK);
@@ -73,7 +73,9 @@ u8 key_hit(u8 code)
 }
 
 #ifdef AUTOPLAY
-/* test builds replay a scripted joystick: pairs of (frames, mask), 0-terminated */
+/* test builds replay a scripted joystick: pairs of (frames, mask), 0-terminated.
+ * A script may also define autoplay_loop[], replayed forever afterwards. */
+#define AUTOPLAY_INPUTS
 #include AUTOPLAY
 static const u8 *ap = autoplay;
 static u8 ap_left;
@@ -85,6 +87,9 @@ void input_poll(void)
     POKE(0xDC00, 0xFF);
     j = ~PEEK(0xDC00) & 0x1F;               /* joystick port 2 */
 #ifdef AUTOPLAY
+#ifdef AUTOPLAY_LOOP
+    if (!*ap) ap = autoplay_loop;
+#endif
     if (*ap) {
         if (!ap_left) ap_left = ap[0];
         j = ap[1];
@@ -133,6 +138,7 @@ u8 glyph(char c)
 
 void cls(void)
 {
+    POKE(0xD016, 0x08);                     /* plain hi-res text: all 16 colours */
     memset(SCREEN, 0, 1000);
     memset(COLORRAM, WHITE, 1000);
 }
@@ -290,9 +296,16 @@ void sound_tick(void)
 }
 
 /* ---------- sprites ---------- */
+/* sprite art is stored as 16x16 (2 bytes a row) under the I/O chips at
+ * $D800; bank I/O out to read it, and pad it to the 24x21 slot */
 void spr_load(u8 slot, const u8 *data)
 {
-    memcpy(SPR_SLOT(slot), data, 63);
+    u8 *p = SPR_SLOT(slot);
+    u8 y;
+    POKE(0x01, 0x34);
+    for (y = 0; y < 16; ++y) { p[0] = data[0]; p[1] = data[1]; p[2] = 0; p += 3; data += 2; }
+    memset(p, 0, 15);
+    POKE(0x01, 0x35);
 }
 
 void spr_pos(u8 n, u16 x, u8 y)

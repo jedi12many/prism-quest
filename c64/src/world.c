@@ -5,13 +5,16 @@
 u8 map_id;
 u8 mw, mh;
 u8 map[MAP_H][MAP_W];
+/* the entity tables live in the free RAM at $0400 (see prismquest.cfg) */
+#pragma bss-name(push, "LOWBSS")
 Mob mobs[MAXMON];
-u8 nmobs;
 Node nodes[MAXNODE];
-u8 nnodes;
 Gate gates[MAXGATE];
-u8 ngates;
 Npc npcs[NNPC];
+#pragma bss-name(pop)
+u8 nmobs;
+u8 nnodes;
+u8 ngates;
 
 static u8 camx, camy;
 static u8 dirty, hud_dirty;
@@ -108,98 +111,127 @@ static u8 npc_at(u8 x, u8 y)
     return 0xFF;
 }
 
-/* a directional zone: a fresh procedural level with a champion at the far end */
+/* a directional zone: a fresh procedural level with a champion at the far end.
+ * (Written with small helpers and globals: cc65 turns the obvious version of
+ * this into 3 KB of code.) */
+#define ZW 34
+#define ZH 26
+static u8 gx, gy;                       /* candidate tile */
+
+static void fill(u8 x0, u8 y0, u8 x1, u8 y1, u8 t)
+{
+    u8 x;
+    for (; y0 <= y1; ++y0) for (x = x0; x <= x1; ++x) map[y0][x] = t;
+}
+
+/* a random tile at least `m` in from the edges */
+static void spot(u8 m)
+{
+    gx = m + rnd(ZW - 2 * m);
+    gy = m + rnd(ZH - 2 * m);
+}
+
+static u8 is_grass(u8 x, u8 y) { return map[y][x] == T_GRASS || map[y][x] == T_GRASS2; }
+
+static u8 near_node(u8 d)
+{
+    u8 i;
+    for (i = 0; i < nnodes; ++i) if (cheb(nodes[i].x, nodes[i].y, gx, gy) < d) return 1;
+    return 0;
+}
+
+static u8 near_mob(u8 d)
+{
+    u8 i;
+    for (i = 0; i < nmobs; ++i) if (cheb(mobs[i].x, mobs[i].y, gx, gy) < d) return 1;
+    return 0;
+}
+
+static void add_node(u8 x, u8 y, u8 m)
+{
+    Node *n = &nodes[nnodes++];
+    n->x = x; n->y = y; n->mineral = m; n->respawn = 0;
+}
+
+static void add_mob(u8 x, u8 y, u8 type, u8 move_t, u16 respawn)
+{
+    Mob *m = &mobs[nmobs++];
+    m->x = m->hx = x; m->y = m->hy = y;
+    m->type = type; m->alive = 1; m->move_t = move_t; m->respawn = respawn;
+}
+
 static void build_zone(u8 z)
 {
     const ZoneDef *zd = &zones[z];
-    u8 i, x, y, k, placed;
+    u8 i, k, n, ex = zd->entry[0], ey = zd->entry[1], lx = zd->lair[0], ly = zd->lair[1];
     u16 guard;
-    i16 cx, cy, rx, ry, dx, dy;
-    u8 ex = zd->entry[0], ey = zd->entry[1], lx = zd->lair[0], ly = zd->lair[1];
-    u8 W = 34, H = 26;
+    i16 dx, dy, rx2, ry2;
+    u8 *row;
 
-    blank_map(W, H);
-    /* lakes */
-    k = 2 + rnd(2);
-    for (i = 0; i < k; ++i) {
-        cx = 6 + rnd(W - 12); cy = 5 + rnd(H - 10);
-        rx = 2 + rnd(3); ry = 2 + rnd(2);
-        for (y = 2; y < H - 2; ++y)
-            for (x = 2; x < W - 2; ++x) {
-                dx = x - cx; dy = y - cy;
-                if (dx * dx * ry * ry + dy * dy * rx * rx < rx * rx * ry * ry) map[y][x] = T_WATER;
+    blank_map(ZW, ZH);
+    /* lakes: 2-3 ellipses */
+    for (n = 2 + rnd(2); n; --n) {
+        spot(6);
+        gy = 5 + rnd(ZH - 10);
+        rx2 = 2 + rnd(3); rx2 *= rx2;
+        ry2 = 2 + rnd(2); ry2 *= ry2;
+        for (i = 2; i < ZH - 2; ++i) {
+            dy = i - gy;
+            row = map[i];
+            for (k = 2; k < ZW - 2; ++k) {
+                dx = k - gx;
+                if (dx * dx * ry2 + dy * dy * rx2 < rx2 * ry2) row[k] = T_WATER;
             }
+        }
     }
     /* forest scatter */
-    for (y = 2; y < H - 2; ++y)
-        for (x = 2; x < W - 2; ++x)
-            if (map[y][x] != T_WATER && chance(9)) map[y][x] = T_TREE;
+    for (i = 2; i < ZH - 2; ++i) {
+        row = map[i];
+        for (k = 2; k < ZW - 2; ++k) if (row[k] != T_WATER && chance(9)) row[k] = T_TREE;
+    }
     /* clearings at the entry and the lair */
-    for (y = ey - 2; y <= ey + 2; ++y) for (x = ex - 2; x <= ex + 2; ++x) map[y][x] = T_GRASS;
-    for (y = ly - 2; y <= ly + 2; ++y) for (x = lx - 2; x <= lx + 2; ++x) map[y][x] = T_GRASS;
+    fill(ex - 2, ey - 2, ex + 2, ey + 2, T_GRASS);
+    fill(lx - 2, ly - 2, lx + 2, ly + 2, T_GRASS);
     /* carve a wandering path from entry to lair so it's always traversable */
-    cx = ex; cy = ey; guard = 0;
-    while ((cx != lx || cy != ly) && guard++ < 800) {
-        dx = lx > cx ? 1 : lx < cx ? -1 : 0;
-        dy = ly > cy ? 1 : ly < cy ? -1 : 0;
-        if (ABSD(lx, cx) > ABSD(ly, cy)) {
-            cx = clampu(cx + dx, 3, W - 4);
-            if (dy && chance(40)) cy = clampu(cy + dy, 3, H - 4);
+    gx = ex; gy = ey;
+    for (guard = 0; (gx != lx || gy != ly) && guard < 800; ++guard) {
+        dx = lx > gx ? 1 : lx < gx ? -1 : 0;
+        dy = ly > gy ? 1 : ly < gy ? -1 : 0;
+        if (ABSD(lx, gx) > ABSD(ly, gy)) {
+            gx = clampu(gx + dx, 3, ZW - 4);
+            if (dy && chance(40)) gy = clampu(gy + dy, 3, ZH - 4);
         } else {
-            cy = clampu(cy + dy, 3, H - 4);
-            if (dx && chance(40)) cx = clampu(cx + dx, 3, W - 4);
+            gy = clampu(gy + dy, 3, ZH - 4);
+            if (dx && chance(40)) gx = clampu(gx + dx, 3, ZW - 4);
         }
-        map[cy][cx] = T_PATH;
-        if (cx + 1 < W - 2 && map[cy][cx + 1] != T_WATER) map[cy][cx + 1] = T_GRASS;
+        row = map[gy];
+        row[gx] = T_PATH;
+        if (gx + 1 < ZW - 2 && row[gx + 1] != T_WATER) row[gx + 1] = T_GRASS;
     }
     /* way-home 2x2 gate at the entry */
-    add_gate(ex - 1, ey - 1, G_HOME, z); add_gate(ex, ey - 1, G_HOME, z);
-    add_gate(ex - 1, ey, G_HOME, z);     add_gate(ex, ey, G_HOME, z);
+    for (i = 0; i < 4; ++i) add_gate(ex - 1 + (i & 1), ey - 1 + (i >> 1), G_HOME, z);
 
     /* mineral nodes (themed pool); legendary prismatite by the lair */
-    placed = 0; guard = 0;
-    while (placed < 10 && guard++ < 3000) {
-        x = 3 + rnd(W - 6); y = 3 + rnd(H - 6);
-        if (map[y][x] != T_GRASS && map[y][x] != T_GRASS2) continue;
-        if (cheb(x, y, ex, ey) < 3) continue;
-        for (i = 0; i < nnodes && cheb(nodes[i].x, nodes[i].y, x, y) >= 2; ++i) ;
-        if (i < nnodes) continue;
-        nodes[nnodes].x = x; nodes[nnodes].y = y;
-        nodes[nnodes].mineral = zd->minerals[rnd(4)];
-        nodes[nnodes++].respawn = 0;
-        ++placed;
+    for (guard = 0; nnodes < 10 && guard < 3000; ++guard) {
+        spot(3);
+        if (is_grass(gx, gy) && cheb(gx, gy, ex, ey) >= 3 && !near_node(2))
+            add_node(gx, gy, zd->minerals[rnd(4)]);
     }
-    nodes[nnodes].x = lx + 1; nodes[nnodes].y = ly + 1; nodes[nnodes].mineral = PRISMATITE; nodes[nnodes++].respawn = 0;
-    nodes[nnodes].x = lx - 1; nodes[nnodes].y = ly + 1; nodes[nnodes].mineral = PRISMATITE; nodes[nnodes++].respawn = 0;
+    add_node(lx + 1, ly + 1, PRISMATITE);
+    add_node(lx - 1, ly + 1, PRISMATITE);
 
     /* monsters + the champion (none once the zone is cleared) */
-    if (!(P.zones_cleared & (1 << z))) {
-        for (k = 0; k < 4; ++k) {
-            placed = 0; guard = 0;
-            while (placed < zd->pack_n[k] && guard++ < 3000 && nmobs < MAXMON - 1) {
-                x = 3 + rnd(W - 6); y = 3 + rnd(H - 6);
-                if (!walkable(x, y)) continue;
-                if (cheb(x, y, ex, ey) < 5 || cheb(x, y, lx, ly) < 2) continue;
-                for (i = 0; i < nmobs && cheb(mobs[i].x, mobs[i].y, x, y) >= 3; ++i) ;
-                if (i < nmobs) continue;
-                if (node_at(x, y) != 0xFF) continue;
-                mobs[nmobs].x = mobs[nmobs].hx = x;
-                mobs[nmobs].y = mobs[nmobs].hy = y;
-                mobs[nmobs].type = zd->pack_type[k];
-                mobs[nmobs].alive = 1;
-                mobs[nmobs].respawn = 0;
-                mobs[nmobs].move_t = 50 + rnd(100);
-                ++nmobs; ++placed;
+    if (P.zones_cleared & (1 << z)) return;
+    for (k = 0; k < 4; ++k)
+        for (i = zd->pack_n[k], guard = 0; i && guard < 3000 && nmobs < MAXMON - 1; ++guard) {
+            spot(3);
+            if (walkable(gx, gy) && cheb(gx, gy, ex, ey) >= 5 && cheb(gx, gy, lx, ly) >= 2
+                && !near_mob(3) && node_at(gx, gy) == 0xFF) {
+                add_mob(gx, gy, zd->pack_type[k], 50 + rnd(100), 0);
+                --i;
             }
         }
-        mobs[nmobs].x = mobs[nmobs].hx = lx;
-        mobs[nmobs].y = mobs[nmobs].hy = ly;
-        mobs[nmobs].type = zd->champion;
-        mobs[nmobs].alive = 1;
-        mobs[nmobs].respawn = 0xFFFF;
-        mobs[nmobs].move_t = 0xFF;            /* champions hold their ground */
-        ++nmobs;
-    }
+    add_mob(lx, ly, zd->champion, 0xFF, 0xFFFF);   /* champions hold their ground */
 }
 
 static void set_palette(void)
@@ -230,8 +262,10 @@ u8 walkable(u8 x, u8 y)
 
 /* ---------- rendering ---------- */
 
-static u8 vt[VIEW_H][VIEW_W];
-static u8 vc[VIEW_H][VIEW_W];
+/* view buffers: rebuilt on every draw, so they share LOWSCRATCH with the
+ * save buffer (save.c) */
+#define vt ((u8 (*)[VIEW_W])LOWSCRATCH)
+#define vc ((u8 (*)[VIEW_W])(LOWSCRATCH + VIEW_W * VIEW_H))
 
 static void put_view(u8 x, u8 y, u8 t, u8 c)
 {
@@ -328,6 +362,7 @@ void draw_hud(void)
 static void redraw_all(void)
 {
     cls();
+    POKE(0xD016, 0x18);                     /* multicolour tiles */
     set_palette();
     draw_hud();
     draw_map();
@@ -543,6 +578,7 @@ void world_loop(void)
         if (key_hit(K_I)) { show_bag(); redraw_all(); }
         if (key_hit(K_C)) { show_spellbook(); redraw_all(); }
         if (key_hit(K_T)) { show_tree(); redraw_all(); }
+        if (key_hit(K_G)) { show_gear(); redraw_all(); }
         if ((in_new & IN_FIRE) && !(in_now & 0x0F)) { camp_menu(); redraw_all(); }
 
         if (cool) --cool;

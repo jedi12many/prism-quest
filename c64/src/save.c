@@ -9,14 +9,14 @@ extern char disk_name[20];
 extern u16 disk_start, disk_end;
 extern char disk_status[40];
 
-enum { OP_SAVE, OP_LOAD, OP_CMD };
+enum { OP_SAVE, OP_LOAD, OP_CMD, OP_LOADHI };
 
-#define SAVE_VERSION 1
-/* "PQ", version, the Player struct, the play clock, a checksum.
- * Initialised so it lands in the DATA segment, below the KERNAL, where the
- * KERNAL's own SAVE/LOAD can reach it. */
+#define SAVE_VERSION 2
+/* "PQ", version, the Player struct, the play clock, a checksum. The buffer
+ * is LOWSCRATCH ($0400), below the KERNAL where its SAVE/LOAD can reach it;
+ * the map view shares it (it's rebuilt after every save or load). */
 #define SAVE_LEN (3 + sizeof(Player) + 2 + 1)
-static u8 savebuf[SAVE_LEN] = { 1 };
+#define savebuf ((u8 *)LOWSCRATCH)
 
 static void set_name(const char *s)
 {
@@ -26,7 +26,8 @@ static void set_name(const char *s)
 
 static u8 checksum(void)
 {
-    u8 i, c = 0x5A;
+    u16 i;                              /* the save is longer than 255 bytes */
+    u8 c = 0x5A;
     for (i = 0; i < SAVE_LEN - 1; ++i) c = (c << 1 | c >> 7) ^ savebuf[i];
     return c;
 }
@@ -94,6 +95,42 @@ u8 load_game(void)
     seconds = savebuf[3 + sizeof(Player)] | (savebuf[4 + sizeof(Player)] << 8);
     calc_stats();
     return 1;
+}
+
+/* PQ.HI holds code and data for $E580-$F67F (the loot engine). It's loaded once
+ * at startup, unless it's already there (e.g. a test harness put it there). */
+u8 hi_present(void)
+{
+    const u8 *p = (const u8 *)HIRAM;
+    u8 port = PEEK(0x01), ok;
+    POKE(0x01, 0x35);                   /* it's under the KERNAL: look at the RAM */
+    ok = p[0] == 0x50 && p[1] == 0x51 && p[2] == 0x48 && p[3] == 0x49 && p[4] == 1;
+    POKE(0x01, port);
+    return ok;
+}
+
+u8 load_hi(void)
+{
+    set_name("pq.hi");
+    disk_op(OP_LOADHI);
+    return hi_present();
+}
+
+/* PQ.HI carries the sprite art (landing on the not-yet-used screen) and the
+ * charset (landing on BSS): move both under the I/O chips, then clear BSS. Runs with
+ * interrupts off, before anything has used BSS. */
+extern u8 _HICHR_LOAD__[], _HICHR_RUN__[], _HICHR_SIZE__[];
+extern u8 _HISPR_LOAD__[], _HISPR_RUN__[], _HISPR_SIZE__[];
+extern u8 _BSS_RUN__[], _BSS_SIZE__[];
+void unpack_hi(void)
+{
+    u8 port = PEEK(0x01);
+    POKE(0x01, 0x34);                   /* RAM everywhere */
+    memcpy(_HICHR_RUN__, _HICHR_LOAD__, (u16)_HICHR_SIZE__);
+    memset(_HICHR_RUN__ + (u16)_HICHR_SIZE__, 0, 2048 - (u16)_HICHR_SIZE__);
+    memcpy(_HISPR_RUN__, _HISPR_LOAD__, (u16)_HISPR_SIZE__);
+    memset(_BSS_RUN__, 0, (u16)_BSS_SIZE__);
+    POKE(0x01, port);
 }
 
 /* rogue-like: a fallen hero's save goes with them */

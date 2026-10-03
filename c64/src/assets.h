@@ -49,13 +49,14 @@
 #define CH_STAR 94
 #define CH_POINTER 95
 
-extern const unsigned char charset[2048];
+#define CHARSET_BYTES 1856
+extern const unsigned char charset[CHARSET_BYTES];
 extern const unsigned char tile_color[T_COUNT][4];
 #define PLAYER_SPRITES 3
 #define BATTLE_SPRITES 11
-extern const unsigned char player_spr[PLAYER_SPRITES][3][63];
+extern const unsigned char player_spr[PLAYER_SPRITES][3][32];
 extern const unsigned char player_spr_col[PLAYER_SPRITES][3];
-extern const unsigned char battle_spr[BATTLE_SPRITES][3][63];
+extern const unsigned char battle_spr[BATTLE_SPRITES][3][32];
 extern const unsigned char battle_spr_col[BATTLE_SPRITES][3];
 
 #endif

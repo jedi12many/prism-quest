@@ -137,6 +137,13 @@ static void monster_hit(void)
     long a;
     i16 dmg;
     if (over) return;
+    /* dodge: a defensive stat from boots and affixes, capped at 60% */
+    a = eff(E_DODGE);
+    if (a && chance(a > 60 ? 60 : a)) {
+        sb_reset(); sb_str("You dance aside - "); sb_str(md->name); sb_str("'s attack whiffs!");
+        blog(sb, CYAN);
+        return;
+    }
     a = (long)md->atk * atk_scale;                 /* x100 */
     if (m_weak_t) a = a * 70 / 100;
     a = a * variance() / 100 * 17 / 10 - P.def * 50;
@@ -327,6 +334,8 @@ static void victory(void)
         sb_reset(); sb_str("Second Wind restores "); sb_num(roll); sb_str(" HP.");
         blog(sb, GREEN);
     }
+    monster_loot(mob->type);
+    if (sb[0]) blog(sb, ORANGE);
     mob->alive = 0;
     mob->respawn = (md->flags & MF_BOSS) ? 0xFFFF : seconds + 45;
     draw_status();

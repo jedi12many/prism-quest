@@ -20,6 +20,8 @@ const EFFECTS = {
   shieldPower: ['E_SHIELD', true], healOnWin: ['E_HEALONWIN', true], lastStand: ['E_LASTSTAND', false],
   regen: ['E_REGEN', false], unicornPower: ['E_UNICORN', true], summonTurns: ['E_SUMMONTURNS', false],
   healPower: ['E_HEALPOWER', true], fleeSure: ['E_FLEESURE', false],
+  // only on gear (js/loot.js), never in a tree
+  atkFlat: ['E_ATKFLAT', false], magFlat: ['E_MAGFLAT', false], dodge: ['E_DODGE', true],
 };
 const ORDER = ['mage', 'knight', 'whisperer'];
 

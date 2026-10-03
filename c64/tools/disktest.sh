@@ -19,8 +19,8 @@ CYCLES=${4:-200000000}
 if [ ! -f "$D64" ]; then
   c1541 -format "prism quest,pq" d64 "$D64" >/dev/null
 fi
-c1541 -attach "$D64" -delete prismquest >/dev/null 2>&1 || true
-c1541 -attach "$D64" -write "$PRG" prismquest >/dev/null
+c1541 -attach "$D64" -delete prismquest -delete pq.hi >/dev/null 2>&1 || true
+c1541 -attach "$D64" -write "$PRG" prismquest -write "$PRG.hi" pq.hi >/dev/null
 
 LOG=$(mktemp)
 timeout 600 xvfb-run -a x64sc \
