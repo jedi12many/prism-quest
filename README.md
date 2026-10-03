@@ -153,6 +153,12 @@ game state is restored afterwards. Target mix we tune toward: roughly half the
 runs are losses, with a healthy spread of close wins, comfortable wins, and the
 occasional godlike **crush** (won without ever being truly threatened).
 
+## Commodore 64 port
+
+A C64 port is under way in [`c64/`](c64/README.md): the village, the four procedural zones,
+the champions and turn-based battles run on a stock 64 KB C64, with art converted
+automatically from `js/sprites.js`.
+
 ## Tech
 
 Plain HTML5 Canvas + vanilla JavaScript. No dependencies, no build.
