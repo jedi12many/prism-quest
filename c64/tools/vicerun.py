@@ -1,47 +1,55 @@
 #!/usr/bin/env python3
-"""Headless smoke test on stub ROMs (see stubroms.py).
+"""Headless test run: put a build on a .d64, boot VICE with real ROMs, run for
+a number of CPU cycles, save a screenshot.
 
-  vicerun.py <prg> <map> <out.png> <cycles>
+  ROMDIR=... vicerun.py <prg> <out.png> <cycles> [--truedrive]
 
-The game normally loads its second file, PQ.HI, through the KERNAL and then
-unpacks it: sprite art and charset go into the RAM under the I/O chips. The
-stub ROMs can't load files, so this puts everything where unpacking would
-leave it, through VICE's monitor (`bank ram` writes under the I/O chips).
-The game then finds PQ.HI present and skips both steps.
+The game loads its second file (PQ.HI) and its overlays (PQ.OV1..7) from disk
+as it goes, so tests need a working KERNAL and drive. ROMDIR must hold kernal,
+basic, chargen (and dos1541 for --truedrive), e.g. from the data/ folder of
+the upstream VICE source release; they're copyrighted, so not in this repo.
+
+By default the drive is VICE's IEC-level virtual device: disk access is
+instant in emulated time, so tests stay fast. --truedrive emulates a real 1541
+instead (every load takes as long as on the real thing).
 """
 import os
-import re
 import subprocess
 import sys
 import tempfile
 
-prg, mapfile, out, cycles = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
-here = os.path.dirname(os.path.abspath(__file__))
+args = [a for a in sys.argv[1:] if not a.startswith('--')]
+truedrive = '--truedrive' in sys.argv
+prg, out, cycles = args[0], args[1], args[2]
+d64 = args[3] if len(args) > 3 else None          # keep a disk across runs (saves)
+roms = os.environ.get('ROMDIR')
+if not roms:
+    sys.exit('set ROMDIR to a folder with kernal, basic, chargen (and dos1541)')
+
 tmp = tempfile.mkdtemp()
-subprocess.run([sys.executable, os.path.join(here, 'stubroms.py'), tmp + '/roms'], check=True)
+if not d64:
+    d64 = os.path.join(tmp, 'test.d64')
+if not os.path.exists(d64):
+    subprocess.run(['c1541', '-format', 'prism quest,pq', 'd64', d64], check=True, stdout=subprocess.DEVNULL)
+files = [(prg, 'prismquest'), (prg + '.hi', 'pq.hi')]
+n = 1
+while os.path.exists('%s.%d' % (prg, n)):
+    files.append(('%s.%d' % (prg, n), 'pq.ov%d' % n))
+    n += 1
+cmd = ['c1541', '-attach', d64]
+for _, name in files:
+    cmd += ['-delete', name]
+subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+cmd = ['c1541', '-attach', d64]
+for path, name in files:
+    cmd += ['-write', path, name]
+subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL)
 
-cmds = []
-hi = prg + '.hi'
-if os.path.exists(hi):
-    sym = dict((k, int(v, 16)) for k, v in re.findall(r'(__HI\w+?__)\s+([0-9A-F]{6})', open(mapfile).read()))
-    data = open(hi, 'rb').read()
-    base = data[0] | data[1] << 8
-    cmds.append('bank ram')
-    for seg in ('HISPR', 'HICHR'):          # copy each tail to where unpack_hi() puts it
-        load, run, size = sym['__%s_LOAD__' % seg], sym['__%s_RUN__' % seg], sym['__%s_SIZE__' % seg]
-        part = os.path.join(tmp, seg + '.prg')
-        with open(part, 'wb') as f:
-            f.write(bytes([run & 255, run >> 8]) + data[2 + load - base: 2 + load - base + size])
-        cmds.append('l "%s" 0' % part)
-    cmds.append('l "%s" 0' % os.path.abspath(hi))
-    cmds.append('bank cpu')
-cmds += ['l "%s" 0' % os.path.abspath(prg), 'g 080d']
-with open(tmp + '/mon.txt', 'w') as f:
-    f.write('\n'.join(cmds) + '\n')
-
-subprocess.run(['timeout', '600', 'xvfb-run', '-a', 'x64sc',
-                '-kernal', tmp + '/roms/kernal', '-basic', tmp + '/roms/basic', '-chargen', tmp + '/roms/chargen',
-                '-drive8type', '0', '+sound', '-warp', '-moncommands', tmp + '/mon.txt',
-                '-limitcycles', cycles, '-exitscreenshot', os.path.abspath(out)],
+drive = (['-dos1541', roms + '/dos1541', '-drive8type', '1541', '-drive8truedrive', '-autostart-handle-tde']
+         if truedrive else ['-drive8type', '1541', '+drive8truedrive', '-iecdevice8'])
+subprocess.run(['timeout', '900', 'xvfb-run', '-a', 'x64sc',
+                '-kernal', roms + '/kernal', '-basic', roms + '/basic', '-chargen', roms + '/chargen']
+               + drive + ['+sound', '-warp', '-autostart', '%s:prismquest' % os.path.abspath(d64),
+                          '-limitcycles', cycles, '-exitscreenshot', os.path.abspath(out)],
                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 print('screenshot: %s' % out if os.path.exists(out) else 'no screenshot')

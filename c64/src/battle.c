@@ -44,7 +44,9 @@ static void bar(u8 x, u8 y, i16 v, i16 max, u8 w, u8 col)
     for (i = 0; i < w; ++i) put_ch(x + i, y, i < n ? CH_BAR : '-' - 32, i < n ? col : BLUE);
 }
 
+#pragma bss-name(push, "LOWBSS")
 static char sb_keep[sizeof(sb)];
+#pragma bss-name(pop)
 
 /* redraw both health lines; preserves the shared string builder */
 static void draw_status(void)

@@ -407,7 +407,7 @@ static void on_gate(u8 gi)
         say("The Glassworks Kiln", "The kiln has been cold for a hundred years. Prism Facets can be fused here - in a later version of this port.");
         break;
     default:
-        show_ledger();
+        open_ledger();
         redraw_all();
         break;
     }
@@ -536,7 +536,7 @@ static u8 step(i8 dx, i8 dy)
 {
     u8 nx = P.x + dx, ny = P.y + dy, k;
     if ((k = npc_at(nx, ny)) != 0xFF) {
-        talk_npc(k);
+        talk(k);
         hud_dirty = 1;
         return 0;
     }
@@ -575,10 +575,10 @@ void world_loop(void)
         wait_frame();
         input_poll();
 
-        if (key_hit(K_I)) { show_bag(); redraw_all(); }
-        if (key_hit(K_C)) { show_spellbook(); redraw_all(); }
-        if (key_hit(K_T)) { show_tree(); redraw_all(); }
-        if (key_hit(K_G)) { show_gear(); redraw_all(); }
+        if (key_hit(K_I)) { open_bag(); redraw_all(); }
+        if (key_hit(K_C)) { open_spellbook(); redraw_all(); }
+        if (key_hit(K_T)) { open_tree(); redraw_all(); }
+        if (key_hit(K_G)) { open_gear(); redraw_all(); }
         if ((in_new & IN_FIRE) && !(in_now & 0x0F)) { camp_menu(); redraw_all(); }
 
         if (cool) --cool;
@@ -588,11 +588,11 @@ void world_loop(void)
             else if (in_now & IN_DOWN) dy = 1;
             else if (in_now & IN_LEFT) dx = -1;
             else dx = 1;
-            if (step(dx, dy)) { game_over(); return; }
+            if (step(dx, dy)) return;
             cool = 9;
         }
 
-        if (in_zone()) { if (update_mobs()) { game_over(); return; } }
+        if (in_zone()) { if (update_mobs()) return; }
         else {
             update_npcs();
             if (seconds >= heal_at) {

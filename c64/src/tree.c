@@ -3,72 +3,72 @@
 
 const Branch tree[3][3] = {
   { /* mage */
-    { "Radiance", 4, {
-      { "Focused Light", "+15% spell damage", { { E_SPELLDMG, 15 }, { E_NONE, 0 } } },
-      { "Prismatic Edge", "+12% crit chance", { { E_CRIT, 12 }, { E_NONE, 0 } } },
-      { "Supernova Heart", "+25% spell damage", { { E_SPELLDMG, 25 }, { E_NONE, 0 } } },
-      { "Starfire", "+20% spell damage", { { E_SPELLDMG, 20 }, { E_NONE, 0 } } },
-      { "Prismatic Nova", "CAPSTONE: +40% spell damage & +12% crit", { { E_SPELLDMG, 40 }, { E_CRIT, 12 } } },
+    { 4, {
+      { { { E_SPELLDMG, 15 }, { E_NONE, 0 } } }, /* Focused Light */
+      { { { E_CRIT, 12 }, { E_NONE, 0 } } }, /* Prismatic Edge */
+      { { { E_SPELLDMG, 25 }, { E_NONE, 0 } } }, /* Supernova Heart */
+      { { { E_SPELLDMG, 20 }, { E_NONE, 0 } } }, /* Starfire */
+      { { { E_SPELLDMG, 40 }, { E_CRIT, 12 } } }, /* Prismatic Nova */
     } },
-    { "Flow", 3, {
-      { "Steady Hands", "Big boost to polish quality odds", { { E_POLISH, 35 }, { E_NONE, 0 } } },
-      { "Echo Casting", "+1 charge every time you craft a spell", { { E_CHARGES, 1 }, { E_NONE, 0 } } },
-      { "Chain Light", "25% chance casting is free", { { E_CHARGESAVE, 25 }, { E_NONE, 0 } } },
-      { "Mana Well", "+1 craft charge & 15% free casts", { { E_CHARGES, 1 }, { E_CHARGESAVE, 15 } } },
-      { "Second Dawn", "CAPSTONE: once per life, cheat death and revive at 50% HP", { { E_REVIVE, 50 }, { E_NONE, 0 } } },
+    { 3, {
+      { { { E_POLISH, 35 }, { E_NONE, 0 } } }, /* Steady Hands */
+      { { { E_CHARGES, 1 }, { E_NONE, 0 } } }, /* Echo Casting */
+      { { { E_CHARGESAVE, 25 }, { E_NONE, 0 } } }, /* Chain Light */
+      { { { E_CHARGES, 1 }, { E_CHARGESAVE, 15 } } }, /* Mana Well */
+      { { { E_REVIVE, 50 }, { E_NONE, 0 } } }, /* Second Dawn */
     } },
-    { "Fortune", 7, {
-      { "Gem Sense", "+1 mineral from every node", { { E_MINEYIELD, 1 }, { E_NONE, 0 } } },
-      { "Scholar", "+25% XP from battles", { { E_XPGAIN, 25 }, { E_NONE, 0 } } },
-      { "Rainbow Luck", "20% chance of a bonus rare gem when mining", { { E_RARELUCK, 20 }, { E_NONE, 0 } } },
-      { "Gem Diviner", "+1 mineral & +12% rare gem luck", { { E_MINEYIELD, 1 }, { E_RARELUCK, 12 } } },
-      { "Midas Prism", "CAPSTONE: +40% XP & +20% rare gem luck", { { E_XPGAIN, 40 }, { E_RARELUCK, 20 } } },
+    { 7, {
+      { { { E_MINEYIELD, 1 }, { E_NONE, 0 } } }, /* Gem Sense */
+      { { { E_XPGAIN, 25 }, { E_NONE, 0 } } }, /* Scholar */
+      { { { E_RARELUCK, 20 }, { E_NONE, 0 } } }, /* Rainbow Luck */
+      { { { E_MINEYIELD, 1 }, { E_RARELUCK, 12 } } }, /* Gem Diviner */
+      { { { E_XPGAIN, 40 }, { E_RARELUCK, 20 } } }, /* Midas Prism */
     } },
   },
   { /* knight */
-    { "Bulwark", 3, {
-      { "Stonewall", "+25 max HP", { { E_HPMAX, 25 }, { E_NONE, 0 } } },
-      { "Crystal Plate", "+3 defense", { { E_DEFFLAT, 3 }, { E_NONE, 0 } } },
-      { "Aegis of Facets", "Prism Shield blocks far more", { { E_SHIELD, 50 }, { E_NONE, 0 } } },
-      { "Bastion", "+30 max HP & +2 defense", { { E_HPMAX, 30 }, { E_DEFFLAT, 2 } } },
-      { "Undying", "CAPSTONE: once per life, revive at 50% HP", { { E_REVIVE, 50 }, { E_NONE, 0 } } },
+    { 3, {
+      { { { E_HPMAX, 25 }, { E_NONE, 0 } } }, /* Stonewall */
+      { { { E_DEFFLAT, 3 }, { E_NONE, 0 } } }, /* Crystal Plate */
+      { { { E_SHIELD, 50 }, { E_NONE, 0 } } }, /* Aegis of Facets */
+      { { { E_HPMAX, 30 }, { E_DEFFLAT, 2 } } }, /* Bastion */
+      { { { E_REVIVE, 50 }, { E_NONE, 0 } } }, /* Undying */
     } },
-    { "Shatter", 7, {
-      { "Heavy Bonk", "+25% Bonk damage", { { E_BASICDMG, 25 }, { E_NONE, 0 } } },
-      { "Fracture Point", "+12% crit chance", { { E_CRIT, 12 }, { E_NONE, 0 } } },
-      { "Meteor Bonk", "+40% Bonk damage", { { E_BASICDMG, 40 }, { E_NONE, 0 } } },
-      { "Devastate", "+30% Bonk damage & +6% crit", { { E_BASICDMG, 30 }, { E_CRIT, 6 } } },
-      { "Cataclysm", "CAPSTONE: +50% Bonk damage & +12% crit", { { E_BASICDMG, 50 }, { E_CRIT, 12 } } },
+    { 7, {
+      { { { E_BASICDMG, 25 }, { E_NONE, 0 } } }, /* Heavy Bonk */
+      { { { E_CRIT, 12 }, { E_NONE, 0 } } }, /* Fracture Point */
+      { { { E_BASICDMG, 40 }, { E_NONE, 0 } } }, /* Meteor Bonk */
+      { { { E_BASICDMG, 30 }, { E_CRIT, 6 } } }, /* Devastate */
+      { { { E_BASICDMG, 50 }, { E_CRIT, 12 } } }, /* Cataclysm */
     } },
-    { "Resolve", 3, {
-      { "Second Wind", "Heal 25% HP after every victory", { { E_HEALONWIN, 25 }, { E_NONE, 0 } } },
-      { "Iron Will", "+2 defense", { { E_DEFFLAT, 2 }, { E_NONE, 0 } } },
-      { "Last Stand", "Survive a fatal blow once per battle", { { E_LASTSTAND, 1 }, { E_NONE, 0 } } },
-      { "Warden Spirit", "+3 regen & heal 15% after each win", { { E_REGEN, 3 }, { E_HEALONWIN, 15 } } },
-      { "Immovable", "CAPSTONE: +25% max HP & +4 defense", { { E_HPMAX, 25 }, { E_DEFFLAT, 4 } } },
+    { 3, {
+      { { { E_HEALONWIN, 25 }, { E_NONE, 0 } } }, /* Second Wind */
+      { { { E_DEFFLAT, 2 }, { E_NONE, 0 } } }, /* Iron Will */
+      { { { E_LASTSTAND, 1 }, { E_NONE, 0 } } }, /* Last Stand */
+      { { { E_REGEN, 3 }, { E_HEALONWIN, 15 } } }, /* Warden Spirit */
+      { { { E_HPMAX, 25 }, { E_DEFFLAT, 4 } } }, /* Immovable */
     } },
   },
   { /* whisperer */
-    { "Kinship", 4, {
-      { "Best Friends", "Unicorns 30% stronger", { { E_UNICORN, 30 }, { E_NONE, 0 } } },
-      { "Loyal Companion", "Summons last 2 extra turns", { { E_SUMMONTURNS, 2 }, { E_NONE, 0 } } },
-      { "Radiant Herd", "Unicorns 50% stronger", { { E_UNICORN, 50 }, { E_NONE, 0 } } },
-      { "Herd Leader", "Summons last +3 turns", { { E_SUMMONTURNS, 3 }, { E_NONE, 0 } } },
-      { "Celestial Herd", "CAPSTONE: +70% unicorn power", { { E_UNICORN, 70 }, { E_NONE, 0 } } },
+    { 4, {
+      { { { E_UNICORN, 30 }, { E_NONE, 0 } } }, /* Best Friends */
+      { { { E_SUMMONTURNS, 2 }, { E_NONE, 0 } } }, /* Loyal Companion */
+      { { { E_UNICORN, 50 }, { E_NONE, 0 } } }, /* Radiant Herd */
+      { { { E_SUMMONTURNS, 3 }, { E_NONE, 0 } } }, /* Herd Leader */
+      { { { E_UNICORN, 70 }, { E_NONE, 0 } } }, /* Celestial Herd */
     } },
-    { "Blessing", 3, {
-      { "Gentle Glow", "Healing 30% stronger", { { E_HEALPOWER, 30 }, { E_NONE, 0 } } },
-      { "Warm Heart", "+20 max HP", { { E_HPMAX, 20 }, { E_NONE, 0 } } },
-      { "Meadow Soul", "Regenerate 3 HP every battle turn", { { E_REGEN, 3 }, { E_NONE, 0 } } },
-      { "Radiant Soul", "+25% healing & +15 max HP", { { E_HEALPOWER, 25 }, { E_HPMAX, 15 } } },
-      { "Unicorn's Gift", "CAPSTONE: once per life, your unicorn sacrifices itself to revive you at 50% HP", { { E_REVIVE, 50 }, { E_NONE, 0 } } },
+    { 3, {
+      { { { E_HEALPOWER, 30 }, { E_NONE, 0 } } }, /* Gentle Glow */
+      { { { E_HPMAX, 20 }, { E_NONE, 0 } } }, /* Warm Heart */
+      { { { E_REGEN, 3 }, { E_NONE, 0 } } }, /* Meadow Soul */
+      { { { E_HEALPOWER, 25 }, { E_HPMAX, 15 } } }, /* Radiant Soul */
+      { { { E_REVIVE, 50 }, { E_NONE, 0 } } }, /* Unicorn's Gift */
     } },
-    { "Wild", 7, {
-      { "Forager", "+1 mineral from every node", { { E_MINEYIELD, 1 }, { E_NONE, 0 } } },
-      { "Fae Steps", "Fleeing always works, never ambushed", { { E_FLEESURE, 1 }, { E_NONE, 0 } } },
-      { "Old Tales", "+25% XP from battles", { { E_XPGAIN, 25 }, { E_NONE, 0 } } },
-      { "Lucky Charm", "+18% chance of a bonus rare gem when mining", { { E_RARELUCK, 18 }, { E_NONE, 0 } } },
-      { "Storyteller", "CAPSTONE: +40% XP from battles", { { E_XPGAIN, 40 }, { E_NONE, 0 } } },
+    { 7, {
+      { { { E_MINEYIELD, 1 }, { E_NONE, 0 } } }, /* Forager */
+      { { { E_FLEESURE, 1 }, { E_NONE, 0 } } }, /* Fae Steps */
+      { { { E_XPGAIN, 25 }, { E_NONE, 0 } } }, /* Old Tales */
+      { { { E_RARELUCK, 18 }, { E_NONE, 0 } } }, /* Lucky Charm */
+      { { { E_XPGAIN, 40 }, { E_NONE, 0 } } }, /* Storyteller */
     } },
   },
 };

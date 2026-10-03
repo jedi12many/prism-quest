@@ -1,7 +1,9 @@
-/* The gear screens: what you wear, the bag of items, item cards, faceting
- * gems into sockets, and salvage -- ported from js/ui.js. */
+/* The Gear screen: what you wear, the bag of items, item cards, faceting gems
+ * into sockets, and salvage -- ported from js/ui.js. Resident: you visit it
+ * after every haul, so it shouldn't cost a disk load. */
 #include <string.h>
 #include "game.h"
+
 
 #define LIST_Y 10
 #define LIST_ROWS 12

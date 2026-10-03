@@ -133,6 +133,33 @@ void unpack_hi(void)
     POKE(0x01, port);
 }
 
+/* ---------- overlays ---------- */
+
+static u8 cur_ovl;
+
+/* make sure overlay `id` (file PQ.OVid) is in the window */
+void ovl(u8 id)
+{
+    u8 err;
+    const u8 *w = (const u8 *)OVL_START;
+    if (cur_ovl == id) return;
+    cur_ovl = 0;
+    for (;;) {
+        set_name("pq.ov0");
+        disk_name[5] += id;
+        put_str(32, 24, "Loading", GREY);
+        err = disk_op(OP_LOADHI);
+        put_str(32, 24, "       ", GREY);
+        if (!err && w[0] == 0x4F && w[1] == id) { cur_ovl = id; return; }
+        /* keep asking: the game can't go on without it */
+        sb_reset(); sb_str("Couldn't load PQ.OV"); sb_num(id); sb_str(" - check the disk, then press fire.");
+        clear_rows(23, 24);
+        wrap(sb, 23, 2, RED);
+        wait_fire();
+        clear_rows(23, 24);
+    }
+}
+
 /* rogue-like: a fallen hero's save goes with them */
 void erase_save(void)
 {

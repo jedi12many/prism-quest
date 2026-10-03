@@ -20,6 +20,8 @@ typedef int i16;
 #define SPR_BASE  0x90            /* sprite pointer value of slot 0 */
 #define CHARSET   0xD000          /* under the I/O chips; only the VIC reads it */
 #define HIRAM     0xE580          /* code + data loaded from PQ.HI */
+extern u8 _OVL_START__[];       /* the overlay window (prismquest.cfg) */
+#define OVL_START ((u16)_OVL_START__)
 #define LOWSCRATCH 0x0400         /* scratch: save buffer / map view buffers */
 #define LOWSCRATCH_LEN 0x01F0
 #define COLORRAM  ((u8 *)0xD800)
@@ -122,7 +124,6 @@ extern const u8 mineral_color[NMIN];
 enum { SP_GLITTER, SP_SHIELD, SP_SUNFLARE, SP_TIDEPOP, SP_BLOOM, SP_BUTTERFLY, SP_DWARVES, SP_RAINBOW, SP_UNICORN, SP_STARDUST };
 typedef struct {
     const char *name;
-    const char *desc;
     u8 power;
     u8 base;               /* charges per craft, before the quality bonus */
     u8 gem[3], n[3];       /* recipe: up to three minerals (n = 0 unused) */
@@ -297,6 +298,34 @@ u8 title_screen(void);          /* returns chosen class */
 void new_game(u8 cls);
 void talk_npc(u8 id);
 void show_bag(void);
+void show_ledger(void);
+u8 lands_freed(void);
+u8 skill_owned(u8 b, u8 t);
+/* kit.c: menu kit shared by the overlay screens */
+void put_strn(u8 x, u8 y, const char *s, u8 max, u8 col);
+void screen_open(const char *title);
+u8 get_input(void);
+u8 at_camp(const char *what);
+/* resident doors into the overlays: load it, then open the screen */
+void open_bag(void);
+void open_gear(void);
+void open_spellbook(void);
+void open_tree(void);
+void open_ledger(void);
+void talk(u8 npc);
+void continue_failed(void);
+void talk_a(u8 id);
+void talk_b(u8 id);
+void show_tree_mage(void);
+void show_tree_knight(void);
+void show_tree_whisperer(void);
+
+/* ---------- overlays (save.c) ----------
+ * Screens you open now and then live on disk (PQ.OV1 .. PQ.OV7) and load on
+ * demand into one shared window at the end of the program. */
+enum { OV_TITLE = 1, OV_TALKA, OV_TALKB, OV_CAMP, OV_TREE };   /* OV_TREE + class */
+#define OV_COUNT 7
+void ovl(u8 id);
 void camp_menu(void);
 void show_spellbook(void);
 void show_tree(void);

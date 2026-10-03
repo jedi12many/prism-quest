@@ -28,18 +28,15 @@ int main(void)
     }
     hw_init();
     for (;;) {
-        u8 c = title_screen();
+        u8 c;
+        ovl(OV_TITLE);
+        c = title_screen();
         if (c == NCLASS) {
-            if (!load_game()) {                 /* nothing to continue: say why */
-                cls();
-                put_center(10, "Continue from disk", YELLOW);
-                wrap(sb, 12, 3, WHITE);
-                put_center(16, "Press fire", BLUE);
-                wait_fire();
-                continue;
-            }
+            if (!load_game()) { continue_failed(); continue; }
         } else new_game(c);
-        world_loop();
+        world_loop();                           /* returns when the hero falls */
+        ovl(OV_TITLE);
+        game_over();
     }
     return 0;
 }

@@ -5,10 +5,11 @@
 enum { E_NONE, E_SPELLDMG, E_BASICDMG, E_CRIT, E_POLISH, E_CHARGES, E_CHARGESAVE, E_REVIVE, E_MINEYIELD, E_XPGAIN, E_RARELUCK, E_HPMAX, E_DEFFLAT, E_SHIELD, E_HEALONWIN, E_LASTSTAND, E_REGEN, E_UNICORN, E_SUMMONTURNS, E_HEALPOWER, E_FLEESURE, E_ATKFLAT, E_MAGFLAT, E_DODGE, E_COUNT };
 
 typedef struct { unsigned char key; signed char val; } Eff;
-typedef struct { const char *name; const char *desc; Eff eff[2]; } SkillNode;
-typedef struct { const char *name; unsigned char color; SkillNode node[5]; } Branch;
+typedef struct { Eff eff[2]; } SkillNode;
+typedef struct { unsigned char color; SkillNode node[5]; } Branch;
 
-extern const Branch tree[3][3];      /* [class][branch] */
+extern const Branch tree[3][3];      /* [class][branch]: effects, resident */
+/* names and descriptions: tree_text.h, used only by the Power Tree overlays */
 extern const Eff class_perk[3][2];
 
 #endif

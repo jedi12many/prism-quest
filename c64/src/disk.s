@@ -38,6 +38,7 @@ _disk_status:   .res 40, 0      ; "00, OK,00,00" from the drive, 0-terminated
 result:         .byte 0
 loadsa:         .byte 0
 saved01:        .byte 0
+savedspr:       .byte 0
 savedptr:       .word 0
 
         .code
@@ -47,6 +48,10 @@ _disk_op:
         sei
         lda $01
         sta saved01
+        lda $D015               ; sprites off: their DMA steals cycles the
+        sta savedspr            ; KERNAL's serial timing needs (loads stall
+        lda #0                  ; or corrupt bytes with sprites on)
+        sta $D015
         lda PTR
         sta savedptr
         lda PTR+1
@@ -150,6 +155,8 @@ done:
         sta PTR+1
         lda saved01
         sta $01
+        lda savedspr
+        sta $D015
         plp
         lda result
         ldx #0

@@ -91,51 +91,84 @@ make d64                       # -> build/prismquest.d64, a 1541 disk with both 
 make run                       # autostarts it in VICE (needs a VICE with the C64 ROMs)
 ```
 
-The game is **two files**: `PRISMQUEST`, which you load and run, and `PQ.HI`
-(the `.prg.hi` build output), which the game loads itself at startup. Put both
-on a disk (or SD2IEC, 1541 Ultimate and so on), then `LOAD"PRISMQUEST",8,1`
-and `RUN`. `make d64` does this for you. Saves go to the same drive, so the
-disk must not be write-protected.
+The game is several files on one disk:
+
+| File | Build output | Contents |
+|---|---|---|
+| `PRISMQUEST` | `prismquest.prg` | the resident game, which you load and run |
+| `PQ.HI` | `.prg.hi` | the loot engine, charset and sprite art; loaded at startup |
+| `PQ.OV1`–`PQ.OV7` | `.prg.1`–`.prg.7` | overlays, loaded on demand (below) |
+
+`make d64` puts them all on a 1541 image. On a real C64 or in VICE, mount
+or insert it, then `LOAD"PRISMQUEST",8,1` and `RUN`. Saves go to the same
+drive, so the disk must not be write-protected.
+
+**microSD:** SD2IEC, Pi1541, Kung Fu Flash and the 1541 Ultimate all look
+like a disk drive to the C64, and the game only uses the standard KERNAL
+LOAD and SAVE calls. Mount `prismquest.d64` and saves go into the image.
+Speed depends on the device: SD2IEC on a stock KERNAL and Pi1541 run at
+roughly 1541 speed, while JiffyDOS, Kung Fu Flash or a 1541 Ultimate make
+every load near-instant.
+
+### Overlays: screens loaded on demand
+
+Screens you open now and then live on disk and load into a shared 3 KB
+window at `$C400` when needed. An overlay that's already in the window isn't
+reloaded.
+
+| Overlay | Contents | Size |
+|---|---|---|
+| `PQ.OV1` | title, hero creation, game over | 2.1 KB |
+| `PQ.OV2` | dialogue: Mayor Puddle, Grandma Nimbus, Foreman Flint | 2.0 KB |
+| `PQ.OV3` | dialogue: Pip, Barnaby, Willow | 2.1 KB |
+| `PQ.OV4` | the Spellbook | 2.7 KB |
+| `PQ.OV5`–`PQ.OV7` | the Power Tree, one per class (each carries only its own class's text) | 2.6–2.7 KB |
+
+On a stock 1541 each takes roughly 5–7 seconds (about 400 bytes a second);
+a "Loading" note shows in the corner meanwhile. Overlays are kept to about
+2–3 KB for that reason.
+
+The world, battles, Bag, Gear, Ledger, saving and the camp menu stay
+resident, so exploring and fighting never wait on the disk. Moving the
+overlays out shrank the resident program from 50 KB to 38 KB, leaving about
+10 KB for future resident features. More overlays can be added whenever a
+feature doesn't need to be instant.
 
 ## Headless testing
 
-Ubuntu's VICE package doesn't ship Commodore's copyrighted ROMs. The game
-mostly doesn't need them, because it banks the ROMs out and drives the
-hardware directly. `tools/stubroms.py` writes placeholder ROMs, and
-`tools/vicerun.py` boots VICE on them under Xvfb, runs for a fixed number of
-CPU cycles and saves a screenshot. The stubs can't load files, so
-`vicerun.py` also puts `PQ.HI`, the charset and the sprite art where the
-game's own loader would. VICE's monitor `bank ram` mode lets it write under
-the I/O chips.
+The game loads files from disk as it goes, so tests need a real KERNAL and a
+drive. `tools/vicerun.py` builds a `.d64` from a build and boots VICE under
+Xvfb with real ROMs. It runs for a fixed number of CPU cycles and saves a
+screenshot. Point `ROMDIR` at a folder with `kernal`, `basic`, `chargen` and
+`dos1541` images. The `data/` folder of the upstream VICE source release has
+them. They are copyrighted, so they are not in this repo.
 
-Test builds replay a scripted joystick (`test/*.h`):
+- **Default drive:** VICE's IEC-level virtual device (`-iecdevice8`). Disk
+  access takes almost no emulated time, so tests stay quick.
+- **`--truedrive`:** emulates a real 1541, so loads take as long as they would
+  on the real thing.
+- **A disk path as 4th argument:** keeps that disk between runs, for testing
+  saves.
 
-```
-make shot SCRIPT=test/village.h CYCLES=9000000    # walk to the Mayor and talk
-make shot SCRIPT=test/battle.h  CYCLES=150000000  # Knight fights through Bogmire
-make shot SCRIPT=test/camp.h    CYCLES=25000000   # polish, craft, learn skills
-make shot SCRIPT=test/gear.h    CYCLES=15000000   # inspect and equip gear
-```
-
-A script can define `autoplay_loop[]` (with `#define AUTOPLAY_LOOP`), which
-is replayed forever after the main script ends.
-
-A script can also define `TEST_SETUP` (C statements run at the end of
-`new_game`) to start the hero with gems or skill points.
-
-The stub ROMs can't talk to a disk drive. To test saving, `tools/disktest.sh`
-boots VICE with **real** ROMs and a true-emulated 1541. It puts a build on a
-`.d64`, autostarts it, screenshots, and lists the disk afterwards. Point
-`ROMDIR` at a folder with `kernal`, `basic`, `chargen` and `dos1541` images.
-The `data/` folder of the upstream VICE source release has them. They are
-copyrighted, so they are not in this repo.
+Test builds replay a scripted joystick (`test/*.h`). The game starts about
+15M cycles in, after the KERNAL has loaded it.
 
 ```
-S="src/main.c src/system.c src/data.c src/world.c src/battle.c src/ui.c src/camp.c src/gear.c src/loot.c src/save.c src/disk.s src/hi.s src/assets.c src/tree.c"
-for t in save load; do cl65 -t c64 -Oirs -Cl -DAUTOPLAY="\"../test/$t.h\"" -C prismquest.cfg -o build/$t.prg $S; done
-ROMDIR=~/vice-roms tools/disktest.sh build/save.prg build/disk.d64 build/save.png 400000000  # writes PQ.SAVE
-ROMDIR=~/vice-roms tools/disktest.sh build/load.prg build/disk.d64 build/load.png 400000000  # Continue + Bag
+export ROMDIR=~/vice-roms
+make shot SCRIPT=test/village.h CYCLES=60000000   # walk to the Mayor and talk
+make shot SCRIPT=test/camp.h    CYCLES=90000000   # polish, craft, learn skills
+make shot SCRIPT=test/gear.h    CYCLES=50000000   # inspect and equip gear
+make shot SCRIPT=test/battle.h  CYCLES=160000000  # Knight fights through Bogmire
+make shot SCRIPT=test/save.h    CYCLES=60000000   # then, keeping one disk:
+tools/vicerun.py build/test.prg build/save.png 60000000 build/disk.d64
+make shot SCRIPT=test/load.h    CYCLES=10         # (just to build it)
+tools/vicerun.py build/test.prg build/load.png 80000000 build/disk.d64
 ```
+
+A script can define `TEST_SETUP` (C statements run at the end of `new_game`)
+to start the hero with gems, gear or skill points. It can also define
+`autoplay_loop[]` (with `#define AUTOPLAY_LOOP`), which is replayed forever
+after the main script ends.
 
 ## Layout
 
@@ -145,15 +178,18 @@ ROMDIR=~/vice-roms tools/disktest.sh build/load.prg build/disk.d64 build/load.pn
 | `src/world.c` | village and zone generation, map rendering, exploration loop, monster AI |
 | `src/battle.c` | combat |
 | `src/ui.c` | title, stats and levelling, villagers, ledger, game over |
-| `src/camp.c` | skill effects, gems and polishing, bag, spellbook, Power Tree, camp menu |
+| `src/kit.c` | skill effects, gem helpers, the menu kit, camp menu, Ledger, doors into the overlays |
+| `src/bag.c` | the Bag: polishing and Summon Dwarves |
 | `src/gear.c` | the Gear screen, item cards, faceting gems, equip/salvage |
+| `src/ov_*.c` | the overlays: title, the two dialogue halves, Spellbook, Power Tree (`ov_tree.inc`, built once per class) |
+| `src/ovl.s` | overlay file headers: load address and signature |
 | `src/loot.c` | the item engine (rarities, affixes, legendaries, set, drops, stats); lives in PQ.HI |
-| `src/save.c` | save/load format, autosave, erase-on-death, loading and unpacking PQ.HI |
+| `src/save.c` | save/load format, autosave, erase-on-death, loading PQ.HI, the overlay loader `ovl()` |
 | `src/hi.s` | PQ.HI's load address and signature |
 | `src/disk.s` | assembly: switches the KERNAL in and calls its SAVE/LOAD/OPEN, reads the drive's error channel |
 | `src/data.c` | classes, monsters, zones, spells, minerals (numbers from `js/data.js`) |
 | `src/assets.c` | **generated** by `tools/gen_assets.js` from `js/sprites.js` |
-| `src/tree.c` | **generated** by `tools/gen_data.js` from `js/data.js` (Power Trees, class perks) |
+| `src/tree.c`, `tree_text.h` | **generated** by `tools/gen_data.js` from `js/data.js`: Power Tree effects and class perks (resident); skill names and descriptions (overlays) |
 
 ### Memory map
 
@@ -163,7 +199,8 @@ The C64 has 64 KB, and the game uses nearly all of it. See `prismquest.cfg`.
 |---|---|
 | `$0400–$05EF` | scratch: the save buffer, shared with the map-view buffers |
 | `$05F0–$07FF` | monster, node, gate and villager tables (the KERNAL's old text screen) |
-| `$0801–$CFEF` | the program: code, read-only data, initialised data (about 50 KB) |
+| `$0801–$C3EF` | the resident program: code, read-only data, initialised data (38 KB used) |
+| `$C400–$CFEF` | the overlay window: PQ.OV1–7 load here on demand |
 | `$D000–$D7FF` | character set, in the RAM under the I/O chips (only the VIC reads it) |
 | `$D800–$DD3F` | sprite art, also under the I/O chips (copied into sprite slots with I/O off) |
 | `$E000` | screen |
@@ -186,7 +223,11 @@ for the duration of a disk call, touching only its own data below `$D000` and
 the hardware stack. The save buffer is below the KERNAL too, so its SAVE and
 LOAD can reach it.
 
-### cc65 gotchas
+### C64 and cc65 gotchas
+
+- Sprites must be off during disk I/O. Their DMA steals cycles the KERNAL's
+  serial timing needs, so loads stall or bytes arrive corrupted. `disk_op`
+  hides them for the length of every call.
 
 - Watch for 8-bit loop counters. The save grew past 255 bytes, and a `u8`
   counter in its checksum loop then never finished.
