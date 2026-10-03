@@ -35,7 +35,14 @@ A work-in-progress port of the browser game to a stock Commodore 64 (64 KB,
   XP gain, max HP and defence, stronger shields and healing, regen, Second Wind,
   Last Stand, the once-per-life revive capstones, unicorn power and duration,
   and sure-footed fleeing.
-- **Rogue-like death:** when your hero falls, the run ends and you start a new hero.
+- **Saving to disk:** "Save game" in the camp menu, plus an automatic save
+  each time you come home to Drizzlewick, writes `PQ.SAVE` (one block, with a
+  magic header, version byte and checksum) to the drive the game was loaded
+  from. "Continue from disk" on the title screen brings the hero back. Zones are
+  procedural, so a hero saved out in the wilds wakes up in a freshly generated
+  zone.
+- **Rogue-like death:** when your hero falls, the run ends, the save on disk is
+  scratched with them, and you start a new hero.
 - **Art:** converted automatically from `js/sprites.js`. Map tiles become
   multicolour characters; the hero and battle portraits become stacked hi-res
   hardware sprites. The 8×8 font is hand-drawn, so no Commodore ROM data is used.
@@ -43,7 +50,7 @@ A work-in-progress port of the browser game to a stock Commodore 64 (64 KB,
 
 **Not ported yet:** loot and gear,
 camp building, dungeons, Prism Facets, pacts, elites, the Rainycastle and the
-realm, saving to disk, and music.
+realm, and music.
 
 ## Controls
 
@@ -53,7 +60,8 @@ realm, saving to disk, and music.
 | Talk | Walk into a villager |
 | Fight | Walk into a monster |
 | Confirm, next page | Fire, Space or Return |
-| Camp menu (Bag, Spellbook, Power Tree, Ledger) | Fire while standing still |
+| Camp menu (Bag, Spellbook, Power Tree, Ledger, Save) | Fire while standing still |
+| Load a saved hero | "Continue from disk" on the title screen |
 | Bag / Spellbook / Power Tree | I / C / T |
 | Back out of a menu | Left, R or RUN/STOP |
 | Battle menu | Left/right then fire, or **B**onk, **S**pell, **R**un |
@@ -64,10 +72,13 @@ realm, saving to disk, and music.
 sudo apt install cc65 vice     # node is also needed, for the asset converter
 cd c64
 make                           # -> build/prismquest.prg
+make d64                       # -> build/prismquest.d64, a 1541 disk with the game on it
 make run                       # autostarts it in VICE (needs a VICE with the C64 ROMs)
 ```
 
-On a real C64 (SD2IEC, 1541 Ultimate and so on): `LOAD"PRISMQUEST.PRG",8,1`, then `RUN`.
+On a real C64 or in VICE, put the game on a disk (or SD2IEC, 1541 Ultimate and
+so on), then `LOAD"PRISMQUEST",8,1` and `RUN`. Saves go to the same drive, so
+the disk must not be write-protected.
 
 ## Headless testing
 
@@ -88,6 +99,20 @@ make shot SCRIPT=test/camp.h    CYCLES=15000000   # polish, craft, learn skills
 A script can also define `TEST_SETUP` (C statements run at the end of
 `new_game`) to start the hero with gems or skill points.
 
+The stub ROMs can't talk to a disk drive. To test saving, `tools/disktest.sh`
+boots VICE with **real** ROMs and a true-emulated 1541. It puts a build on a
+`.d64`, autostarts it, screenshots, and lists the disk afterwards. Point
+`ROMDIR` at a folder with `kernal`, `basic`, `chargen` and `dos1541` images.
+The `data/` folder of the upstream VICE source release has them. They are
+copyrighted, so they are not in this repo.
+
+```
+S="src/main.c src/system.c src/data.c src/world.c src/battle.c src/ui.c src/camp.c src/save.c src/disk.s src/assets.c src/tree.c"
+for t in save load; do cl65 -t c64 -Oirs -Cl -DAUTOPLAY="\"../test/$t.h\"" -C prismquest.cfg -o build/$t.prg $S; done
+ROMDIR=~/vice-roms tools/disktest.sh build/save.prg build/disk.d64 build/save.png 400000000  # writes PQ.SAVE
+ROMDIR=~/vice-roms tools/disktest.sh build/load.prg build/disk.d64 build/load.png 400000000  # Continue + Bag
+```
+
 ## Layout
 
 | File | |
@@ -97,6 +122,8 @@ A script can also define `TEST_SETUP` (C statements run at the end of
 | `src/battle.c` | combat |
 | `src/ui.c` | title, stats and levelling, villagers, ledger, game over |
 | `src/camp.c` | skill effects, gems and polishing, bag, spellbook, Power Tree, camp menu |
+| `src/save.c` | save/load format, autosave, erase-on-death |
+| `src/disk.s` | assembly: switches the KERNAL in and calls its SAVE/LOAD/OPEN, reads the drive's error channel |
 | `src/data.c` | classes, monsters, zones, spells, minerals (numbers from `js/data.js`) |
 | `src/assets.c` | **generated** by `tools/gen_assets.js` from `js/sprites.js` |
 | `src/tree.c` | **generated** by `tools/gen_data.js` from `js/data.js` (Power Trees, class perks) |
@@ -116,5 +143,15 @@ See `prismquest.cfg`.
 
 Everything from `$E000` up is the RAM under the KERNAL ROM. The VIC chip reads
 it directly (bank 3), and the CPU can reach it once the ROMs are banked out.
-The KERNAL and BASIC ROMs are banked out and interrupts are off. The game syncs
+The KERNAL and BASIC ROMs are banked out and interrupts are off. The only
+exception is `disk.s`: it banks the KERNAL in for the duration of a disk call,
+touching only its own data below `$D000` and the hardware stack, and the save
+buffer lives in the program's DATA segment, where the KERNAL can read it.
+
+### A cc65 gotcha
+
+cc65 2.19 miscompiles a bit test whose shift count is a computed expression,
+for example `if (!(P.skills & (1u << (b * 5 + t))))`. It checks only the high
+byte of the result, which quietly turned off half of the Power Tree. Test bits
+with a shift-and-mask (`(P.skills >> n) & 1`) or put the count in a `u8` first. The game syncs
 to the raster beam.

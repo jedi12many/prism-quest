@@ -57,6 +57,7 @@ void new_game(u8 cls)
     calc_stats();
     P.hp = P.hpmax;
     P.x = 6; P.y = 6;
+    P.map = MAP_VILLAGE;
 }
 
 /* ---------- title ---------- */
@@ -64,6 +65,18 @@ void new_game(u8 cls)
 static void show_class(u8 c)
 {
     u8 i;
+    put_ch(3, 17, c == NCLASS ? CH_POINTER : 0, YELLOW);
+    put_str(5, 17, "Continue from disk", c == NCLASS ? YELLOW : PURPLE);
+    if (c == NCLASS) {
+        POKE(0xD015, 0);
+        for (i = 0; i < NCLASS; ++i) {
+            put_ch(3, 11 + i * 2, 0, YELLOW);
+            put_str(5, 11 + i * 2, classes[i].name, WHITE);
+        }
+        clear_rows(18, 21);
+        wrap("Load your saved hero from the disk in the drive.", 18, 2, CYAN);
+        return;
+    }
     for (i = 0; i < 3; ++i) {
         spr_load(i, player_spr[c][i]);
         SPR_PTR[i] = SPR_BASE + i;
@@ -101,8 +114,8 @@ u8 title_screen(void)
     put_center(24, "Joystick 2 or W/S + fire/space", BLUE);
     for (;;) {
         wait_frame(); input_poll();
-        if (in_new & IN_UP) { c = c ? c - 1 : NCLASS - 1; show_class(c); }
-        if (in_new & IN_DOWN) { c = c + 1 == NCLASS ? 0 : c + 1; show_class(c); }
+        if (in_new & IN_UP) { c = c ? c - 1 : NCLASS; show_class(c); }
+        if (in_new & IN_DOWN) { c = c == NCLASS ? 0 : c + 1; show_class(c); }
         if (key_hit(K_1)) { c = 0; break; }
         if (key_hit(K_2)) { c = 1; break; }
         if (key_hit(K_3)) { c = 2; break; }
@@ -277,6 +290,7 @@ void show_ledger(void)
 void game_over(void)
 {
     POKE(0xD015, 0);
+    erase_save();                       /* one life: the save falls with the hero */
     cls();
     POKE(0xD020, BLACK); POKE(0xD021, BLACK);
     sb_reset(); sb_str(classes[P.cls].name); sb_str(" has fallen.");

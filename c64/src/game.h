@@ -196,6 +196,7 @@ typedef struct {
     u8 pip_stage, pip_n;
     u8 baker_stage, willow_stage;
     u8 x, y;
+    u8 map;                /* MAP_VILLAGE or a zone id */
 } Player;
 extern Player P;
 
@@ -263,5 +264,11 @@ u8 menu_pick(u8 x, u8 y0, const char *const *items, u8 n, u8 sel);
 void show_ledger(void);
 u8 battle(u8 mob, u8 ambush);   /* 0 fled, 1 won, 2 died */
 void game_over(void);
+
+/* disk (save.c) */
+void disk_init(void);
+u8 save_game(void);
+u8 load_game(void);
+void erase_save(void);
 
 #endif

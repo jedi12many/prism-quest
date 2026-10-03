@@ -1,7 +1,7 @@
 # Prism Quest: Rainyday -- Commodore 64 port
 # Needs cc65 (apt install cc65) and node; VICE for `make run` / `make shot`.
 
-SRC    := src/main.c src/system.c src/data.c src/world.c src/battle.c src/ui.c src/camp.c src/assets.c src/tree.c
+SRC    := src/main.c src/system.c src/data.c src/world.c src/battle.c src/ui.c src/camp.c src/save.c src/disk.s src/assets.c src/tree.c
 PRG    := build/prismquest.prg
 CFLAGS := -t c64 -Oirs -Cl
 # memory layout: see prismquest.cfg
@@ -23,6 +23,13 @@ $(PRG): src/assets.h src/tree.h $(SRC) src/game.h | build
 build:
 	mkdir -p build
 
+# a 1541 disk image with the game on it (saves go on the same disk)
+D64 := build/prismquest.d64
+d64: $(PRG)
+	rm -f $(D64)
+	c1541 -format "prism quest,pq" d64 $(D64) -write $(PRG) prismquest >/dev/null
+	@echo "built $(D64)"
+
 # run in VICE (uses the real ROMs if your VICE has them)
 run: $(PRG)
 	x64sc -autostart $(PRG)
@@ -39,4 +46,4 @@ shot: src/assets.h src/tree.h $(SRC) src/game.h $(SCRIPT) | build
 clean:
 	rm -rf build src/*.o
 
-.PHONY: all run shot clean
+.PHONY: all run shot d64 clean

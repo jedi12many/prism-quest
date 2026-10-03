@@ -4,6 +4,11 @@
 
 /* ---------- effects (js/game.js eff) ---------- */
 
+/* Is skill (branch b, tier t) learned? Note: written as a shift-and-mask on
+ * purpose -- cc65 2.19 miscompiles `!(P.skills & (1u << n))` (it tests only
+ * the high byte of the result), which silently disabled the first 8 skills. */
+static u8 owned(u8 b, u8 t) { return (P.skills >> (b * 5 + t)) & 1; }
+
 i16 eff(u8 key)
 {
     i16 v = 0;
@@ -14,7 +19,7 @@ i16 eff(u8 key)
     if (!P.skills) return v;
     for (b = 0; b < 3; ++b)
         for (t = 0; t < 5; ++t) {
-            if (!(P.skills & (1u << (b * 5 + t)))) break;   /* tiers unlock in order */
+            if (!owned(b, t)) break;               /* tiers unlock in order */
             e = tree[P.cls][b].node[t].eff;
             if (e[0].key == key) v += e[0].val;
             if (e[1].key == key) v += e[1].val;
@@ -287,7 +292,6 @@ void show_spellbook(void)
 #define TREE_X(b) ((b) * 13 + 1)
 #define TREE_Y(t) (4 + (t) * 2)
 
-static u8 owned(u8 b, u8 t) { return (P.skills >> (b * 5 + t)) & 1; }
 static u8 unlocked(u8 b, u8 t) { return t == 0 || owned(b, t - 1); }
 
 static void draw_node(u8 b, u8 t, u8 selected)
@@ -368,16 +372,17 @@ void show_tree(void)
 
 /* ---------- the camp menu (fire in the world) ---------- */
 
-static const char *const camp_items[5] = { "Bag & polishing", "Spellbook", "Power Tree", "Village Ledger", "Back" };
+static const char *const camp_items[6] = { "Bag & polishing", "Spellbook", "Power Tree", "Village Ledger", "Save game", "Back" };
 
 void camp_menu(void)
 {
     u8 sel;
     POKE(0xD015, 0);
     msg_clear();
-    sel = menu_pick(1, MSG_ROW - 1, camp_items, 5, 0);
+    sel = menu_pick(1, MSG_ROW - 2, camp_items, 6, 0);
     if (sel == 0) show_bag();
     else if (sel == 1) show_spellbook();
     else if (sel == 2) show_tree();
     else if (sel == 3) show_ledger();
+    else if (sel == 4) { clear_rows(MSG_ROW - 2, 24); save_game(); wait_fire(); }
 }

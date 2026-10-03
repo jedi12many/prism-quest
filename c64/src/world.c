@@ -340,6 +340,7 @@ static void travel(u8 id, u8 x, u8 y)
     sfx(SFX_GATE);
     POKE(0xD015, 0);
     build_map(id);
+    P.map = id;
     P.x = x; P.y = y;
     gate_armed = 0;
     redraw_all();
@@ -362,6 +363,7 @@ static void on_gate(u8 gi)
         break;
     case G_HOME:
         travel(MAP_VILLAGE, zones[map_id].home[0], zones[map_id].home[1]);
+        save_game();                    /* autosave on coming home */
         break;
     case G_CLOUD:
         say("The Cloudgate", "An old rainbow arch, cold and dormant. The Mayor says it only wakes once all four lands shine.");
@@ -519,10 +521,19 @@ void world_loop(void)
     u8 last_sec = 0;
     i8 dx, dy;
 
-    build_map(MAP_VILLAGE);
+    build_map(P.map);
+    if (!walkable(P.x, P.y) && gate_at(P.x, P.y) == 0xFF) {
+        /* a freshly generated zone may have a tree where you stood: go to its gate */
+        if (in_zone()) { P.x = zones[map_id].entry[0]; P.y = zones[map_id].entry[1]; }
+        else { P.x = 6; P.y = 6; }
+    }
     gate_armed = gate_at(P.x, P.y) == 0xFF;
     redraw_all();
-    msg("Welcome to Drizzlewick! Mayor Puddle is waiting to speak with you. Walk into people to talk.");
+    if (P.kills || P.main_quest) {
+        sb_reset(); sb_str("Welcome back, "); sb_str(classes[P.cls].name); sb_str("!");
+        msg(sb);
+    } else
+        msg("Welcome to Drizzlewick! Mayor Puddle is waiting to speak with you. Walk into people to talk.");
     heal_at = seconds + 2;
 
     for (;;) {
