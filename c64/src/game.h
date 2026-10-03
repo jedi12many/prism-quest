@@ -3,6 +3,7 @@
 #define GAME_H
 
 #include "assets.h"
+#include "tree.h"
 
 typedef unsigned char u8;
 typedef signed char i8;
@@ -12,12 +13,14 @@ typedef int i16;
 #define PEEK(a)    (*(volatile u8 *)(a))
 #define POKE(a, v) (*(volatile u8 *)(a) = (v))
 
-/* ---------- memory map (VIC bank 3) ---------- */
-#define SCREEN    ((u8 *)0xC000)
-#define SPRITES   0xC400          /* 16 sprite slots, pointer values 16..31 */
-#define CHARSET   0xC800
+/* ---------- memory map ----------
+ * VIC bank 3, in the RAM under the (banked-out) KERNAL; see prismquest.cfg */
+#define SCREEN    ((u8 *)0xE000)
+#define SPRITES   0xE400          /* 16 sprite slots */
+#define SPR_BASE  0x90            /* sprite pointer value of slot 0 */
+#define CHARSET   0xE800
 #define COLORRAM  ((u8 *)0xD800)
-#define SPR_PTR   ((u8 *)0xC3F8)
+#define SPR_PTR   ((u8 *)0xE3F8)
 #define SPR_SLOT(n) ((u8 *)(SPRITES + (n) * 64))
 
 /* screen layout: row 0 HUD, rows 1-20 map (10 tiles), rows 21-24 messages */
@@ -36,6 +39,7 @@ enum { BLACK, WHITE, RED, CYAN, PURPLE, GREEN, BLUE, YELLOW,
 #define IN_LEFT  0x04
 #define IN_RIGHT 0x08
 #define IN_FIRE  0x10
+#define IN_BONK  0x20            /* the B key (Bonk in battle) */
 /* keyboard matrix codes: (column << 3) | row */
 #define K_RETURN 0x01
 #define K_SPACE  0x3C
@@ -46,6 +50,8 @@ enum { BLACK, WHITE, RED, CYAN, PURPLE, GREEN, BLUE, YELLOW,
 #define K_B 0x1C
 #define K_F 0x15
 #define K_I 0x21
+#define K_C 0x14
+#define K_T 0x16
 #define K_R 0x11
 #define K_1 0x38
 #define K_2 0x3B
@@ -108,11 +114,14 @@ enum { QUARTZ, AMETHYST, SUNSTONE, AQUAMARINE, EMERALD, ROSEOPAL, PRISMATITE };
 extern const char *const mineral_name[NMIN];
 extern const u8 mineral_color[NMIN];
 
-#define NSPELL 9
-enum { SP_GLITTER, SP_SHIELD, SP_SUNFLARE, SP_TIDEPOP, SP_BLOOM, SP_BUTTERFLY, SP_RAINBOW, SP_UNICORN, SP_STARDUST };
+#define NSPELL 10
+enum { SP_GLITTER, SP_SHIELD, SP_SUNFLARE, SP_TIDEPOP, SP_BLOOM, SP_BUTTERFLY, SP_DWARVES, SP_RAINBOW, SP_UNICORN, SP_STARDUST };
 typedef struct {
     const char *name;
+    const char *desc;
     u8 power;
+    u8 base;               /* charges per craft, before the quality bonus */
+    u8 gem[3], n[3];       /* recipe: up to three minerals (n = 0 unused) */
 } SpellDef;
 extern const SpellDef spells[NSPELL];
 
@@ -123,10 +132,6 @@ typedef struct {
     const char *blurb;
     u8 hp, atk, mag, def;
     u8 def_grow2;          /* defence growth per level, in halves */
-    i8 spell_dmg;          /* perk percentages */
-    i8 basic_dmg;
-    u8 charge_save;
-    u8 unicorn_power;
 } ClassDef;
 extern const ClassDef classes[NCLASS];
 
@@ -180,7 +185,10 @@ typedef struct {
     u8 atk, mag, def;
     u8 bonus_hp;
     u16 raw[NMIN];
+    u16 polished[NMIN][3]; /* rough, fine, brilliant */
     u8 spells[NSPELL];
+    u16 skills;            /* learned Power Tree nodes: bit branch*5 + tier */
+    u8 revive_used;
     u8 zones_cleared;      /* bitmask by zone id */
     u8 main_quest;
     u16 kills;
@@ -193,6 +201,14 @@ extern Player P;
 
 void calc_stats(void);
 u16 gain_xp(u16 n);
+i16 eff(u8 key);           /* summed skill/perk effect (percent or flat) */
+
+/* gems (ui.c) */
+enum { Q_ROUGH, Q_FINE, Q_BRILLIANT };
+u16 polished_count(u8 m);
+u16 gem_stock(u8 m);       /* raw + polished */
+void consume_gems(u8 m, u8 n);
+void polish_all(u16 bonus);
 
 /* ---------- world ---------- */
 #define MAP_W 34
@@ -240,6 +256,10 @@ u8 title_screen(void);          /* returns chosen class */
 void new_game(u8 cls);
 void talk_npc(u8 id);
 void show_bag(void);
+void camp_menu(void);
+void show_spellbook(void);
+void show_tree(void);
+u8 menu_pick(u8 x, u8 y0, const char *const *items, u8 n, u8 sel);
 void show_ledger(void);
 u8 battle(u8 mob, u8 ambush);   /* 0 fled, 1 won, 2 died */
 void game_over(void);

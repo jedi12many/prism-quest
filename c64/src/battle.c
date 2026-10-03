@@ -16,6 +16,7 @@ static u8 p_shield_t, p_shield_red, p_pois_t, p_pois_d, p_dread_t;
 static u8 uni_t;
 static u16 uni_pow;
 static u8 over, result;
+static u8 last_stand_used;
 
 static void pause(u8 n) { while (n--) wait_frame(); }
 
@@ -26,7 +27,7 @@ static void blog(const char *s, u8 col)
 }
 
 static u8 variance(void) { return 90 + rnd(21); }
-static u8 is_crit(void) { return chance(5); }
+static u8 is_crit(void) { return chance(5 + eff(E_CRIT)); }
 static u8 dread_pct(void) { return p_dread_t ? 75 : 100; }
 
 static i16 finish(long d100)
@@ -106,9 +107,29 @@ static u8 hit_monster(i16 dmg, const char *label)
 
 static void player_damage(i16 dmg)
 {
+    i16 r;
     if (over) return;
     P.hp -= dmg;
-    if (P.hp <= 0) { P.hp = 0; defeat(); }
+    if (P.hp > 0) return;
+    /* Last Stand: survive at 1 HP, once per battle */
+    if (eff(E_LASTSTAND) && !last_stand_used) {
+        last_stand_used = 1;
+        P.hp = 1;
+        blog("Last Stand! You refuse to fall!", YELLOW);
+        return;
+    }
+    /* revive capstone: cheat death once per life */
+    if ((r = eff(E_REVIVE)) && !P.revive_used) {
+        P.revive_used = 1;
+        P.hp = (P.hpmax * r + 50) / 100;
+        if (P.hp < 1) P.hp = 1;
+        sfx(SFX_LEVEL);
+        sb_reset(); sb_str("Death denied! You surge back to "); sb_num(P.hp); sb_str(" HP - but only once.");
+        blog(sb, PURPLE);
+        return;
+    }
+    P.hp = 0;
+    defeat();
 }
 
 static void monster_hit(void)
@@ -174,9 +195,8 @@ static void enemy_turn(void)
 
 static void bonk(void)
 {
-    const ClassDef *c = &classes[P.cls];
     u8 crit = is_crit();
-    long d = (long)P.atk * 2 * (100 + c->basic_dmg) * variance() / 100;
+    long d = (long)P.atk * 2 * (100 + eff(E_BASICDMG)) * variance() / 100;
     d = d * dread_pct() / 100;
     if (crit) d = d * 17 / 10;
     d -= mdef * 50;
@@ -186,37 +206,42 @@ static void bonk(void)
 
 static void cast(u8 sp)
 {
-    const ClassDef *c = &classes[P.cls];
+    u8 save = eff(E_CHARGESAVE);
     u8 pet_free = sp == SP_UNICORN && P.cls == CL_WHISPERER;
     u8 crit;
     long d;
     i16 heal;
     if (!pet_free) {
-        if (c->charge_save && chance(c->charge_save)) blog("Chain Light - the charge is refunded!", CYAN);
+        if (save && chance(save)) blog("Chain Light - the charge is refunded!", CYAN);
         else --P.spells[sp];
     }
     sfx(SFX_SPELL);
     flash(sp == SP_SUNFLARE ? YELLOW : sp == SP_TIDEPOP ? BLUE : PURPLE);
     switch (sp) {
     case SP_SHIELD:
-        p_shield_t = 2; p_shield_red = 60;
-        blog("Prism Shield! Blocking 60% damage for 2 turns.", CYAN);
+        p_shield_t = 2;
+        p_shield_red = 60 * (100 + eff(E_SHIELD)) / 100;
+        if (p_shield_red > 90) p_shield_red = 90;
+        sb_reset(); sb_str("Prism Shield! Blocking "); sb_num(p_shield_red); sb_str("% damage for 2 turns.");
+        blog(sb, CYAN);
         break;
     case SP_BLOOM:
-        heal = (P.hpmax * 4 + 5) / 10;
+        heal = (i16)(((long)P.hpmax * 40 * (100 + eff(E_HEALPOWER)) + 5000) / 10000);
         P.hp += heal; if (P.hp > P.hpmax) P.hp = P.hpmax;
         sb_reset(); sb_str("Healing Bloom restores "); sb_num(heal); sb_str(" HP!");
         draw_status();
         blog(sb, GREEN);
         break;
     case SP_UNICORN:
-        uni_t = 4;
-        uni_pow = 100 + c->unicorn_power;
-        blog(pet_free ? "Your bonded unicorn gallops to your side! (4 turns)" : "A radiant unicorn gallops to your side! (4 turns)", WHITE);
+        uni_t = 4 + eff(E_SUMMONTURNS);
+        uni_pow = 100 + eff(E_UNICORN);
+        sb_reset(); sb_str(pet_free ? "Your bonded" : "A radiant"); sb_str(" unicorn gallops to your side! (");
+        sb_num(uni_t); sb_str(" turns)");
+        blog(sb, WHITE);
         break;
     default:
         crit = is_crit();
-        d = (long)spells[sp].power * (100 + P.mag * 5) * (100 + c->spell_dmg) / 100;
+        d = (long)spells[sp].power * (100 + P.mag * 5) * (100 + eff(E_SPELLDMG)) / 100;
         d = d * variance() / 100 * dread_pct() / 100;
         if (crit) d = d * 17 / 10;
         d -= mdef * 30;
@@ -251,7 +276,7 @@ static void end_of_turn(void)
     if (uni_t) {
         --uni_t;
         d = finish(8L * uni_pow * (100 + 4 * P.mag) / 100 * variance() / 100);
-        heal = (6 * uni_pow + 50) / 100;
+        heal = (i16)((6L * uni_pow * (100 + eff(E_HEALPOWER)) + 5000) / 10000);
         P.hp += heal; if (P.hp > P.hpmax) P.hp = P.hpmax;
         mhp -= d;
         sb_reset(); sb_str("Unicorn charges for "); sb_num(d); sb_str(" and heals you "); sb_num(heal); sb_str("!");
@@ -259,6 +284,10 @@ static void end_of_turn(void)
         draw_status(); blog(sb, WHITE);
         if (mhp <= 0) { victory(); return; }
         if (!uni_t) blog("The unicorn bows and departs.", CYAN);
+    }
+    if ((d = eff(E_REGEN)) && P.hp < P.hpmax) {
+        P.hp += d; if (P.hp > P.hpmax) P.hp = P.hpmax;
+        draw_status();
     }
     enemy_turn();
 }
@@ -291,6 +320,12 @@ static void victory(void)
         P.raw[pick] += i;
         sb_reset(); sb_str("It dropped "); sb_num(i); sb_str(" raw "); sb_str(mineral_name[pick]); sb_str("!");
         blog(sb, WHITE);
+    }
+    if ((total = eff(E_HEALONWIN))) {
+        roll = (P.hpmax * total + 50) / 100;
+        P.hp += roll; if (P.hp > P.hpmax) P.hp = P.hpmax;
+        sb_reset(); sb_str("Second Wind restores "); sb_num(roll); sb_str(" HP.");
+        blog(sb, GREEN);
     }
     mob->alive = 0;
     mob->respawn = (md->flags & MF_BOSS) ? 0xFFFF : seconds + 45;
@@ -326,7 +361,7 @@ static u8 spell_menu(void)
 {
     u8 list[NSPELL], n = 0, i, sel = 0;
     for (i = 0; i < NSPELL; ++i)
-        if (P.spells[i] || (i == SP_UNICORN && P.cls == CL_WHISPERER)) list[n++] = i;
+        if (i != SP_DWARVES && (P.spells[i] || (i == SP_UNICORN && P.cls == CL_WHISPERER))) list[n++] = i;
     log_reset(LOG_Y, LOG_ROWS);
     if (!n) { blog("No spell charges! Craft spells at camp.", BLUE); return 0xFF; }
     put_str(1, LOG_Y, "Cast which spell? (fire, or R to go back)", CYAN);
@@ -354,7 +389,7 @@ static u8 choose(void)
         draw_menu(sel);
         for (;;) {
             wait_frame(); input_poll();
-            if (key_hit(K_B)) { sel = 0; break; }
+            if (in_new & IN_BONK) { sel = 0; break; }
             if (key_hit(K_S)) { sel = 1; break; }
             if (key_hit(K_R)) { sel = 2; break; }
             if (in_new & IN_LEFT) { sel = sel ? sel - 1 : 2; draw_menu(sel); }
@@ -380,6 +415,7 @@ u8 battle(u8 mi, u8 ambush)
     m_burn_t = m_pois_t = m_weak_t = 0;
     p_shield_t = p_pois_t = p_dread_t = 0;
     uni_t = 0;
+    last_stand_used = 0;
     over = 0; result = 0;
 
     POKE(0xD015, 0);
@@ -390,8 +426,8 @@ u8 battle(u8 mi, u8 ambush)
     for (i = 0; i < 3; ++i) {
         spr_load(i, player_spr[P.cls][i]);
         spr_load(3 + i, battle_spr[md->sprite][i]);
-        SPR_PTR[i] = 16 + i;
-        SPR_PTR[3 + i] = 19 + i;
+        SPR_PTR[i] = SPR_BASE + i;
+        SPR_PTR[3 + i] = SPR_BASE + 3 + i;
         POKE(0xD027 + i, player_spr_col[P.cls][i]);
         POKE(0xD027 + 3 + i, battle_spr_col[md->sprite][i]);
         spr_pos(i, 64, 78);
@@ -406,7 +442,7 @@ u8 battle(u8 mi, u8 ambush)
     else { sb_str("A wild "); sb_str(md->name); sb_str(" appears!"); }
     blog(sb, WHITE);
     if (md->flags & MF_BOSS) blog("A champion of the gloom! Defeat it and the light returns to this land!", YELLOW);
-    if (ambush) { blog("Ambush! It strikes first!", RED); monster_hit(); }
+    if (ambush && !eff(E_FLEESURE)) { blog("Ambush! It strikes first!", RED); monster_hit(); }
 
     while (!over) {
         act = choose();
@@ -416,7 +452,7 @@ u8 battle(u8 mi, u8 ambush)
             if (sp == 0xFF) continue;
             cast(sp);
         } else {
-            if (chance(60)) { blog("You slip away in a puff of glitter!", CYAN); over = 1; result = 0; break; }
+            if (eff(E_FLEESURE) || chance(60)) { blog("You slip away in a puff of glitter!", CYAN); over = 1; result = 0; break; }
             blog("Couldn't escape!", RED);
         }
         draw_status();

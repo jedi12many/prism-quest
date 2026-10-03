@@ -2,6 +2,10 @@
 #include <string.h>
 #include "game.h"
 
+#ifdef AUTOPLAY
+#include AUTOPLAY          /* test builds may define TEST_SETUP */
+#endif
+
 Player P;
 
 /* ---------- stats (js/game.js calcStats / gainXp) ---------- */
@@ -10,16 +14,17 @@ void calc_stats(void)
 {
     const ClassDef *c = &classes[P.cls];
     u8 l = P.level - 1;
-    P.hpmax = c->hp + 6 * l + 10 /* camp house, level 1 */ + P.bonus_hp;
+    P.hpmax = c->hp + 6 * l + 10 /* camp house, level 1 */ + P.bonus_hp + eff(E_HPMAX);
     P.atk = c->atk + l;
     P.mag = c->mag + l;
-    P.def = (c->def * 2 + l * c->def_grow2) / 2;
+    P.def = (c->def * 2 + l * c->def_grow2) / 2 + eff(E_DEFFLAT);
     if (P.hp > P.hpmax) P.hp = P.hpmax;
 }
 
 u16 gain_xp(u16 n)
 {
     u8 leveled = 0;
+    n = (n * (100 + eff(E_XPGAIN)) + 50) / 100;
     P.xp += n;
     while (P.level < LEVEL_CAP && P.xp >= xp_next[P.level]) {
         P.xp -= xp_next[P.level];
@@ -46,6 +51,9 @@ void new_game(u8 cls)
     P.skill_points = 1;
     P.spells[SP_GLITTER] = 4;
     if (cls == CL_WHISPERER) P.spells[SP_UNICORN] = 2;
+#ifdef TEST_SETUP
+    TEST_SETUP
+#endif
     calc_stats();
     P.hp = P.hpmax;
     P.x = 6; P.y = 6;
@@ -58,7 +66,7 @@ static void show_class(u8 c)
     u8 i;
     for (i = 0; i < 3; ++i) {
         spr_load(i, player_spr[c][i]);
-        SPR_PTR[i] = 16 + i;
+        SPR_PTR[i] = SPR_BASE + i;
         POKE(0xD027 + i, player_spr_col[c][i]);
         spr_pos(i, 248, 118);
     }
@@ -153,8 +161,16 @@ void talk_npc(u8 id)
         }
         break;
     case NPC_FOREMAN:
-        say(who, "Flint's the name - stone, gems, and honest work. Walk over a sparkling node out in the wilds and you'll "
-                 "scoop up the raw minerals. Raw minerals pay the bills, hero.");
+        if (!(P.npc_flags & 2)) {
+            P.npc_flags |= 2;
+            ++P.spells[SP_DWARVES];
+            say(who, "Flint's the name - stone, gems, and honest work. The crew owes me a favor, so here: one dwarf crew "
+                     "summons, on the house. They'll polish your whole bag, and they don't do sloppy work.");
+            msg("Foreman Flint taught you Summon Dwarves! (+1 charge, cast it from your Bag)");
+        } else {
+            say(who, "Walk over a sparkling node out in the wilds to scoop up raw minerals, then polish them in your Bag. "
+                     "Better cuts make more spell charges.");
+        }
         break;
     case NPC_PIP:
         if (P.pip_stage == 0) {
@@ -180,13 +196,13 @@ void talk_npc(u8 id)
                      "Four Sunstones would warm them right up.");
             P.baker_stage = 1;
             msg("Favor accepted: bring Barnaby 4 Sunstone.");
-        } else if (P.baker_stage == 1 && P.raw[SUNSTONE] < 4) {
-            sb_reset(); sb_str("Any luck? You've got "); sb_num(P.raw[SUNSTONE]);
+        } else if (P.baker_stage == 1 && gem_stock(SUNSTONE) < 4) {
+            sb_reset(); sb_str("Any luck? You've got "); sb_num(gem_stock(SUNSTONE));
             sb_str("/4 Sunstone. The Thunderfen (East) practically glows with them.");
             say(who, sb);
         } else if (P.baker_stage == 1) {
             say(who, "FOUR SUNSTONES! Feel that? The ovens are singing already. First batch of Sunshine Buns is yours.");
-            P.raw[SUNSTONE] -= 4;
+            consume_gems(SUNSTONE, 4);
             P.baker_stage = 2;
             P.bonus_hp += 10;
             calc_stats();
@@ -202,12 +218,12 @@ void talk_npc(u8 id)
                      "Rose Opal. Two would do it. The far lands grow them... so I'm told.");
             P.willow_stage = 1;
             msg("Favor accepted: bring Willow 2 Rose Opal.");
-        } else if (P.willow_stage == 1 && P.raw[ROSEOPAL] < 2) {
-            sb_reset(); sb_str("The tulips are holding their breath. "); sb_num(P.raw[ROSEOPAL]); sb_str("/2 Rose Opal so far.");
+        } else if (P.willow_stage == 1 && gem_stock(ROSEOPAL) < 2) {
+            sb_reset(); sb_str("The tulips are holding their breath. "); sb_num(gem_stock(ROSEOPAL)); sb_str("/2 Rose Opal so far.");
             say(who, sb);
         } else if (P.willow_stage == 1) {
             say(who, "Oh, they're PERFECT. *dusts the beds* ...Look at that. First bloom in a century.");
-            P.raw[ROSEOPAL] -= 2;
+            consume_gems(ROSEOPAL, 2);
             P.willow_stage = 2;
             ++P.skill_points;
             msg("The tulips bloom! Willow's wisdom: +1 skill point.");
@@ -217,41 +233,6 @@ void talk_npc(u8 id)
         break;
     }
     world_hud_dirty();
-}
-
-/* ---------- bag ---------- */
-
-void show_bag(void)
-{
-    u8 i, y;
-    POKE(0xD015, 0);
-    cls();
-    POKE(0xD021, BLACK);
-    put_str(1, 0, "Bag", YELLOW);
-    put_str(12, 0, classes[P.cls].name, CYAN);
-    sb_reset(); sb_str("Level "); sb_num(P.level); sb_str("   HP "); sb_num(P.hp); sb_str("/"); sb_num(P.hpmax);
-    sb_str("   ATK "); sb_num(P.atk); sb_str("  MAG "); sb_num(P.mag); sb_str("  DEF "); sb_num(P.def);
-    put_str(1, 2, sb, WHITE);
-    put_str(1, 4, "Raw minerals", PURPLE);
-    for (i = 0; i < NMIN; ++i) {
-        y = 5 + i;
-        put_ch(2, y, CH_GEM, mineral_color[i]);
-        put_str(4, y, mineral_name[i], WHITE);
-        put_num(16, y, P.raw[i], YELLOW);
-    }
-    put_str(1, 13, "Spells", PURPLE);
-    for (y = 14, i = 0; i < NSPELL; ++i) {
-        if (!P.spells[i] && !(i == SP_UNICORN && P.cls == CL_WHISPERER)) continue;
-        put_str(2, y, spells[i].name, WHITE);
-        if (i == SP_UNICORN && P.cls == CL_WHISPERER) put_str(20, y, "bonded", CYAN);
-        else { sb_reset(); sb_str("x"); sb_num(P.spells[i]); put_str(20, y, sb, CYAN); }
-        ++y;
-    }
-    sb_reset(); sb_str("Skill points: "); sb_num(P.skill_points); sb_str("   Kills: "); sb_num(P.kills);
-    put_str(1, 21, sb, WHITE);
-    put_str(1, 23, "Polishing, crafting and the Power Tree", BLUE);
-    put_str(1, 24, "are next on the port's list. Fire: back", BLUE);
-    wait_fire();
 }
 
 /* ---------- the Village Ledger ---------- */

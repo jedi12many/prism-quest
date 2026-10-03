@@ -302,7 +302,7 @@ void place_player_sprite(void)
     u8 i;
     for (i = 0; i < 3; ++i) {
         spr_load(i, player_spr[P.cls][i]);
-        SPR_PTR[i] = 16 + i;
+        SPR_PTR[i] = SPR_BASE + i;
         POKE(0xD027 + i, player_spr_col[P.cls][i]);
         spr_pos(i, sx, sy);
     }
@@ -318,7 +318,8 @@ void draw_hud(void)
     put_str(1, 0, sb, P.hp * 4 < P.hpmax ? RED : WHITE);
     sb_reset(); sb_str("Lv"); sb_num(P.level);
     put_str(9, 0, sb, YELLOW);
-    sb_reset(); sb_str("XP "); sb_num(P.xp); sb_str("/"); sb_num(xp_next[P.level]);
+    if (P.skill_points) put_ch(8, 0, CH_STAR, YELLOW);   /* unspent skill points */
+    sb_reset(); sb_num(P.xp); sb_str("/"); sb_num(xp_next[P.level]); sb_str("xp");
     put_str(14, 0, sb, CYAN);
     if (in_zone()) put_str(40 - strlen(zones[map_id].name), 0, zones[map_id].name, zone_sunny() ? YELLOW : PURPLE);
     else put_str(29, 0, "Drizzlewick", YELLOW);
@@ -378,11 +379,17 @@ static void on_gate(u8 gi)
 static void mine(u8 ni)
 {
     Node *n = &nodes[ni];
-    u8 amt = 1 + chance(35);
+    static const u8 rare[3] = { AQUAMARINE, EMERALD, ROSEOPAL };
+    u8 amt = 1 + chance(35) + eff(E_MINEYIELD), luck = eff(E_RARELUCK), b;
     P.raw[n->mineral] += amt;
     n->respawn = seconds + 60;
     sfx(SFX_MINE);
     sb_reset(); sb_str("+"); sb_num(amt); sb_str(" raw "); sb_str(mineral_name[n->mineral]); sb_str("!");
+    if (luck && chance(luck)) {
+        b = rare[rnd(3)];
+        ++P.raw[b];
+        sb_str(" Lucky: +1 "); sb_str(mineral_name[b]); sb_str("!");
+    }
     msg(sb);
 }
 
@@ -523,6 +530,9 @@ void world_loop(void)
         input_poll();
 
         if (key_hit(K_I)) { show_bag(); redraw_all(); }
+        if (key_hit(K_C)) { show_spellbook(); redraw_all(); }
+        if (key_hit(K_T)) { show_tree(); redraw_all(); }
+        if ((in_new & IN_FIRE) && !(in_now & 0x0F)) { camp_menu(); redraw_all(); }
 
         if (cool) --cool;
         else if (in_now & (IN_UP | IN_DOWN | IN_LEFT | IN_RIGHT)) {

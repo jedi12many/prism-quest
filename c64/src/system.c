@@ -27,7 +27,7 @@ void hw_init(void)
 
     POKE(0xD011, 0x0B);                     /* blank while we set up */
     memcpy((void *)CHARSET, charset, 2048);
-    POKE(0xD018, 0x02);                     /* screen $C000, chars $C800 */
+    POKE(0xD018, 0x8A);                     /* screen $E000, chars $E800 */
     POKE(0xD016, 0x18);                     /* multicolour text */
     POKE(0xD020, BLACK);
     POKE(0xD021, BLACK);
@@ -96,6 +96,7 @@ void input_poll(void)
     if (key_down(K_A)) j |= IN_LEFT;
     if (key_down(K_D)) j |= IN_RIGHT;
     if (key_down(K_SPACE) || key_down(K_RETURN)) j |= IN_FIRE;
+    if (key_down(K_B)) j |= IN_BONK;
     in_now = j;
     in_new = j & ~in_prev;
     in_prev = j;

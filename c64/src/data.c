@@ -7,25 +7,34 @@ const char *const mineral_name[NMIN] = {
 /* node colours (cell colour 0-7); prismatite cycles through the rainbow */
 const u8 mineral_color[NMIN] = { WHITE, PURPLE, YELLOW, CYAN, GREEN, RED, BLUE };
 
+/* recipes and charges from js/data.js SPELLS */
 const SpellDef spells[NSPELL] = {
-    { "Glitter Bomb",    8 },
-    { "Prism Shield",    0 },
-    { "Sunflare",       12 },
-    { "Tide Pop",       12 },
-    { "Healing Bloom",   0 },
-    { "Butterfly Swarm", 6 },
-    { "Rainbow Beam",   18 },
-    { "Summon Unicorn",  8 },
-    { "Stardust Storm", 40 },
+    { "Glitter Bomb", "A fizzing burst of glitter. Cheap, cheerful, surprisingly painful.",
+      8, 4, { QUARTZ }, { 2 } },
+    { "Prism Shield", "A shimmering barrier that blocks most damage for 2 turns.",
+      0, 3, { QUARTZ, AMETHYST }, { 1, 1 } },
+    { "Sunflare", "Scorching light that also burns the target for 3 turns.",
+      12, 3, { SUNSTONE }, { 2 } },
+    { "Tide Pop", "A splashy blast that weakens the enemy's attacks for 3 turns.",
+      12, 3, { AQUAMARINE }, { 2 } },
+    { "Healing Bloom", "Flowers burst around you, restoring 40% of your health.",
+      0, 3, { EMERALD }, { 2 } },
+    { "Butterfly Swarm", "Glittering butterflies nip and poison the enemy for 4 turns.",
+      6, 3, { AMETHYST, EMERALD }, { 1, 1 } },
+    { "Summon Dwarves", "A dwarf crew polishes your ENTIRE bag of raw minerals with a big bonus to Brilliant cuts. Cast from your Bag.",
+      0, 2, { SUNSTONE, EMERALD }, { 1, 1 } },
+    { "Rainbow Beam", "A full-spectrum blast of concentrated joy. Hits hard.",
+      18, 3, { QUARTZ, AMETHYST, SUNSTONE }, { 1, 1, 1 } },
+    { "Summon Unicorn", "A radiant unicorn fights beside you for 4 turns, attacking and healing.",
+      8, 2, { ROSEOPAL, AQUAMARINE }, { 1, 1 } },
+    { "Stardust Storm", "Calls down a storm of falling stars. Devastating.",
+      40, 2, { PRISMATITE, QUARTZ }, { 1, 1 } },
 };
 
 const ClassDef classes[NCLASS] = {
-    { "Prism Mage", "A scholar of light. Spells hit harder, but robes are thin.",
-      40, 4, 9, 3, 1, 35, 0, 10, 0 },
-    { "Crystal Knight", "A walking geode. Bonks first, asks questions never.",
-      46, 8, 4, 4, 2, -10, 50, 0, 0 },
-    { "Unicorn Whisperer", "Speaks fluent sparkle. Unicorns answer the call.",
-      38, 5, 6, 3, 1, 0, 0, 0, 35 },
+    { "Prism Mage", "A scholar of light. Spells hit harder, but robes are thin.", 40, 4, 9, 3, 1 },
+    { "Crystal Knight", "A walking geode. Bonks first, asks questions never.", 46, 8, 4, 4, 2 },
+    { "Unicorn Whisperer", "Speaks fluent sparkle. Unicorns answer the call.", 38, 5, 6, 3, 1 },
 };
 
 /*            name                  hp  atk def  xp flags                 dbl rgn tile           spr  Qz Am Su Aq Em Ro Pr */
