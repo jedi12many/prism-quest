@@ -475,6 +475,9 @@ u8 battle(u8 mi, u8 ambush)
         mhpmax = mhp += (u16)mhp * 3 / 5;
         atk_scale += atk_scale * 3 / 20;
     }
+#ifdef TEST_WEAK
+    mhpmax = mhp = 1;                   /* (tests: one bonk does it) */
+#endif
     m_burn_t = m_pois_t = m_weak_t = 0;
     p_shield_t = p_pois_t = p_dread_t = 0;
     uni_t = 0;
@@ -485,12 +488,12 @@ u8 battle(u8 mi, u8 ambush)
     cls();
     POKE(0xD021, BLACK);
     POKE(0xD020, BLACK);
+    foe_spr = foe_mask[mon_sprites(md->sprite)];    /* (first: it may load the big foes' overlay, with the castle's names) */
     sb_reset();
     if (el) { sb_str(elite_name[el - 1]); sb_str(" "); }
     sb_str(md->name);
     put_str(1, 0, sb, el ? elite_col[el - 1] : (md->flags & MF_BOSS) ? YELLOW : WHITE);
     hero_sprites(P.cls);
-    foe_spr = foe_mask[mon_sprites(md->sprite)];
     for (i = 0; i < 7; ++i)             /* both doubled: 48x42, feet level */
         spr_pos(i, i < 3 ? 56 : 224, 68);
     POKE(0xD017, 0x7F); POKE(0xD01D, 0x7F);
@@ -506,7 +509,8 @@ u8 battle(u8 mi, u8 ambush)
         sb_str(md->name); sb_str(" appears!");
     }
     blog(sb, WHITE);
-    if (md->flags & MF_KEEPER) blog("The keeper of this place stirs - deadly, but its hoard is legendary!", YELLOW);
+    if (md->sprite >= CASTLE_SPRITE0) blog(castle_cry[md->sprite - CASTLE_SPRITE0], YELLOW);
+    else if (md->flags & MF_KEEPER) blog("The keeper of this place stirs - deadly, but its hoard is legendary!", YELLOW);
     else if (md->flags & MF_BOSS) blog("A champion of the gloom! Defeat it and the light returns to this land!", YELLOW);
     else if (map_id == MAP_DUNGEON && mi == dg.warden) blog("The Warden! It carries the key to the stair.", YELLOW);
     if (ambush && !eff(E_FLEESURE)) { blog("Ambush! It strikes first!", RED); monster_hit(); }

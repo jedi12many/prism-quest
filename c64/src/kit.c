@@ -94,7 +94,7 @@ u8 menu_pick(u8 x, u8 y0, const char *const *items, u8 n, u8 sel)
 
 u8 at_camp(const char *what)
 {
-    if (map_id == MAP_VILLAGE) return 1;
+    if (map_id == MAP_VILLAGE || (home_base() && what[0] != 'b')) return 1;   /* (the castle's no place to build) */
     sb_reset(); sb_str("Too dangerous out here! Return to Drizzlewick to "); sb_str(what); sb_str(".");
     say(0, sb);
     return 0;

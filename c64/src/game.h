@@ -184,7 +184,8 @@ typedef struct {
     u8 drop[NMIN];         /* weights */
 } MonsterDef;
 enum { MO_SLIME, MO_BAT, MO_SHROOM, MO_FOX, MO_GOLEM, MO_GAZER, MO_SPAWNLING,
-       MO_BOGMAW, MO_VOLTRA, MO_MILDEW, MO_UMBRELLA, MO_TROLL, MO_REVENANT, MO_POLTERGEIST, NMON };
+       MO_BOGMAW, MO_VOLTRA, MO_MILDEW, MO_UMBRELLA, MO_TROLL, MO_REVENANT, MO_POLTERGEIST,
+       MO_SENTINEL, MO_RAINCALLER, MO_WYRM, NMON };
 extern const MonsterDef monsters[NMON];
 
 #define NZONE 4
@@ -288,6 +289,7 @@ typedef struct {
     u8 facets;             /* Prism Facets dug up, bitmask by zone id */
     u8 pact;               /* the Gloom Pact sealed for this land: 1 + its number, 0 none */
     u8 champ_below;        /* lands whose champion lurks at the bottom of a dungeon, by zone id */
+    u8 castle;             /* the Rainycastle: CA_* bits */
     u8 x, y;
     u8 map;                /* MAP_VILLAGE or a zone id */
     Item equip[NSLOT];
@@ -310,7 +312,7 @@ void polish_all(u16 bonus);
 /* ---------- world ---------- */
 #define MAP_W 34
 #define MAP_H 26
-enum { MAP_VILLAGE = 0xFF, MAP_DUNGEON = 0xFE };    /* otherwise a zone id */
+enum { MAP_VILLAGE = 0xFF, MAP_DUNGEON = 0xFE, MAP_CASTLE = 0xFD };    /* otherwise a zone id */
 extern u8 map_id;
 extern u8 mw, mh;
 extern u8 map[MAP_H][MAP_W];
@@ -336,8 +338,9 @@ typedef struct { u8 x, y, mineral; u16 respawn; } Node;
 extern Node nodes[MAXNODE];
 extern u8 nnodes;
 
-enum { G_ZONE, G_HOME, G_CLOUD, G_FORGE, G_BOARD, G_FACET, G_DUNGEON, G_EXIT, G_STAIRS };
-/* (G_FACET: a zone's buried Prism Facet; G_DUNGEON: zone = the dungeon's type) */
+enum { G_ZONE, G_HOME, G_CLOUD, G_FORGE, G_BOARD, G_FACET, G_DUNGEON, G_EXIT, G_STAIRS, G_CASTLE };
+/* (G_FACET: a zone's buried Prism Facet; G_DUNGEON: zone = the dungeon's type;
+ * G_CASTLE: zone = one of CG_*) */
 #define MAXGATE 12
 typedef struct { u8 x, y, kind, zone; } Gate;
 extern Gate gates[MAXGATE];
@@ -363,7 +366,25 @@ typedef struct {
 extern Dungeon dg;
 u8 combat_tier(void);              /* the difficulty where we stand */
 void build_dungeon(void);          /* ov_dungeon.c: the floor dg.floor of dg.type */
-extern const char *const dungeon_name[NDUNGEON];   /* (resident: the HUD) */
+extern const char *const dungeon_name[NDUNGEON + 1];   /* (resident: the HUD; the last, the castle's) */
+
+/* ---------- the Rainycastle (world.c; its floors and doings: ov_castle.c) ----------
+ * Three floors up, reached by the Cloudgate once all four lands shine: a
+ * guardian seals each stair, and the Rainwyrm holds the throne. It borrows
+ * dg: dg.floor is the floor (0: the lowest whose guardian stands), dg.has_key
+ * the stair's open. */
+enum { CA_FLOOR1 = 1, CA_FLOOR2 = 2, CA_WYRM = 4, CA_CLAIMED = 8 };   /* P.castle */
+enum { CG_DOWN, CG_UP, CG_HOARD, CG_PORTAL };   /* its gates */
+#define DG_CASTLE NDUNGEON                      /* (dg.type: its name) */
+void travel(u8 id, u8 x, u8 y);
+void build_castle(void);           /* ov_castle.c: floor dg.floor */
+void castle_hello(void);           /* the floor's greeting, on arriving */
+u8 castle_gate(u8 gi);             /* a castle gate, or the Cloudgate: 1 down to the village, 2 up a floor, 3 up the rainbow */
+/* (ov_foes.c, loaded for any fight with a keeper or the castle's foes:) */
+void foe_won(u8 mi);               /* after beating mobs[mi], one of them */
+extern const char *const castle_cry[3];        /* the guardians' and the Wyrm's battle cries */
+extern const char nm_sentinel[], nm_raincaller[], nm_wyrm[];
+u8 home_base(void);                /* the village, or the castle's throne once claimed */
 void add_mob(u8 x, u8 y, u8 type, u8 move_t, u16 respawn);
 void add_node(u8 x, u8 y, u8 m);
 void add_gate(u8 x, u8 y, u8 kind, u8 zone);
@@ -418,12 +439,16 @@ enum { OV_TITLE = 1, OV_TALKA, OV_TALKB, OV_CAMP, OV_TREE };   /* OV_TREE + clas
 #define OV_DIG 12                       /* digging up a Prism Facet */
 #define OV_GLASS 13                     /* the Glassworks */
 #define OV_PACT 14                      /* the gloom's bargain */
-#define OV_COUNT 14
+#define OV_CASTLE 15                    /* the Rainycastle's floors */
+#define OV_FOES 16                      /* the big foes: keepers' and castle's portraits, and the castle's battles */
+#define OV_COUNT 16
 /* Gloom Pacts (js/data.js PACTS): a blessing and a curse, sealed on entering
  * a land still under the gloom, for as long as you stay (dungeons too) */
 #define NPACT 8
 extern const Eff pact_eff[NPACT][4];    /* data.c (resident: eff() adds it in) */
 void offer_pact(u8 zone);               /* ov_pact.c */
+void zone_hello(u8 zone);               /* (with it: stepping into a land under the gloom) */
+void village_hello(u8 first);           /* ov_village.c: coming home (first: a new hero) */
 void show_glassworks(void);
 void dig_facet(u8 gate);
 void build_village(void);               /* ov_village.c, in PQ.OV12 too */

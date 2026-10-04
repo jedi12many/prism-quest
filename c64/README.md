@@ -72,6 +72,21 @@ A work-in-progress port of the browser game to a stock Commodore 64 (64 KB,
   and so does the Ledger, which lists such a land as "below" in purple. The
   champion fights at the land's own tier. Beat it down there and the land
   floods with sunlight as usual.
+- **The Rainycastle:** once all four lands shine, Mayor Puddle unseals the
+  Cloudgate in the plaza, and the rainbow carries you up to a castle of
+  cloud: three floors (as in `js/game.js` buildClouds), with clouds to walk
+  on and holes down to the open sky.
+  - Galeheart, the Storm Sentinel guards the first floor's stair up, and the
+    Raincaller the second's; their attendants are Swift, then Cursed, elites.
+  - The Rainwyrm waits on the throne. Each of the three has its own battle
+    portrait, battle cry and last words.
+  - Beaten guardians stay beaten, and the rainbow brings you back to the
+    lowest floor still guarded. The rainbow down (west on every floor) takes
+    you home onto the Cloudgate, with an autosave.
+  - The Wyrm leaves its hoard on the throne: brilliant gems and two
+    legendary pieces (or one and a set piece). Claiming it makes the throne
+    yours, a forward base where you can rest, craft and train (not build).
+  - A portal then opens to Sog'naroth's realm, which isn't ported yet.
 - **Elites:** now and then a monster spawns with one of the web game's six
   mods: Vicious, Armored, Swift, Venomous, Cursed or Radiant. The odds are
   about 10% in Bogmire, rising 4% a tier, and higher in dungeons.
@@ -124,7 +139,8 @@ A work-in-progress port of the browser game to a stock Commodore 64 (64 KB,
   magic header, version byte and checksum) to the drive the game was loaded
   from. "Continue from disk" on the title screen brings the hero back. Zones are
   procedural, so a hero saved out in the wilds wakes up in a freshly generated
-  zone.
+  zone; one saved in the Rainycastle wakes up at the start of its lowest
+  floor still guarded. (Save version 7: older saves won't load.)
 - **Rogue-like death:** when your hero falls, the run ends, the save on disk is
   scratched with them, and you start a new hero.
 - **Art:** map tiles are converted automatically from `js/sprites.js` into
@@ -158,8 +174,8 @@ A work-in-progress port of the browser game to a stock Commodore 64 (64 KB,
   bass is a triangle or a sawtooth. See *Music* below.
 - **Sound:** short SID sound effects and the thunder, on the third voice.
 
-**Not ported yet:** the Rainycastle and the
-realm.
+**Not ported yet:** Sog'naroth's realm (the portal past the Rainycastle) and
+the ending.
 
 ## Controls
 
@@ -191,7 +207,7 @@ The game is several files on one disk:
 |---|---|---|
 | `PRISMQUEST` | `prismquest.prg` | the resident game, which you load and run |
 | `PQ.HI` | `.prg.hi` | the loot engine, charset and sprite art; loaded at startup |
-| `PQ.OV1`–`PQ.OV7` | `.prg.1`–`.prg.7` | overlays, loaded on demand (below) |
+| `PQ.OV1`–`PQ.OV16` | `.prg.1`–`.prg.16` | overlays, loaded on demand (below) |
 
 `make d64` puts them all on a 1541 image. On a real C64 or in VICE, mount
 or insert it, then `LOAD"PRISMQUEST",8,1` and `RUN`. Saves go to the same
@@ -223,7 +239,9 @@ reloaded.
 | `PQ.OV11` | the zone generator | 2.7 KB |
 | `PQ.OV12` | digging up a Prism Facet, a land freed, the village's layout | 2.4 KB |
 | `PQ.OV13` | the Glassworks kiln | 2.2 KB |
-| `PQ.OV14` | the Gloom Pact offer | 1.2 KB |
+| `PQ.OV14` | the Gloom Pact offer, and stepping into a land under the gloom | 1.4 KB |
+| `PQ.OV15` | the Rainycastle's floors, its gates and the Wyrm's hoard (and the Cloudgate) | 2.1 KB |
+| `PQ.OV16` | the big foes: the dungeon keepers' and the castle's battle portraits, the castle's foes' names, cries and falls | 1.8 KB |
 
 On a stock 1541 each takes roughly 5–7 seconds (about 400 bytes a second);
 a "Loading" note shows in the corner meanwhile. Overlays are kept to about
@@ -237,8 +255,15 @@ still in the window from last time: going home and back out loads nothing).
 Resident memory is nearly full (about 0.7 KB free), so new screens should be
 overlays; the resident part of a feature should be the little the world
 itself needs (camp building keeps only the buildings' effects, positions,
-names and costs resident; dungeons keep entering, leaving and the keepers'
-battle art).
+names and costs resident; dungeons keep entering and leaving). Text shown
+at a moment when some overlay is already in the window rides in that
+overlay: arriving in a land under the gloom shows its line from the pact
+overlay, and coming home shows the village's line from the village's.
+
+A fight with a dungeon keeper or one of the castle's foes loads `PQ.OV16`
+first (`mon_sprites`), because their portraits are there. Battles load
+nothing else, so the castle's names and battle cries can live there too,
+and so can what happens when one of them falls (`foe_won`).
 
 ## Smooth scrolling
 
@@ -342,6 +367,9 @@ make shot SCRIPT=test/forge.h   CYCLES=40000000   # fuse two facets at the Glass
 make shot SCRIPT=test/blade.h   CYCLES=36000000   # THE PRISMBLADE's Gear card
 make shot SCRIPT=test/pact.h    CYCLES=54000000 DEFS="-DTEST_PACT"   # seal Turtle's Patience in Bogmire
 make shot SCRIPT=test/pactledger.h CYCLES=42000000   # a pact in the Ledger
+make shot SCRIPT=test/castle.h  CYCLES=135000000 DEFS="-DTEST_EMPTY -DTEST_WEAK"   # climb it; the Wyrm's hoard
+make shot SCRIPT=test/rainbow.h CYCLES=110000000  # up the Cloudgate, the throne as a base, and home
+make shot SCRIPT=test/cloudgate.h CYCLES=66000000  # the Mayor unseals the Cloudgate
 make shot SCRIPT=test/elite.h   CYCLES=76000000 DEFS="-DTEST_ELITE=6 -DTEST_DUNGEON=0"   # a Radiant elite's spoils
 make shot SCRIPT=test/champion.h CYCLES=48000000 DEFS="-DTEST_CLEAR"   # a land freed
 make shot SCRIPT=test/gear.h    CYCLES=50000000   # inspect and equip gear
@@ -377,6 +405,7 @@ make shot SCRIPT=test/home.h   CYCLES=50000000                          # out a 
 - **`-DJUKEBOX=n`:** the title screen plays tune n (0 title, 1 village,
   2 gloom, 3 battle). Record it with VICE's `-sound -sounddev wav -soundarg
   out.wav -limitcycles 50000000`; the tune starts about 15 s in.
+- **`-DTEST_WEAK`:** every foe starts with 1 HP (see `test/castle.h`).
 - **`-DTEST_ELITE=n`:** every monster that could be elite is mod n (1-6).
 - **`-DTEST_CLEAR`:** a zone is freed the moment you enter it.
 - **`-DTEST_PACT`:** test builds skip the Gloom Pact offer (the scripts
@@ -435,7 +464,7 @@ The C64 has 64 KB, and the game uses nearly all of it. See `prismquest.cfg`.
 | `$0801–$BFDF` | the resident program: code, read-only data, initialised data (about 46 KB), then `world.c`'s variables (WBSS, zeroed by `main()`) |
 | `$C000–$C3FF` | the map's second screen (the scroller double-buffers); at startup, the startup code |
 | `$C400–$C53F` | the music player's once-a-frame code |
-| `$C540–$CFFF` | the overlay window: PQ.OV1–9 load here on demand |
+| `$C540–$CFFF` | the overlay window: PQ.OV1–16 load here on demand |
 | `$D000–$D7FF` | character set, in the RAM under the I/O chips (only the VIC reads it) |
 | `$D800–$DDFF` | the battle portraits (packed) and the tunes, also under the I/O chips |
 | `$DE00–$DFBF` | the rain's sprite frames |

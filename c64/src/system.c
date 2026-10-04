@@ -381,11 +381,12 @@ u8 mon_sprites(u8 m)
 {
     static u8 half[42];
     static const u8 bit[8] = { 0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01 };
-    const u8 *src = (m >= KEEPER_SPRITE0 ? keeper_art : mon_art) + mon_off[m];   /* (the keepers': resident) */
+    const u8 *src = mon_art + mon_off[m];
     u8 n = mon_nl[m], l, i, k, b0, b1;
     u8 *d;
+    if (m >= KEEPER_SPRITE0) { ovl(OV_FOES); src = foe_art + mon_off[m]; }   /* (the big foes': their overlay) */
     for (l = 0; l < n; ++l) {
-        POKE(0x01, 0x34);                   /* (the art is under I/O; the keepers' isn't: RAM either way) */
+        POKE(0x01, 0x34);                   /* (the art is under I/O; the big foes' isn't: RAM either way) */
         for (i = 0, k = 6; i < 42; ++i) half[i] = (src[i >> 3] & bit[i & 7]) ? src[k++] : 0;
         POKE(0x01, 0x35);
         src += k;

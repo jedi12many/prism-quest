@@ -59,15 +59,16 @@
 extern const unsigned char charset[CHARSET_BYTES];
 extern const unsigned char tile_color[T_COUNT][4];
 #define PLAYER_SPRITES 3
-#define BATTLE_SPRITES 14
+#define BATTLE_SPRITES 17
 /* heroes: outline, detail (hi-res), fill (multicolour; $D025/$D026 = hero_mc) */
 extern const unsigned char hero_spr[PLAYER_SPRITES][3][63];
 extern const unsigned char hero_col[PLAYER_SPRITES][3];
 extern const unsigned char hero_mc[PLAYER_SPRITES][2];
 /* battle portraits: hi-res layers, left halves, packed (under the I/O chips): mon_sprites() */
 extern const unsigned char mon_art[];
-#define KEEPER_SPRITE0 11   /* from here on, the art is keeper_art[] (resident) */
-extern const unsigned char keeper_art[];
+#define KEEPER_SPRITE0 11   /* from here on, the art is foe_art[] (the big foes' overlay) */
+#define CASTLE_SPRITE0 14   /* (the castle's) */
+extern const unsigned char foe_art[];
 extern const unsigned int mon_off[BATTLE_SPRITES];
 extern const unsigned char mon_nl[BATTLE_SPRITES];
 extern const unsigned char mon_col[BATTLE_SPRITES][4];

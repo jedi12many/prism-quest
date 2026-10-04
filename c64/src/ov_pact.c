@@ -34,6 +34,16 @@ static void draw(void)
     }
 }
 
+static void step_into(u8 zone) { sb_reset(); sb_str("You step into "); sb_str(zones[zone].name); }
+
+void zone_hello(u8 zone)
+{
+    step_into(zone);
+    sb_str(P.champ_below & (1 << zone) ? ". Its champion has gone to ground - three floors down, in one of the dungeons here."
+                                       : ". Somewhere ahead, its gloom champion waits.");
+    msg(sb);
+}
+
 void offer_pact(u8 zone)
 {
     u8 in;
@@ -41,7 +51,7 @@ void offer_pact(u8 zone)
     do pick[1] = rnd(NPACT); while (pick[1] == pick[0]);
     do pick[2] = rnd(NPACT); while (pick[2] == pick[0] || pick[2] == pick[1]);
     screen_open("A Gloom Pact");
-    sb_reset(); sb_str("You step into "); sb_str(zones[zone].name);
+    step_into(zone);
     sb_str(". The gloom offers a bargain - choose a pact, or refuse it.");
     wrap(sb, 2, 3, GREY);
     put_str(1, 24, "Up/Down: choose  Fire: seal it", BLUE);

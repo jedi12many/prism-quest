@@ -4,8 +4,8 @@
 SRC    := src/main.c src/system.c src/data.c src/world.c src/battle.c src/ui.c src/kit.c src/bag.c src/gear.c \
           src/loot.c src/items.c src/save.c src/rain.c src/rainirq.s src/scroll.s src/input.s src/disk.s src/music.s src/musicdata.s src/hi.s src/ovl.s src/assets.c src/tree.c \
           src/ov_title.c src/ov_talk_a.c src/ov_talk_b.c src/ov_camp.c \
-          src/ov_tree_mage.c src/ov_tree_knight.c src/ov_tree_whisperer.c src/ov_build.c src/ov_ledger.c src/ov_save.c src/ov_dungeon.c src/ov_lands.c src/ov_dig.c src/ov_village.c src/ov_glass.c src/ov_pact.c
-OVLS   := 1 2 3 4 5 6 7 8 9 10 11 12 13 14
+          src/ov_tree_mage.c src/ov_tree_knight.c src/ov_tree_whisperer.c src/ov_build.c src/ov_ledger.c src/ov_save.c src/ov_dungeon.c src/ov_lands.c src/ov_dig.c src/ov_village.c src/ov_glass.c src/ov_pact.c src/ov_castle.c src/ov_foes.c
+OVLS   := 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16
 PRG    := build/prismquest.prg
 CFLAGS := -t c64 -Oirs -Cl
 # memory layout: see prismquest.cfg

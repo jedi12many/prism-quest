@@ -27,10 +27,19 @@ void talk_a(u8 id)
                 if (!(P.zones_cleared & (1 << i))) { sb_str(" "); sb_str(zones[i].dir); }
             sb_str(". Start with the South if you're fresh; it's the gentlest.");
             say(who, sb);
-        } else {
+        } else if (q == 2) {
             say(who, "You DID it! The whole land glitters - but do you feel that drizzle? The RAINYCASTLE has risen in the "
-                     "rainclouds, and something up there is brewing the storm all over again. "
-                     "(The climb to the Rainycastle comes in a later version of the C64 port.)");
+                     "rainclouds, and something up there is brewing the storm all over again. There's only one road up: a rainbow. I've unsealed the old Cloudgate in the plaza. Ride well, hero.");
+            P.main_quest = 3;
+            msg("Quest: step onto the Cloudgate in the plaza and ride to the Rainycastle.");
+        } else if (q == 3) {
+            say(who, "The Cloudgate glows in the plaza, north-east of the camp. Step onto it, and ride!");
+        } else if (q == 4) {
+            say(who, "Climb the castle floor by floor - its guardians seal every stair. Sun spells burn brightest "
+                     "up there, they say.");
+        } else {
+            say(who, "So the serpent was only the doorman... something older than weather waits beyond that portal, and it "
+                     "only opens ONE way. Craft every spell you can carry first, hero.");
         }
         break;
     case NPC_GRANDMA:
@@ -40,6 +49,9 @@ void talk_a(u8 id)
             say(who, "Oh, sweetheart, you'll catch your death out there. Here - some quartz from my rock garden, for practice. "
                      "Mind the rain: the gloom-things cannot step into sunshine. If they gang up on you, run for the light.");
             msg("Grandma Nimbus gave you 4 raw Quartz!");
+        } else if (q >= 2) {
+            say(who, "The rain's climbing back into the sky - see it? That is not the weather breaking, child. That is something "
+                     "inhaling. It fears pure light - Sunflare, Rainbow Beam, Stardust.");
         } else {
             say(who, "The champions? Nasty things - the toad spits poison, the serpent strikes twice, the mold regrows, "
                      "and the umbrella... whispers. Bring healing blooms.");

@@ -281,7 +281,7 @@ _render_cells:
 ; villagers, monsters -- into vt (tile) and vc (colour, $FF = the tile's own).
 ; Off the map is forest.
 
-        .export _c_tx, _c_ty, _c_tw, _c_th, _prism_col, _compose
+        .export _c_tx, _c_ty, _c_tw, _c_th, _prism_col, _compose, _edge_tile
         .import _map, _mw, _mh, _map_id
         .import _gates, _ngates, _gate_t
         .import _nodes, _nnodes, _seconds, _mineral_color
@@ -299,6 +299,7 @@ _c_ty:  .res 1
 _c_tw:  .res 1
 _c_th:  .res 1
 _prism_col: .res 1
+_edge_tile: .res 1              ; what lies past the map's edge (trees; the castle's sky)
 cy:     .res 1                  ; row
 cwy:    .res 1                  ; its biased world row
 cn:     .res 1                  ; map tiles on a row
@@ -384,7 +385,7 @@ _compose:
 @trees: ldy #0
 @fill:  cpy _c_tw
         beq @next
-        lda #T_TREE
+        lda _edge_tile
         sta VT,x
         lda #$FF
         sta VC,x

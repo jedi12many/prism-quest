@@ -32,6 +32,12 @@ void build_village(void)
     }
 }
 
+void village_hello(u8 first)
+{
+    msg(first ? "Welcome to Drizzlewick! Mayor Puddle is waiting to speak with you. Walk into people to talk."
+              : "Drizzlewick: always sunny, always safe. Rest here to heal.");
+}
+
 void zone_cleared(u8 z)                 /* (z: map_id is MAP_DUNGEON for a champion below) */
 {
     u8 i, n = 0;

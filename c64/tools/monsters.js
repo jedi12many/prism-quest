@@ -107,7 +107,7 @@ module.exports = [
       '...........c', '.........c.c', '.........ccc', '............',
       '............',
     ] },
-  // the dungeon keepers: their art is resident, not under I/O (keeper: true)
+  // the dungeon keepers: their art rides in the big foes' overlay (keeper: true)
   { name: 'gloomtroll', keeper: true, colors: { o: 0, a: 5, b: 9, c: 1 },   // green, brown loincloth, white eyes and tusks
     rows: [
       '............', '.......ooooo', '......oaaaaa', '.....oaaaaaa',
@@ -134,5 +134,34 @@ module.exports = [
       '...ooaaaaaaa', '....obaaaaaa', '....obaaaaaa', '.....obaaaab',
       '.....obaaabo', '......obabo.', '......obao..', '.......oo...',
       '............',
+    ] },
+  // the Rainycastle's guardians and its master: their art rides in the big foes'
+  // overlay too (castle: true)
+  { name: 'sentinel', castle: true, colors: { o: 0, a: 14, b: 6, c: 7 },    // storm blue, deep blue, yellow eyes and bolt
+    rows: [
+      '.......ooooo', '.....ooaaaaa', '....oaaaaaaa', '...oaaoooooo',
+      '...oaaoccocc', '...oaaoooooo', '....oaaaaaaa', '.oooobbaaaaa',
+      'oaaaaobbaaaa', 'oaaaaaobaaaa', 'oaaoaaobaaac', 'oaaoaaobaacc',
+      'oaaoaaobaaac', 'obboaaobaaca', '.oo.oaobaaaa', '....oaobbbbb',
+      '....oaaoaaaa', '.....oaoaaao', '.....oaoaaao', '....oaaoaaao',
+      '....oooooooo',
+    ] },
+  { name: 'raincaller', castle: true, colors: { o: 0, a: 6, b: 14, c: 3 },  // blue robe, light blue trim, cyan eyes and rain
+    rows: [
+      '.........ooo', '.......ooaaa', '......oaaaaa', '.....oaaaaaa',
+      '.....oaaoooo', '..c..oaaoooo', '.....oaaocoo', '.c...oaaoooo',
+      '....oaaaaooo', '..c.oaaaaaaa', '....oaaaaaaa', '.c.oaaabaaaa',
+      '...oaaaabaaa', '..oaaaaabaaa', 'c.oaaaaaabaa', '..oaaaaaaaba',
+      '.oaaaaaaaaba', '.oaaaaaaaaaa', 'oaaaaaaaaaaa', 'oaaaaaaaaaaa',
+      'oooooooooooo',
+    ] },
+  { name: 'rainwyrm', castle: true, colors: { o: 0, a: 14, b: 6, c: 7 },    // storm blue, deep blue wings, gold horns and eyes
+    rows: [
+      '......c.....', '......oc....', '.......oc.oo', 'oo......ocaa',
+      'oao....oaaaa', 'obao...oacaa', 'obbao..oaaaa', 'obbbao.oaaaa',
+      'obbbbaooaaaa', 'obbbbbaoaooo', 'obbbbbbaoaoa', '.obbbbbaoaaa',
+      '.obbbooaoaaa', '..obo..oaaaa', '..oo...oaaaa', '.......oaaaa',
+      '.......oaaaa', '........oaaa', '.........oaa', '..........oa',
+      '...........o',
     ] },
 ];

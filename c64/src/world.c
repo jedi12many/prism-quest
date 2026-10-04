@@ -29,6 +29,8 @@ u8 mob_elite[MAXMON];
 static u8 gate_tile(u8 i);
 static void enter_dungeon(u8 gi);
 static u8 gate_armed;
+static u8 land_bg;                      /* the map's ground (the lightning flashes it white) */
+extern u8 edge_tile;                    /* scroll.s: past the map's edge */
 static u16 heal_at;
 
 #define ABSD(a, b) ((a) > (b) ? (a) - (b) : (b) - (a))
@@ -39,12 +41,16 @@ u8 cheb(u8 x1, u8 y1, u8 x2, u8 y2)
 }
 
 Dungeon dg;
-const char *const dungeon_name[NDUNGEON] = { "Gloom Cave", "Sunken Ruins", "Haunted House" };
-static const u8 dungeon_bg[NDUNGEON] = { DKGREY, GREY, BROWN };   /* (the floors' ground) */
+const char *const dungeon_name[NDUNGEON + 1] = { "Gloom Cave", "Sunken Ruins", "Haunted House", "Rainycastle" };
+static const u8 dungeon_bg[NDUNGEON + 1] = { DKGREY, GREY, BROWN, LTGREY };   /* (the floors' ground) */
 
 static u8 in_zone(void) { return map_id < NZONE; }
-static u8 in_wilds(void) { return map_id != MAP_VILLAGE; }     /* a zone or a dungeon */
+static u8 in_wilds(void) { return map_id != MAP_VILLAGE; }     /* a zone, a dungeon or the castle */
+static u8 in_dg(void) { return map_id == MAP_DUNGEON || map_id == MAP_CASTLE; }   /* (dg says where) */
 static u8 zone_sunny(void) { return in_zone() && (P.zones_cleared & (1 << map_id)); }
+static u8 stormy(void) { return (in_zone() && !zone_sunny()) || map_id == MAP_CASTLE; }
+static u8 storm_tier(void) { return in_zone() ? zones[map_id].tier : 4; }
+u8 home_base(void) { return map_id == MAP_VILLAGE || (map_id == MAP_CASTLE && dg.floor == 3 && (P.castle & CA_CLAIMED)); }
 
 /* ---------- building ---------- */
 
@@ -165,9 +171,12 @@ void set_palette(void)
 {
     u8 bg = GREEN;
     if (in_zone()) bg = zone_sunny() ? zones[map_id].bg_sun : zones[map_id].bg;
-    else if (map_id == MAP_DUNGEON) bg = dungeon_bg[dg.type];
-    map_bg = bg;                            /* the frame interrupt sets it under the panel */
-    POKE(0xD020, in_zone() && !zone_sunny() ? DKGREY : BLACK);
+    else if (in_dg()) bg = dungeon_bg[dg.type];
+    map_bg = land_bg = bg;                  /* the frame interrupt sets it under the panel */
+    POKE(0xD020, stormy() ? DKGREY : BLACK);
+    /* the castle's clouds are the grass, flecked white, ringed with sky (the water) */
+    memset((u8 *)tile_color[T_GRASS], map_id == MAP_CASTLE ? WHITE : GREEN, 4);
+    edge_tile = map_id == MAP_CASTLE ? T_WATER : T_TREE;
 }
 
 /* the gates' and monsters' tiles, once a map's built */
@@ -207,6 +216,7 @@ static void make_map(u8 id)
     map_id = id;
     nmobs = nnodes = ngates = 0;
     if (id == MAP_VILLAGE) { ovl(OV_DIG); build_village(); }   /* (its layout rides with the dig overlay) */
+    else if (id == MAP_CASTLE) { ovl(OV_CASTLE); build_castle(); }
     else {
         ovl(OV_LANDS);                  /* (the zone generator) */
         keep = rnd16();
@@ -288,6 +298,7 @@ static u8 arr_x[2], arr_y[2], arr_at[2], arr_n;
 static u8 *front(void) { return (sc_front ? SCR_B : SCR_A) + MAP_ROW * 40; }
 static u8 *back(void) { return (sc_front ? SCR_A : SCR_B) + MAP_ROW * 40; }
 
+static const u8 castle_tile[4] = { T_CLOUDGATE, T_DUNGEON, T_NODE, T_CLOUDGATE };   /* (CG_*) */
 static u8 gate_tile(u8 i)
 {
     const Gate *g = &gates[i];
@@ -299,6 +310,7 @@ static u8 gate_tile(u8 i)
     case G_BOARD: return T_BOARD;
     case G_EXIT:  return T_HOMESIGN;
     case G_FACET: return T_GLINT;
+    case G_CASTLE: return castle_tile[g->zone];
     default:      return T_DUNGEON;     /* a dungeon's mouth, or a stair down */
     }
 }
@@ -566,7 +578,7 @@ void draw_hud(void)
     sb_reset(); sb_num(P.xp); sb_str("/"); sb_num(xp_next[P.level]); sb_str("xp");
     put_str(14, 0, sb, CYAN);
     if (in_zone()) put_str(40 - strlen(zones[map_id].name), 0, zones[map_id].name, zone_sunny() ? YELLOW : PURPLE);
-    else if (map_id == MAP_DUNGEON) {
+    else if (in_dg()) {
         sb_reset(); sb_str(dungeon_name[dg.type]); sb_str(" F"); sb_num(dg.floor);
         put_str(40 - strlen(sb), 0, sb, PURPLE);
     }
@@ -586,13 +598,13 @@ static void redraw_all(void)
     split_on();
     draw_map();
     place_player_sprite();
-    if (in_zone() && !zone_sunny()) storm_start(zones[map_id].tier);
-    music(map_id == MAP_DUNGEON || (in_zone() && !zone_sunny()) ? TUNE_WILDS : TUNE_VILLAGE);
+    if (stormy()) storm_start(storm_tier());
+    music(map_id == MAP_DUNGEON || stormy() ? TUNE_WILDS : TUNE_VILLAGE);
 }
 
 /* ---------- actions ---------- */
 
-static void travel(u8 id, u8 x, u8 y)
+void travel(u8 id, u8 x, u8 y)
 {
     sfx(SFX_GATE);
     POKE(0xD015, 0);
@@ -607,18 +619,10 @@ static void travel(u8 id, u8 x, u8 y)
     calc_stats();
     P.x = x; P.y = y;
     redraw_all();
-    if (in_zone()) {
-        sb_reset();
-        if (zone_sunny()) { sb_str(zones[id].name); sb_str(" basks in sunshine. Gloom-things cannot step into the light."); }
-        else {
-            sb_str("You step into "); sb_str(zones[id].name);
-            sb_str(P.champ_below & (1 << id) ? ". Its champion has gone to ground - three floors down, in one of the dungeons here."
-                                             : ". Somewhere ahead, its gloom champion waits.");
-        }
-        msg(sb);
-    } else {
-        msg("Drizzlewick: always sunny, always safe. Rest here to heal.");
-    }
+    if (zone_sunny()) { sb_reset(); sb_str(zones[id].name); sb_str(" basks in sunshine. Gloom-things cannot step into the light."); msg(sb); }
+    else if (in_zone()) { ovl(OV_PACT); zone_hello(id); }
+    else if (id == MAP_CASTLE) castle_hello();   /* (its overlay's still in, */
+    else village_hello(0);                       /* and the village's) */
 #ifdef TEST_CLEAR                       /* (tests: the land freed at once) */
     if (in_zone()) { ovl(OV_DIG); zone_cleared(id); }
 #endif
@@ -637,6 +641,7 @@ static u16 zone_resp[MAXMON], zone_node[MAXNODE];
 u8 combat_tier(void)
 {
     if (map_id == MAP_DUNGEON) return dg.tier + 1;     /* deadlier than its zone */
+    if (map_id == MAP_CASTLE) return dg.floor < 2 ? 5 : 6;
     return in_zone() ? zones[map_id].tier : 1;
 }
 
@@ -709,9 +714,6 @@ static void on_gate(u8 gi)
         travel(MAP_VILLAGE, zones[map_id].home[0], zones[map_id].home[1]);
         save_game();                    /* autosave on coming home */
         break;
-    case G_CLOUD:
-        say("The Cloudgate", "An old rainbow arch, cold and dormant. The Mayor says it only wakes once all four lands shine.");
-        break;
     case G_FORGE:
         ovl(OV_GLASS);
         show_glassworks();
@@ -730,6 +732,14 @@ static void on_gate(u8 gi)
         break;
     case G_EXIT:
         leave_dungeon();
+        break;
+    case G_CLOUD:                       /* (the castle's overlay says if it's awake) */
+    case G_CASTLE:
+        ovl(OV_CASTLE);
+        gi = castle_gate(gi);
+        if (gi == 1) { travel(MAP_VILLAGE, 18, 4); save_game(); }   /* down the rainbow, onto the Cloudgate */
+        else if (gi == 2) { ++dg.floor; travel(MAP_CASTLE, 4, 7); }
+        else if (gi == 3) { dg.floor = 0; travel(MAP_CASTLE, 4, 8); }   /* up it */
         break;
     default:                            /* G_STAIRS */
         if (!dg.has_key) { msg("The way down is locked. Defeat the Warden to claim its key."); break; }
@@ -762,7 +772,8 @@ static void mine(u8 ni)
 /* fight the mob at index mi; returns 1 if the hero died */
 static u8 fight(u8 mi, u8 ambush)
 {
-    u8 r, i, k;
+    u8 r, i;
+    const MonsterDef *md;
     static const i8 hop[4][2] = { { 0, 1 }, { 0, -1 }, { 1, 0 }, { -1, 0 } };
 #ifdef BENCH
     return 0;                           /* (scroller tests: just keep walking) */
@@ -779,13 +790,10 @@ static u8 fight(u8 mi, u8 ambush)
     }
     redraw_all();
     if (r == 1) {
-        k = monsters[mobs[mi].type].flags;
-        if (map_id == MAP_DUNGEON) {
-            if (mi == dg.warden) { dg.has_key = 1; msg("The Warden drops a heavy key - the stair is open!"); }
-            else if (k & MF_KEEPER) msg("The keeper falls, and its hoard is yours. The way out is behind you.");
-            else if (k & MF_BOSS) { ovl(OV_DIG); zone_cleared(dg.zone); }   /* the champion below */
-        }
-        else if (k & MF_BOSS) { ovl(OV_DIG); zone_cleared(map_id); }
+        md = &monsters[mobs[mi].type];
+        if (map_id == MAP_DUNGEON && mi == dg.warden) { dg.has_key = 1; msg("The Warden drops a heavy key - the stair is open!"); }
+        else if (md->sprite >= KEEPER_SPRITE0) { ovl(OV_FOES); foe_won(mi); }   /* (in already, for the fight) */
+        else if (md->flags & MF_BOSS) { ovl(OV_DIG); zone_cleared(map_id == MAP_DUNGEON ? dg.zone : map_id); }
         else if (map_id == Z_SOUTH && P.pip_stage == 1 && P.pip_n < 5) {
             if (++P.pip_n == 5) msg("That should scare the swamp quiet - tell Pip!");
         }
@@ -945,6 +953,7 @@ void world_loop(void)
         for (;;) wait_frame();
     }
 #endif
+    if (P.map == MAP_CASTLE) { dg.floor = 0; P.x = 4; P.y = 8; }   /* (back at the lowest guarded floor's start) */
     build_map(P.map);
     if (!walkable(P.x, P.y) && gate_at(P.x, P.y) == 0xFF) {
         /* a freshly generated zone may have a tree where you stood: go to its gate */
@@ -955,8 +964,7 @@ void world_loop(void)
     if (P.kills || P.main_quest) {
         sb_reset(); sb_str("Welcome back, "); sb_str(classes[P.cls].name); sb_str("!");
         msg(sb);
-    } else
-        msg("Welcome to Drizzlewick! Mayor Puddle is waiting to speak with you. Walk into people to talk.");
+    } else village_hello(1);            /* (a new hero: the village's overlay is in) */
     heal_at = seconds + 2;
 
     for (;;) {
@@ -1018,17 +1026,15 @@ void world_loop(void)
 
         if (in_wilds()) {
             if (update_mobs()) return;
-            if (in_zone() && !zone_sunny()) storm_tick(zones[map_id].tier, zones[map_id].bg);
+            if (stormy()) storm_tick(storm_tier(), land_bg);
         }
-        else {
-            update_npcs();
-            if (seconds >= heal_at) {
-                heal_at = seconds + 2;
-                if (P.hp < P.hpmax) {   /* resting: the House and Kitchen make it heartier */
-                    P.hp += 2 + P.base[B_HOUSE] + 2 * P.base[B_KITCHEN];
-                    if (P.hp > P.hpmax) P.hp = P.hpmax;
-                    hud_dirty = 1;
-                }
+        else update_npcs();
+        if (home_base() && seconds >= heal_at) {
+            heal_at = seconds + 2;
+            if (P.hp < P.hpmax) {       /* resting: the House and Kitchen make it heartier */
+                P.hp += 2 + P.base[B_HOUSE] + 2 * P.base[B_KITCHEN];
+                if (P.hp > P.hpmax) P.hp = P.hpmax;
+                hud_dirty = 1;
             }
         }
         if ((u8)seconds != last_sec) { last_sec = (u8)seconds; shimmer(); }

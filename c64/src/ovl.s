@@ -5,6 +5,7 @@
 ;   4 Spellbook           5-7 Power Tree for the mage, knight, whisperer
 ;   8 building the camp   9 the Village Ledger   10 the dungeons' floors   11 growing a zone
 ;   12 digging up a Prism Facet   13 the Glassworks   14 a Gloom Pact
+;   15 the Rainycastle's floors   16 the big foes: the keepers' and the castle's portraits, and more
         .import __OVL_START__
         .segment "OV1LOAD"
         .word   __OVL_START__
@@ -62,3 +63,11 @@
         .word   __OVL_START__
         .segment "OV14SIG"
         .byte   $4F, 14
+        .segment "OV15LOAD"
+        .word   __OVL_START__
+        .segment "OV15SIG"
+        .byte   $4F, 15
+        .segment "OV16LOAD"
+        .word   __OVL_START__
+        .segment "OV16SIG"
+        .byte   $4F, 16
