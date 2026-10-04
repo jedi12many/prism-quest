@@ -149,6 +149,9 @@ closest:
         jsr CLOSE
 
 done:
+        lda #$7F                ; the KERNAL may have re-armed the CIA timer
+        sta $DC0D               ; interrupt; the game only uses the raster one
+        lda $DC0D
         lda savedptr
         sta PTR
         lda savedptr+1

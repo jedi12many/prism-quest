@@ -108,6 +108,17 @@ void log_reset(u8 y0, u8 rows);
 enum { SFX_MINE, SFX_BONK, SFX_CRIT, SFX_HURT, SFX_SPELL, SFX_WIN, SFX_LEVEL, SFX_DEATH, SFX_GATE, SFX_TALK };
 void sfx(u8 id);
 void sound_tick(void);
+void thunder(void);                      /* SID voice 3: noise through a falling low-pass */
+
+/* ---------- the storm (rain.s, rain.c) ---------- */
+void rain_init(void);
+void __fastcall__ rain_on(u8 mask);      /* sprites 3-7 as a rain multiplexer */
+void rain_off(void);
+void rain_irq(void);
+extern u8 rain_mask;
+void storm_start(u8 tier);
+void storm_tick(u8 tier, u8 bg);
+void storm_clears(void);
 
 /* ---------- sprites ---------- */
 void spr_load(u8 slot, const u8 *data);

@@ -100,6 +100,7 @@ static const char *const camp_items[7] = { "Bag & polishing", "Gear", "Spellbook
 void camp_menu(void)
 {
     u8 sel;
+    rain_off();                             /* the menu sits over the map */
     POKE(0xD015, 0);
     msg_clear();
     sel = menu_pick(1, MSG_ROW - 3, camp_items, 7, 0);

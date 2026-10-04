@@ -82,6 +82,7 @@ u8 title_screen(void)
     put_str(3, 9, "Choose your hero:", PURPLE);
     show_class(c);
     put_center(24, "Joystick 2 or W/S + fire/space", BLUE);
+    rain_on(0xF8);                          /* "...beneath one endless storm" */
     for (;;) {
         wait_frame(); input_poll();
         if (in_new & IN_UP) { c = c ? c - 1 : NCLASS; show_class(c); }

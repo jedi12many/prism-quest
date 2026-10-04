@@ -16,7 +16,8 @@ void hw_init(void)
     POKE(0x00, 0x2F);                       /* CPU port direction (KERNAL default) */
     POKE(0x01, 0x35);                       /* RAM everywhere except I/O */
     POKE(0xDC0D, 0x7F); POKE(0xDD0D, 0x7F); /* silence the CIAs */
-    PEEK(0xDC0D); PEEK(0xDD0D);
+    __asm__("lda $dc0d");                   /* ...and acknowledge (cc65 drops a bare PEEK) */
+    __asm__("lda $dd0d");
     POKE(0xD01A, 0x00); POKE(0xD019, 0xFF);
     *(u16 *)0xFFFA = (u16)&rti_op;          /* NMI (RESTORE) -> RTI */
     *(u16 *)0xFFFE = (u16)&rti_op;
@@ -138,6 +139,7 @@ u8 glyph(char c)
 
 void cls(void)
 {
+    rain_off();                             /* every full-screen change stops the rain */
     POKE(0xD016, 0x08);                     /* plain hi-res text: all 16 colours */
     memset(SCREEN, 0, 1000);
     memset(COLORRAM, WHITE, 1000);
@@ -282,8 +284,29 @@ void sfx(u8 id)
     }
 }
 
+/* thunder on voice 3: a burst of noise rumbling down through the filter */
+static u8 thunder_t, cutoff;
+void thunder(void)
+{
+    POKE(0xD40E, 0x00); POKE(0xD40F, 0x05); /* low noise */
+    POKE(0xD413, 0x0A); POKE(0xD414, 0x0B); /* instant crack, long decay and release */
+    POKE(0xD417, 0xF4);                     /* resonant filter on voice 3 */
+    cutoff = 0xFF;
+    POKE(0xD416, cutoff);
+    POKE(0xD418, 0x1F);                     /* low-pass, full volume */
+    POKE(0xD412, 0x81);                     /* noise, gate on */
+    thunder_t = 100;
+}
+
 void sound_tick(void)
 {
+    if (thunder_t) {
+        --thunder_t;
+        if (thunder_t == 85) POKE(0xD412, 0x80);   /* let it roll away */
+        cutoff -= cutoff >> 5;
+        POKE(0xD416, cutoff);
+        if (!thunder_t) { POKE(0xD417, 0x00); POKE(0xD418, 0x0F); }
+    }
     if (!snd_t) return;
     --snd_t;
     switch (snd_id) {

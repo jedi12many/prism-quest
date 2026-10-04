@@ -340,8 +340,9 @@ void place_player_sprite(void)
         POKE(0xD027 + i, player_spr_col[P.cls][i]);
         spr_pos(i, sx, sy);
     }
-    POKE(0xD017, 0); POKE(0xD01D, 0);
-    POKE(0xD015, 0x07);
+    /* sprites 0-2 only: 3-7 belong to the rain */
+    POKE(0xD017, PEEK(0xD017) & 0xF8); POKE(0xD01D, PEEK(0xD01D) & 0xF8);
+    POKE(0xD015, PEEK(0xD015) | 0x07);
 }
 
 void draw_hud(void)
@@ -366,6 +367,7 @@ static void redraw_all(void)
     set_palette();
     draw_hud();
     draw_map();
+    if (in_zone() && !zone_sunny()) storm_start(zones[map_id].tier);
 }
 
 /* ---------- actions ---------- */
@@ -433,6 +435,7 @@ static void mine(u8 ni)
 static void zone_cleared(void)
 {
     u8 i, n = 0;
+    storm_clears();                         /* the rain thins out, then the sun */
     P.zones_cleared |= 1 << map_id;
     for (i = 0; i < nmobs; ++i) { mobs[i].alive = 0; mobs[i].respawn = 0xFFFF; }
     for (i = 0; i < NZONE; ++i) if (P.zones_cleared & (1 << i)) ++n;
@@ -592,7 +595,10 @@ void world_loop(void)
             cool = 9;
         }
 
-        if (in_zone()) { if (update_mobs()) return; }
+        if (in_zone()) {
+            if (update_mobs()) return;
+            if (!zone_sunny()) storm_tick(zones[map_id].tier, zones[map_id].bg);
+        }
         else {
             update_npcs();
             if (seconds >= heal_at) {

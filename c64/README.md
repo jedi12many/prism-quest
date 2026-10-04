@@ -62,7 +62,16 @@ A work-in-progress port of the browser game to a stock Commodore 64 (64 KB,
 - **Art:** converted automatically from `js/sprites.js`. Map tiles become
   multicolour characters; the hero and battle portraits become stacked hi-res
   hardware sprites. The 8×8 font is hand-drawn, so no Commodore ROM data is used.
-- **Sound:** short SID sound effects.
+- **The storm:** in gloomy lands it rains, using a raster-interrupt sprite
+  multiplexer (`rainirq.s`). Five double-wide hardware sprites are reused seven
+  times down the map, giving about 245 animated raindrops from 35 sprite
+  images. Each band and column runs its own animation phase, so there's no
+  grid. Rain gets heavier in deeper lands. Lightning flashes the screen, and
+  thunder follows after a delay of up to a second: SID noise on voice 3,
+  rumbling down through a resonant low-pass filter. Beat a champion and the
+  rain thins out column by column, then sunlight breaks through. The title
+  screen has the storm too.
+- **Sound:** short SID sound effects, plus the thunder.
 
 **Not ported yet:** camp building, dungeons, Prism Facets, pacts, elites, the Rainycastle and the
 realm, and music.
@@ -225,6 +234,14 @@ LOAD can reach it.
 
 ### C64 and cc65 gotchas
 
+- The KERNAL can re-arm the CIA timer interrupt during disk calls. That never
+  mattered while interrupts were off, but the rain enables them. `disk_op`
+  silences the CIAs after every call, and the rain handler acknowledges any
+  CIA interrupt as a safety net.
+- cl65 compiles `foo.c` via a temporary `foo.s` in the same folder and then
+  deletes it. Never name an assembly file after a C file (hence `rainirq.s`).
+- cc65 drops a bare `PEEK(reg);` statement even though the pointer is
+  volatile. Use inline asm (`lda $dc0d`) for reads that matter.
 - Sprites must be off during disk I/O. Their DMA steals cycles the KERNAL's
   serial timing needs, so loads stall or bytes arrive corrupted. `disk_op`
   hides them for the length of every call.

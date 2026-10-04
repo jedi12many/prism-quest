@@ -27,6 +27,7 @@ int main(void)
         unpack_hi();
     }
     hw_init();
+    rain_init();                             /* also enables the raster interrupt */
     for (;;) {
         u8 c;
         ovl(OV_TITLE);
