@@ -215,7 +215,7 @@ and fighting never wait on the disk. Saving loads its code with the Ledger
 first: it's a disk operation anyway. Generating a zone or a
 dungeon floor loads its generator behind the transition screen (unless it's
 still in the window from last time: going home and back out loads nothing).
-Resident memory is nearly full (about 0.8 KB free), so new screens should be
+Resident memory is nearly full (about 0.5 KB free), so new screens should be
 overlays; the resident part of a feature should be the little the world
 itself needs (camp building keeps only the buildings' effects, positions,
 names and costs resident; dungeons keep entering, leaving and the keepers'
