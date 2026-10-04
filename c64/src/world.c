@@ -371,9 +371,7 @@ static void draw_tile(u8 tx, u8 ty)
  * each, so they wait for frames with time to spare */
 #define TQ 48                           /* (16 monsters x old + new spot, nodes) */
 static u8 tq_x[TQ], tq_y[TQ], tq_n;
-#pragma bss-name(push, "BSS")           /* (room for it up there too) */
 static u8 tq_bits[(MAP_W * MAP_H + 7) / 8];   /* one bit a map tile: queued? */
-#pragma bss-name(pop)
 static const u8 bitv8[8] = { 1, 2, 4, 8, 16, 32, 64, 128 };
 
 /* does tile (x, y) show for origin (oc_, orb_)? */
@@ -614,6 +612,11 @@ static void travel(u8 id, u8 x, u8 y)
     put_center(12, id == MAP_VILLAGE ? "Home to Drizzlewick..." : "Through the gate...", GREY);
     build_map(id);
     P.map = id;
+    P.pact = 0;                             /* a pact lasts while you stay in its land */
+#if !defined(AUTOPLAY) || defined(TEST_PACT)    /* (tests: no bargains, unless asked) */
+    if (in_zone() && !zone_sunny()) { ovl(OV_PACT); offer_pact(id); }
+#endif
+    calc_stats();
     P.x = x; P.y = y;
     gate_armed = 0;
     redraw_all();
@@ -983,6 +986,7 @@ void world_loop(void)
             arr_x[0] = arr_x[1]; arr_y[0] = arr_y[1]; arr_at[0] = arr_at[1];
             --arr_n;
             arrive(k, dx);
+            in_new = 0;                 /* (a screen opened on arrival took its own fire press) */
         }
 
         if (!cq_n && !glide && !arr_n) {    /* standing still */

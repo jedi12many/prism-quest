@@ -23,6 +23,8 @@ i16 eff(u8 key)
         if (e[0].key == key) v += e[0].val * t;
         if (e[1].key == key) v += e[1].val * t;
     }
+    if (P.pact)                                       /* a Gloom Pact, while in its land */
+        for (k = 0, e = pact_eff[P.pact - 1]; k < 4; ++k, ++e) if (e->key == key) v += e->val;
     if (!P.skills) return v;
     for (b = 0; b < 3; ++b)
         for (t = 0; t < 5; ++t) {

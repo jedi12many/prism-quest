@@ -6,6 +6,11 @@
 #pragma rodata-name("OVLEDGERDATA")
 #pragma bss-name("OVLEDGERDATA")
 
+static const char *const pact_name[NPACT] = {
+    "Glass Rainbow", "Berserker's Vow", "Hoarder's Bargain", "Turtle's Patience",
+    "Unicorn's Fervor", "Nimble Gambit", "Scholar's Focus", "Ascetic's Boon",
+};
+
 static const char *const quest_text[3] = {
     "Talk to Mayor Puddle in Drizzlewick.",
     "Take a gate out of the village and defeat the gloom champion in each direction.",
@@ -35,6 +40,7 @@ void show_ledger(void)
     put_str(30, 15, P.baker_stage == 2 ? "done" : P.baker_stage ? "open" : "-", CYAN);
     put_str(2, 16, "Willow's stubborn tulips", WHITE);
     put_str(30, 16, P.willow_stage == 2 ? "done" : P.willow_stage ? "open" : "-", CYAN);
+    if (P.pact) { put_str(2, 18, "Gloom Pact", WHITE); put_str(20, 18, pact_name[P.pact - 1], PURPLE); }
     for (i = 0, k = 0; i < NZONE; ++i) if (P.facets & (1 << i)) ++k;
     put_str(2, 17, "Prism Facets found", WHITE);
     put_ch(30, 17, glyph('0' + k), CYAN); put_str(31, 17, "/4", CYAN);

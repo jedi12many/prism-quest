@@ -100,5 +100,17 @@ const u8 bld_cost[NBLD][BLD_MAX][6] = {
     { { QUARTZ, 8, AMETHYST, 4 }, { SUNSTONE, 6, AQUAMARINE, 4 }, { EMERALD, 4, ROSEOPAL, 4, PRISMATITE, 1 } },
 };
 
+/* the Gloom Pacts' blessings and curses (their names: ov_pact.c, ov_ledger.c) */
+const Eff pact_eff[NPACT][4] = {
+    { { E_SPELLDMG, 35 }, { E_HPMAX, -18 } },                                    /* Glass Rainbow */
+    { { E_BASICDMG, 40 }, { E_CRIT, 8 }, { E_DEFFLAT, -3 } },                   /* Berserker's Vow */
+    { { E_RARELUCK, 25 }, { E_MINEYIELD, 1 }, { E_XPGAIN, -30 } },              /* Hoarder's Bargain */
+    { { E_DEFFLAT, 4 }, { E_HPMAX, 20 }, { E_SPELLDMG, -20 }, { E_BASICDMG, -20 } },   /* Turtle's Patience */
+    { { E_UNICORN, 60 }, { E_HEALPOWER, 30 }, { E_ATKFLAT, -2 } },              /* Unicorn's Fervor */
+    { { E_DODGE, 12 }, { E_CRIT, 8 }, { E_HPMAX, -12 } },                       /* Nimble Gambit */
+    { { E_XPGAIN, 50 }, { E_CHARGESAVE, 15 }, { E_DEFFLAT, -2 } },              /* Scholar's Focus */
+    { { E_SPELLDMG, 20 }, { E_BASICDMG, 20 }, { E_REGEN, 2 }, { E_HPMAX, -25 } },   /* Ascetic's Boon */
+};
+
 /* round(18 * level^1.5) */
 const u16 xp_next[13] = { 0, 18, 51, 94, 144, 201, 265, 333, 407, 486, 569, 657, 748 };

@@ -41,6 +41,12 @@ A work-in-progress port of the browser game to a stock Commodore 64 (64 KB,
     Socketed gems come back.
   - Prism relics can't be salvaged. The C64's Prismblade has two sockets,
     not the web game's three.
+- **Gloom Pacts:** stepping into a land still under the gloom, you're offered
+  three of the web game's eight bargains at random, each a blessing with a
+  curse (say +40% Bonk damage and +8% crit, but -3 defense), or you can
+  refuse. A pact lasts while you stay in that land, its dungeons included;
+  going home or through another gate ends it. The Ledger shows the active
+  pact.
 - **Dungeons:** each zone hides one or two entrances: a Gloom Cave, Sunken
   Ruins or a Haunted House, two or three floors deep, each generated its own
   way (as in `js/game.js`):
@@ -133,7 +139,7 @@ A work-in-progress port of the browser game to a stock Commodore 64 (64 KB,
   bass is a triangle or a sawtooth. See *Music* below.
 - **Sound:** short SID sound effects and the thunder, on the third voice.
 
-**Not ported yet:** pacts, elites, the Rainycastle and the
+**Not ported yet:** elites, the Rainycastle and the
 realm.
 
 ## Controls
@@ -198,6 +204,7 @@ reloaded.
 | `PQ.OV11` | the zone generator | 2.7 KB |
 | `PQ.OV12` | digging up a Prism Facet, and its whispers | 1.2 KB |
 | `PQ.OV13` | the Glassworks kiln | 2.2 KB |
+| `PQ.OV14` | the Gloom Pact offer | 1.2 KB |
 
 On a stock 1541 each takes roughly 5–7 seconds (about 400 bytes a second);
 a "Loading" note shows in the corner meanwhile. Overlays are kept to about
@@ -313,6 +320,8 @@ make shot SCRIPT=test/keeper.h  CYCLES=80000000 DEFS="-DTEST_DUNGEON=0 -DTEST_EM
 make shot SCRIPT=test/facet.h   CYCLES=56000000 DEFS="-DTEST_FACET"   # dig up the Crimson Facet
 make shot SCRIPT=test/forge.h   CYCLES=40000000   # fuse two facets at the Glassworks
 make shot SCRIPT=test/blade.h   CYCLES=36000000   # THE PRISMBLADE's Gear card
+make shot SCRIPT=test/pact.h    CYCLES=54000000 DEFS="-DTEST_PACT"   # seal Turtle's Patience in Bogmire
+make shot SCRIPT=test/pactledger.h CYCLES=42000000   # a pact in the Ledger
 make shot SCRIPT=test/gear.h    CYCLES=50000000   # inspect and equip gear
 make shot SCRIPT=test/battle.h  CYCLES=160000000  # Knight fights through Bogmire
 make shot SCRIPT=test/save.h    CYCLES=60000000   # then, keeping one disk:
@@ -346,6 +355,8 @@ make shot SCRIPT=test/home.h   CYCLES=50000000                          # out a 
 - **`-DJUKEBOX=n`:** the title screen plays tune n (0 title, 1 village,
   2 gloom, 3 battle). Record it with VICE's `-sound -sounddev wav -soundarg
   out.wav -limitcycles 50000000`; the tune starts about 15 s in.
+- **`-DTEST_PACT`:** test builds skip the Gloom Pact offer (the scripts
+  predate it); this brings it back.
 - **`-DTEST_FACET`:** a zone's facet is buried two steps east of its entry.
 - **`-DTEST_DUNGEON=n`:** on reaching a zone, go straight down its first
   dungeon as type n (0 cave, 1 ruins, 2 haunted house). With it:
@@ -369,7 +380,7 @@ make shot SCRIPT=test/home.h   CYCLES=50000000                          # out a 
 | `src/kit.c` | skill and building effects, gem helpers, the menu kit, camp menu, doors into the overlays |
 | `src/bag.c` | the Bag: polishing and Summon Dwarves |
 | `src/gear.c` | the Gear screen, item cards, faceting gems, equip/salvage |
-| `src/ov_*.c` | the overlays: title, the two dialogue halves, Spellbook, Power Tree (`ov_tree.inc`, built once per class), building the camp, the Village Ledger (with saving and loading), the dungeon floors, growing a zone, digging up a facet, the Glassworks |
+| `src/ov_*.c` | the overlays: title, the two dialogue halves, Spellbook, Power Tree (`ov_tree.inc`, built once per class), building the camp, the Village Ledger (with saving and loading), the dungeon floors, growing a zone, digging up a facet, the Glassworks, the Gloom Pact offer |
 | `src/ovl.s` | overlay file headers: load address and signature |
 | `src/loot.c` | the item engine (rarities, affixes, legendaries, set, rolling); lives in PQ.HI |
 | `src/items.c` | item stats and names (in PQ.HI too), and the Prism relics' table (resident) |

@@ -286,6 +286,7 @@ typedef struct {
     u8 baker_stage, willow_stage;
     u8 base[NBLD];         /* camp building levels, 0 = not built */
     u8 facets;             /* Prism Facets dug up, bitmask by zone id */
+    u8 pact;               /* the Gloom Pact sealed for this land: 1 + its number, 0 none */
     u8 x, y;
     u8 map;                /* MAP_VILLAGE or a zone id */
     Item equip[NSLOT];
@@ -409,7 +410,13 @@ enum { OV_TITLE = 1, OV_TALKA, OV_TALKB, OV_CAMP, OV_TREE };   /* OV_TREE + clas
 #define OV_LANDS 11                     /* the zone generator */
 #define OV_DIG 12                       /* digging up a Prism Facet */
 #define OV_GLASS 13                     /* the Glassworks */
-#define OV_COUNT 13
+#define OV_PACT 14                      /* the gloom's bargain */
+#define OV_COUNT 14
+/* Gloom Pacts (js/data.js PACTS): a blessing and a curse, sealed on entering
+ * a land still under the gloom, for as long as you stay (dungeons too) */
+#define NPACT 8
+extern const Eff pact_eff[NPACT][4];    /* data.c (resident: eff() adds it in) */
+void offer_pact(u8 zone);               /* ov_pact.c */
 void show_glassworks(void);
 void dig_facet(u8 gate);
 void queue_tile(u8 x, u8 y);            /* world.c: redraw this map tile soon */
