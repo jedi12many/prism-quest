@@ -70,5 +70,31 @@ const char *const npc_name[NNPC] = {
 };
 const u8 npc_home[NNPC][2] = { { 14, 6 }, { 17, 9 }, { 10, 12 }, { 20, 7 }, { 22, 11 }, { 13, 10 } };
 
+/* camp buildings (js/data.js BUILDINGS): where each stands, what each level
+ * gives, names and costs. The rest is the build screen's (ov_build.c). */
+const u8 bld_xy[NBLD - 1][2] = { { 6, 4 }, { 8, 5 }, { 4, 5 }, { 8, 8 }, { 4, 8 } };
+const Eff bld_eff[NBLD][2] = {
+    { { E_HPMAX, 10 }, { 0, 0 } },          /* House */
+    { { E_HPMAX, 12 }, { 0, 0 } },          /* Kitchen */
+    { { E_POLISH, 20 }, { 0, 0 } },         /* Polishing Factory */
+    { { E_UNICORN, 25 }, { 0, 0 } },        /* Unicorn Stalls */
+    { { E_BASICDMG, 10 }, { E_CRIT, 4 } },  /* Training Grounds */
+    { { E_DEFFLAT, 2 }, { 0, 0 } },         /* Castle Walls */
+};
+
+const char *const bld_name[NBLD] = {
+    "House", "Kitchen", "Polishing Factory", "Unicorn Stalls", "Training Grounds", "Castle Walls",
+};
+/* the gems to reach each level: up to three (mineral, count); the House's
+ * first level comes free */
+const u8 bld_cost[NBLD][BLD_MAX][6] = {
+    { { 0 }, { QUARTZ, 6, AMETHYST, 2 }, { SUNSTONE, 6, EMERALD, 4, ROSEOPAL, 2 } },
+    { { QUARTZ, 4 }, { SUNSTONE, 4, AQUAMARINE, 2 }, { EMERALD, 4, ROSEOPAL, 2 } },
+    { { QUARTZ, 3, AMETHYST, 2 }, { AQUAMARINE, 4, EMERALD, 2 }, { ROSEOPAL, 3, PRISMATITE, 1 } },
+    { { QUARTZ, 5, AMETHYST, 2 }, { AQUAMARINE, 3, EMERALD, 3 }, { ROSEOPAL, 2, PRISMATITE, 1 } },
+    { { QUARTZ, 4, SUNSTONE, 1 }, { SUNSTONE, 3, EMERALD, 3 }, { ROSEOPAL, 3, SUNSTONE, 2 } },
+    { { QUARTZ, 8, AMETHYST, 4 }, { SUNSTONE, 6, AQUAMARINE, 4 }, { EMERALD, 4, ROSEOPAL, 4, PRISMATITE, 1 } },
+};
+
 /* round(18 * level^1.5) */
 const u16 xp_next[13] = { 0, 18, 51, 94, 144, 201, 265, 333, 407, 486, 569, 657, 748 };

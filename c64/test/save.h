@@ -13,7 +13,7 @@
 static const unsigned char autoplay[] = {
     30, 0, PRESS(D), PRESS(F), 60, 0,         /* pick the Knight */
     PRESS(F),                                 /* camp menu */
-    PRESS(D), PRESS(D), PRESS(D), PRESS(D), PRESS(D),   /* -> Save game */
+    PRESS(D), PRESS(D), PRESS(D), PRESS(D), PRESS(D), PRESS(D),   /* -> Save game */
     PRESS(F),
     0
 };

@@ -14,13 +14,13 @@ int main(void)
     __asm__("sei");
     POKE(0x00, 0x2F);
     POKE(0x01, 0x35);
-    {   /* the music player's start/stop code rides past the end of the
-         * program, where world.c's variables go: move it to the tape buffer */
+    {   /* the music player's start/stop code rides in the second screen with
+         * the startup code: move it to the tape buffer */
         extern u8 _CASSCODE_LOAD__[], _CASSCODE_RUN__[], _CASSCODE_SIZE__[];
         memcpy(_CASSCODE_RUN__, _CASSCODE_LOAD__, (u16)_CASSCODE_SIZE__);
     }
     /* the startup functions up to rain_init run where they loaded, in the
-     * same space (INITCODE): only then is it cleared for world.c */
+     * second screen (INITCODE), before anything is drawn there */
     disk_init();
     /* the second file: loot code, plus the charset and sprite art. (A test
      * harness may have put everything in place already: then skip it all.) */

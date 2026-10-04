@@ -18,6 +18,11 @@ i16 eff(u8 key)
     for (k = 0; k < 2; ++k)
         if (class_perk[P.cls][k].key == key) v += class_perk[P.cls][k].val;
     v += gear_eff(key);
+    for (b = 0, e = bld_eff[0]; b < NBLD; ++b, e += 2) {   /* camp buildings, per level */
+        if (!(t = P.base[b])) continue;
+        if (e[0].key == key) v += e[0].val * t;
+        if (e[1].key == key) v += e[1].val * t;
+    }
     if (!P.skills) return v;
     for (b = 0; b < 3; ++b)
         for (t = 0; t < 5; ++t) {
@@ -95,7 +100,7 @@ u8 at_camp(const char *what)
 
 /* ---------- the camp menu (fire in the world) ---------- */
 
-static const char *const camp_items[7] = { "Bag & polishing", "Gear", "Spellbook", "Power Tree", "Village Ledger", "Save game", "Back" };
+static const char *const camp_items[8] = { "Bag & polishing", "Gear", "Spellbook", "Power Tree", "Build the camp", "Village Ledger", "Save game", "Back" };
 
 void camp_menu(void)
 {
@@ -104,58 +109,31 @@ void camp_menu(void)
     cls();
     POKE(0xD021, BLACK);
     put_str(1, 7, "Make camp:", PURPLE);
-    sel = menu_pick(1, 9, camp_items, 7, 0);
+    sel = menu_pick(1, 9, camp_items, 8, 0);
     if (sel == 0) open_bag();
     else if (sel == 1) open_gear();
     else if (sel == 2) open_spellbook();
     else if (sel == 3) open_tree();
-    else if (sel == 4) open_ledger();
-    else if (sel == 5) { clear_rows(7, 24); save_game(); wait_fire(); }
-}
-
-/* ---------- the Village Ledger ---------- */
-
-static const char *const quest_text[3] = {
-    "Talk to Mayor Puddle in Drizzlewick.",
-    "Take a gate out of the village and defeat the gloom champion in each direction.",
-    "The land shines! Report to Mayor Puddle.",
-};
-
-void show_ledger(void)
-{
-    u8 i;
-    POKE(0xD015, 0);
-    cls();
-    POKE(0xD021, BLACK);
-    put_str(1, 0, "The Village Ledger", YELLOW);
-    put_str(1, 2, "Current quest:", PURPLE);
-    log_reset(3, 3);
-    log_add(quest_text[P.main_quest > 2 ? 2 : P.main_quest], WHITE);
-    put_str(1, 7, "The four lands:", PURPLE);
-    for (i = 0; i < NZONE; ++i) {
-        sb_reset(); sb_str(zones[i].dir); sb_str(" - "); sb_str(zones[i].name);
-        put_str(2, 8 + i, sb, WHITE);
-        put_str(30, 8 + i, (P.zones_cleared & (1 << i)) ? "sunny" : "gloom", (P.zones_cleared & (1 << i)) ? YELLOW : BLUE);
-    }
-    put_str(1, 13, "Favors:", PURPLE);
-    put_str(2, 14, "Pip's lost frog", WHITE);
-    put_str(30, 14, P.pip_stage == 2 ? "done" : P.pip_stage ? "open" : "-", CYAN);
-    put_str(2, 15, "Barnaby's cold ovens", WHITE);
-    put_str(30, 15, P.baker_stage == 2 ? "done" : P.baker_stage ? "open" : "-", CYAN);
-    put_str(2, 16, "Willow's stubborn tulips", WHITE);
-    put_str(30, 16, P.willow_stage == 2 ? "done" : P.willow_stage ? "open" : "-", CYAN);
-    sb_reset(); sb_str("Kills: "); sb_num(P.kills); sb_str("   Time: "); sb_num(seconds / 60); sb_str(" min");
-    put_str(1, 19, sb, WHITE);
-    put_str(1, 24, "Fire: back", BLUE);
-    wait_fire();
+    else if (sel == 4) open_build(0xFF);
+    else if (sel == 5) open_ledger();
+    else if (sel == 6) { clear_rows(7, 24); save_game(); wait_fire(); }
 }
 
 /* ---------- doors into the overlays ---------- */
 
 void open_bag(void)  { show_bag(); }      /* resident */
 void open_gear(void) { show_gear(); }     /* resident */
-void open_ledger(void) { show_ledger(); }   /* resident */
+void open_ledger(void) { ovl(OV_LEDGER); show_ledger(); }
 /* check "only in camp" first, so a refusal doesn't cost a disk load */
+u8 build_sel;
+void open_build(u8 b)
+{
+    if (b != 0xFF) build_sel = b;
+    if (!at_camp("build")) return;
+    ovl(OV_BUILD);
+    show_build();
+    place_buildings();                    /* (whatever went up) */
+}
 void open_spellbook(void) { if (at_camp("craft spells")) { ovl(OV_CAMP); show_spellbook(); } }
 void open_tree(void)
 {

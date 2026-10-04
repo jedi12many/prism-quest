@@ -21,6 +21,7 @@ void new_game(u8 cls)
     if (cls == CL_WHISPERER) P.spells[SP_UNICORN] = 2;
     P.x = 6; P.y = 6;
     P.map = MAP_VILLAGE;
+    P.base[B_HOUSE] = 1;                    /* a cozy cabin to start */
     for (c = 0; c < NSLOT; ++c) P.equip[c].kind = 0xFF;
     roll_item(&P.equip[SL_WEAPON], 1, R_COMMON, SL_WEAPON);   /* a humble starter weapon */
 #ifdef TEST_SETUP

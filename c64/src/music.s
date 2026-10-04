@@ -45,8 +45,8 @@ save01:         .res 1
 odd:            .res 1
 
 
-; The once-a-frame part runs at the top of the overlay window, above the
-; biggest overlay (prismquest.cfg): it rides in PQ.HI, and unpack_hi copies it.
+; The once-a-frame part runs from just below the overlay window
+; (prismquest.cfg), loaded there with the main file.
         .segment "MUSCODE"
 sidoff:         .byte 0, 7
 steps:          .byte 1, 2, 4, 8
@@ -199,7 +199,7 @@ play_event:
         rts
 
 ; Starting and stopping run from the tape buffer (prismquest.cfg): main()
-; copies them there.
+; copies them there from the second screen, where they load.
         .segment "CASSCODE"
 endmark:        .byte $FF       ; an empty pattern: start on the order list
 

@@ -242,6 +242,21 @@ u8 give_item(const Item *it);
 void monster_loot(u8 type);
 void show_gear(void);                  /* gear.c */
 
+/* ---------- camp buildings ----------
+ * Built and upgraded with gems (raw or polished) from the build screen
+ * (ov_build.c); their effects add into eff() (kit.c). The House comes built. */
+#define NBLD 6
+enum { B_HOUSE, B_KITCHEN, B_FACTORY, B_STALLS, B_TRAINING, B_WALLS };
+#define BLD_MAX 3
+extern const u8 bld_xy[NBLD - 1][2];    /* each building's tile (the walls ring the camp) */
+extern const Eff bld_eff[NBLD][2];      /* per level */
+extern const char *const bld_name[NBLD];
+extern const u8 bld_cost[NBLD][BLD_MAX][6];   /* gems for each level: up to 3 (mineral, n) */
+void place_buildings(void);             /* world.c: onto the village map */
+void open_build(u8 b);                  /* kit.c: the door into the build screen (b: 0xFF as last time) */
+void show_build(void);
+extern u8 build_sel;                    /* the building the build screen opens on */
+
 /* ---------- player state ---------- */
 typedef struct {
     u8 cls;
@@ -262,6 +277,7 @@ typedef struct {
     u8 npc_flags;          /* 1 grandma gift, 2 foreman gift */
     u8 pip_stage, pip_n;
     u8 baker_stage, willow_stage;
+    u8 base[NBLD];         /* camp building levels, 0 = not built */
     u8 x, y;
     u8 map;                /* MAP_VILLAGE or a zone id */
     Item equip[NSLOT];
@@ -353,7 +369,9 @@ void show_tree_whisperer(void);
  * Screens you open now and then live on disk (PQ.OV1 .. PQ.OV7) and load on
  * demand into one shared window at the end of the program. */
 enum { OV_TITLE = 1, OV_TALKA, OV_TALKB, OV_CAMP, OV_TREE };   /* OV_TREE + class */
-#define OV_COUNT 7
+#define OV_BUILD 8
+#define OV_LEDGER 9
+#define OV_COUNT 9
 void ovl(u8 id);
 void camp_menu(void);
 void show_spellbook(void);

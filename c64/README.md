@@ -11,6 +11,19 @@ A work-in-progress port of the browser game to a stock Commodore 64 (64 KB,
   Glassworks kiln, Village Ledger and the four zone signposts. All six villagers
   wander around their posts and talk, using the original dialogue. Pip's,
   Barnaby's and Willow's favors work. Resting in the village heals you.
+- **Camp building:** six buildings on the camp plot, built and upgraded to
+  level 3 with gems, raw or polished (the web game's costs):
+  - the House (+10 max HP a level; it comes built);
+  - the Kitchen (+12 max HP);
+  - the Polishing Factory (+20% polish luck);
+  - the Unicorn Stalls (+25% unicorn power);
+  - the Training Grounds (+10% Bonk, +4% crit);
+  - the Castle Walls (+2 defense, once the House is level 2), which ring
+    the camp in brick.
+
+  The House and Kitchen also speed up resting. Walk into a building or its
+  empty plot (stakes and a rope) to open the build screen on it, or pick
+  "Build the camp" from the camp menu.
 - **The four zones:** each one is a fresh procedural 34×26 level, generated the
   same way as `buildZone` in `js/game.js`: lakes, forest scatter, a guaranteed
   path to the lair, themed mineral nodes (Prismatite by the lair), monster packs,
@@ -90,7 +103,7 @@ A work-in-progress port of the browser game to a stock Commodore 64 (64 KB,
   bass is a triangle or a sawtooth. See *Music* below.
 - **Sound:** short SID sound effects and the thunder, on the third voice.
 
-**Not ported yet:** camp building, dungeons, Prism Facets, pacts, elites, the Rainycastle and the
+**Not ported yet:** dungeons, Prism Facets, pacts, elites, the Rainycastle and the
 realm.
 
 ## Controls
@@ -101,7 +114,7 @@ realm.
 | Talk | Walk into a villager |
 | Fight | Walk into a monster |
 | Confirm, next page | Fire, Space or Return |
-| Camp menu (Bag, Gear, Spellbook, Power Tree, Ledger, Save) | Fire while standing still |
+| Camp menu (Bag, Gear, Spellbook, Power Tree, Build, Ledger, Save) | Fire while standing still |
 | Load a saved hero | "Continue from disk" on the title screen |
 | Bag / Gear / Spellbook / Power Tree | I / G / C / T |
 | Back out of a menu | Left, R or RUN/STOP |
@@ -138,8 +151,8 @@ every load near-instant.
 
 ### Overlays: screens loaded on demand
 
-Screens you open now and then live on disk and load into a shared 3 KB
-window at `$C400` when needed. An overlay that's already in the window isn't
+Screens you open now and then live on disk and load into a shared 2.7 KB
+window at `$C540` when needed. An overlay that's already in the window isn't
 reloaded.
 
 | Overlay | Contents | Size |
@@ -149,16 +162,18 @@ reloaded.
 | `PQ.OV3` | dialogue: Pip, Barnaby, Willow | 2.1 KB |
 | `PQ.OV4` | the Spellbook | 2.7 KB |
 | `PQ.OV5`–`PQ.OV7` | the Power Tree, one per class (each carries only its own class's text) | 2.6–2.7 KB |
+| `PQ.OV8` | building the camp | 2.6 KB |
+| `PQ.OV9` | the Village Ledger | 1.1 KB |
 
 On a stock 1541 each takes roughly 5–7 seconds (about 400 bytes a second);
 a "Loading" note shows in the corner meanwhile. Overlays are kept to about
 2–3 KB for that reason.
 
-The world, battles, Bag, Gear, Ledger, saving and the camp menu stay
-resident, so exploring and fighting never wait on the disk. Moving the
-overlays out shrank the resident program from 50 KB to 38 KB, leaving about
-10 KB for future resident features. More overlays can be added whenever a
-feature doesn't need to be instant.
+The world, battles, Bag, Gear, saving and the camp menu stay resident, so
+exploring and fighting never wait on the disk. Resident memory is now nearly
+full (about 1 KB free), so new screens should be overlays; the resident part
+of a feature should be the little the world itself needs (camp building
+keeps only the buildings' effects, positions, names and costs resident).
 
 ## Smooth scrolling
 
@@ -253,6 +268,7 @@ Test builds replay a scripted joystick (`test/*.h`). The game starts about
 export ROMDIR=~/vice-roms
 make shot SCRIPT=test/village.h CYCLES=60000000   # walk to the Mayor and talk
 make shot SCRIPT=test/camp.h    CYCLES=90000000   # polish, craft, learn skills
+make shot SCRIPT=test/build.h   CYCLES=56000000   # build the Kitchen, the walls; the Ledger
 make shot SCRIPT=test/gear.h    CYCLES=50000000   # inspect and equip gear
 make shot SCRIPT=test/battle.h  CYCLES=160000000  # Knight fights through Bogmire
 make shot SCRIPT=test/save.h    CYCLES=60000000   # then, keeping one disk:
@@ -298,10 +314,10 @@ make shot SCRIPT=test/home.h   CYCLES=50000000                          # out a 
 | `src/world.c` | village and zone generation, map rendering, exploration loop, monster AI |
 | `src/battle.c` | combat |
 | `src/ui.c` | title, stats and levelling, villagers, ledger, game over |
-| `src/kit.c` | skill effects, gem helpers, the menu kit, camp menu, Ledger, doors into the overlays |
+| `src/kit.c` | skill and building effects, gem helpers, the menu kit, camp menu, doors into the overlays |
 | `src/bag.c` | the Bag: polishing and Summon Dwarves |
 | `src/gear.c` | the Gear screen, item cards, faceting gems, equip/salvage |
-| `src/ov_*.c` | the overlays: title, the two dialogue halves, Spellbook, Power Tree (`ov_tree.inc`, built once per class) |
+| `src/ov_*.c` | the overlays: title, the two dialogue halves, Spellbook, Power Tree (`ov_tree.inc`, built once per class), building the camp, the Village Ledger |
 | `src/ovl.s` | overlay file headers: load address and signature |
 | `src/loot.c` | the item engine (rarities, affixes, legendaries, set, drops, stats); lives in PQ.HI |
 | `src/save.c` | save/load format, autosave, erase-on-death, loading PQ.HI, the overlay loader `ovl()` |
@@ -326,10 +342,10 @@ The C64 has 64 KB, and the game uses nearly all of it. See `prismquest.cfg`.
 | `$0334–$03FB` | the music player's start and stop (the tape buffer: no tape here) |
 | `$0400–$05EF` | scratch: the save buffer, shared with the map-view buffers |
 | `$05F0–$07FF` | monster, node, gate and villager tables (the KERNAL's old text screen) |
-| `$0801–$BFEF` | the resident program: code, read-only data, initialised data (about 44 KB), then `world.c`'s variables (WBSS, zeroed by `main()`) |
-| `$C000–$C3FF` | the map's second screen (the scroller double-buffers) |
-| `$C400–$CE9F` | the overlay window: PQ.OV1–7 load here on demand |
-| `$CEA0–$CFFF` | the music player's once-a-frame code |
+| `$0801–$BFDF` | the resident program: code, read-only data, initialised data (about 46 KB), then `world.c`'s variables (WBSS, zeroed by `main()`) |
+| `$C000–$C3FF` | the map's second screen (the scroller double-buffers); at startup, the startup code |
+| `$C400–$C53F` | the music player's once-a-frame code |
+| `$C540–$CFFF` | the overlay window: PQ.OV1–9 load here on demand |
 | `$D000–$D7FF` | character set, in the RAM under the I/O chips (only the VIC reads it) |
 | `$D800–$DDFF` | the battle portraits (packed) and the tunes, also under the I/O chips |
 | `$DE00–$DFBF` | the rain's sprite frames |
@@ -344,18 +360,21 @@ Everything from `$E000` up is the RAM under the KERNAL ROM. The VIC chip reads
 it directly (bank 3), and the CPU can reach it once the ROMs are banked out.
 
 `PQ.HI` is one file loaded at `$E000`. It holds the sprite art and the tunes
-(landing where the screen will go), the loot engine, then the charset and the
-music player's frame code (landing on BSS). At startup `unpack_hi()` moves
-the art, tunes and charset under the I/O chips and the player above the
-overlay window, then clears BSS. Only then is the screen set up. Anything
-written to BSS before that would corrupt the file's tail, so the startup
-functions keep their (static) locals in `EARLYBSS` at `$FF00`.
+(landing where the screen will go), the loot engine, then the charset
+(landing on BSS). At startup `unpack_hi()` moves the art, tunes and charset
+under the I/O chips, then clears BSS. Only then is the screen set up.
+Anything written to BSS before that would corrupt the file's tail, so the
+startup functions keep their (static) locals in `EARLYBSS` at `$FF00`.
 
-The main file carries two things past the end of the program, where
-`world.c`'s variables will go: the tape-buffer code, which `main()` copies
-down first, and the one-time startup code (`INITCODE`: hardware setup, rain
-frames, loading PQ.HI), which runs in place. Then `main()` clears that space
-for the variables.
+The main file runs contiguously from `$0801` to `$C53F`: the resident
+program is padded to its end, and after it come the one-time startup code
+(`INITCODE`: hardware setup, rain frames, loading PQ.HI) and the tape-buffer
+code in the second screen, then the music player's frame code. The startup
+code runs where it lands, before the second screen is needed; `main()`
+copies the tape-buffer code down first.
+
+The map renderer (`scroll.s`) takes the tile numbers from `assets.inc`,
+which `gen_assets.js` writes alongside `assets.h`.
 
 The KERNAL and BASIC ROMs are banked out. The only interrupt is the VIC's
 raster interrupt (vector at `$FFFE`): it drives the rain and the music, and in

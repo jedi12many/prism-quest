@@ -11,7 +11,7 @@ extern char disk_status[40];
 
 enum { OP_SAVE, OP_LOAD, OP_CMD, OP_LOADHI };
 
-#define SAVE_VERSION 2
+#define SAVE_VERSION 3                  /* 3: camp buildings */
 /* "PQ", version, the Player struct, the play clock, a checksum. The buffer
  * is LOWSCRATCH ($0400), below the KERNAL where its SAVE/LOAD can reach it;
  * the map view shares it (it's rebuilt after every save or load). */
@@ -124,12 +124,10 @@ u8 load_hi(void)
 }
 
 /* PQ.HI carries the sprite art and tunes (landing on the not-yet-used screen)
- * and the charset (landing on BSS): move them under the I/O chips, and the
- * music player's frame code (after the charset) above the overlay window,
- * then clear BSS. Runs with interrupts off, before anything has used BSS. */
+ * and the charset (landing on BSS): move them under the I/O chips, then clear
+ * BSS. Runs with interrupts off, before anything has used BSS. */
 extern u8 _HICHR_LOAD__[], _HICHR_RUN__[], _HICHR_SIZE__[];
 extern u8 _HISPR_LOAD__[], _HISPR_RUN__[], _HISPR_SIZE__[];
-extern u8 _MUSCODE_LOAD__[], _MUSCODE_RUN__[], _MUSCODE_SIZE__[];
 extern u8 _BSS_RUN__[], _BSS_SIZE__[];
 void unpack_hi(void)
 {
@@ -138,7 +136,6 @@ void unpack_hi(void)
     memcpy(_HICHR_RUN__, _HICHR_LOAD__, (u16)_HICHR_SIZE__);
     memset(_HICHR_RUN__ + (u16)_HICHR_SIZE__, 0, 2048 - (u16)_HICHR_SIZE__);
     memcpy(_HISPR_RUN__, _HISPR_LOAD__, (u16)_HISPR_SIZE__);
-    memcpy(_MUSCODE_RUN__, _MUSCODE_LOAD__, (u16)_MUSCODE_SIZE__);
     memset(_BSS_RUN__, 0, (u16)_BSS_SIZE__);
     POKE(0x01, port);
 }

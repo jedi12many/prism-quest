@@ -288,9 +288,7 @@ _render_cells:
         .import _npcs, _mobs, _nmobs, _mob_tile
 
 MAP_W   = 34
-T_TREE_ = 3                     ; (checked against assets.h by world.c)
-T_NODE_ = 13
-T_N_MAYOR_ = 28
+        .include "assets.inc"   ; the tile numbers
 PRISM   = 6                     ; PRISMATITE
 NNPC_   = 6
 MAXGATE_ = 12
@@ -386,7 +384,7 @@ _compose:
 @trees: ldy #0
 @fill:  cpy _c_tw
         beq @next
-        lda #T_TREE_
+        lda #T_TREE
         sta VT,x
         lda #$FF
         sta VC,x
@@ -454,7 +452,7 @@ _compose:
         jsr rowof
         ldy ptr2
         bcs @nnext
-        lda #T_NODE_
+        lda #T_NODE
         sta VT,x
         lda _nodes+2,y
         cmp #PRISM
@@ -496,7 +494,7 @@ _compose:
         bcs @vnext
         lda ci
         clc
-        adc #T_N_MAYOR_
+        adc #T_N_MAYOR
         sta VT,x
 @vnext: inc ci
         bne @vill

@@ -68,7 +68,7 @@ static void build_village(void)
     blank_map(28, 18);
     for (i = 0; i < 5; ++i) map[village_cottages[i][1]][village_cottages[i][0]] = T_COTTAGE;
     for (i = 0; i < 8; ++i) map[village_decor[i][1]][village_decor[i][0]] = T_FLOWER;
-    map[4][6] = T_HOUSE;                      /* your camp house */
+    place_buildings();                        /* your camp */
     add_gate(18, 4, G_CLOUD, 0);
     add_gate(12, 7, G_FORGE, 0);
     add_gate(15, 4, G_BOARD, 0);
@@ -82,6 +82,38 @@ static void build_village(void)
         npcs[i].y = npc_home[i][1];
         npcs[i].move_t = 50 + rnd(150);
     }
+}
+
+/* the camp: each building, or its empty plot; walls round it once built,
+ * with a gap in the south side. (Called again after building.) */
+#if T_KITCHEN != T_HOUSE + 1 || T_FACTORY != T_HOUSE + 2 || T_STALLS != T_HOUSE + 3 || T_TRAINING != T_HOUSE + 4 || T_PLOT != T_HOUSE + 5
+#error "the camp's tiles must run House .. Training, then the plot (gen_assets.js)"
+#endif
+#define CAMP_X0 2
+#define CAMP_X1 11
+#define CAMP_Y0 2
+#define CAMP_Y1 11
+void place_buildings(void)
+{
+    u8 x, y;
+    u8 *row;
+    for (x = 0; x < NBLD - 1; ++x)
+        map[bld_xy[x][1]][bld_xy[x][0]] = P.base[x] ? T_HOUSE + x : T_PLOT;
+    if (!P.base[B_WALLS]) return;
+    row = map[CAMP_Y0];
+    for (y = CAMP_Y0; y <= CAMP_Y1; ++y, row += MAP_W)
+        for (x = CAMP_X0; x <= CAMP_X1; ++x)
+            if (y == CAMP_Y0 || x == CAMP_X0 || x == CAMP_X1 || (y == CAMP_Y1 && (x < 6 || x > 7)))
+                row[x] = T_WALL;                /* (the gate: x 6-7 on the south side) */
+}
+
+/* the camp building (or plot) at x, y, else 0xFF: walking into one opens
+ * the build screen on it */
+static u8 camp_plot(u8 x, u8 y)
+{
+    u8 i;
+    for (i = 0; i < NBLD - 1; ++i) if (bld_xy[i][0] == x && bld_xy[i][1] == y) return i;
+    return 0xFF;
 }
 
 static u8 clampu(i16 v, i16 lo, i16 hi) { return (u8)(v < lo ? lo : v > hi ? hi : v); }
@@ -350,7 +382,7 @@ void compose(void);
 extern u8 r_wx0, r_wy, r_w, r_h, r_cs, r_cty;
 extern u8 *r_scr, *r_col;
 void render_cells(void);
-#if T_TREE != 3 || T_NODE != 13 || T_N_MAYOR != 28 || MAP_W != 34   /* (and PRISMATITE == 6) */
+#if MAP_W != 34                         /* (and PRISMATITE == 6; tile numbers: assets.inc) */
 #error "scroll.s needs updating"
 #endif
 
@@ -822,7 +854,12 @@ static u8 step(i8 dx, i8 dy)
         return 0;
     }
     if ((k = mob_at(nx, ny)) != 0xFF) return fight(k, 0);
-    if (!walkable(nx, ny)) return 0;
+    if (!walkable(nx, ny)) {
+#ifndef BENCH
+        if (map_id == MAP_VILLAGE && (k = camp_plot(nx, ny)) != 0xFF) { open_build(k); redraw_all(); }
+#endif
+        return 0;
+    }
     P.x = nx; P.y = ny;                 /* the tile is ours (monsters see it taken) */
     if (!cq_n) push_frame(phx, phy);    /* from a standstill: a frame's grace to start building */
     gdx = dx; gdy = dy;
@@ -953,7 +990,11 @@ void world_loop(void)
             update_npcs();
             if (seconds >= heal_at) {
                 heal_at = seconds + 2;
-                if (P.hp < P.hpmax) { P.hp += 3; if (P.hp > P.hpmax) P.hp = P.hpmax; hud_dirty = 1; }
+                if (P.hp < P.hpmax) {   /* resting: the House and Kitchen make it heartier */
+                    P.hp += 2 + P.base[B_HOUSE] + 2 * P.base[B_KITCHEN];
+                    if (P.hp > P.hpmax) P.hp = P.hpmax;
+                    hud_dirty = 1;
+                }
             }
         }
         if ((u8)seconds != last_sec) { last_sec = (u8)seconds; shimmer(); }

@@ -1,0 +1,42 @@
+/* Overlay: the Village Ledger -- the quest, the lands, the favors.
+ * Loaded from disk on demand into the overlay window (see ovl() in save.c). */
+#include "game.h"
+
+#pragma code-name("OVLEDGERCODE")
+#pragma rodata-name("OVLEDGERDATA")
+#pragma bss-name("OVLEDGERDATA")
+
+static const char *const quest_text[3] = {
+    "Talk to Mayor Puddle in Drizzlewick.",
+    "Take a gate out of the village and defeat the gloom champion in each direction.",
+    "The land shines! Report to Mayor Puddle.",
+};
+
+void show_ledger(void)
+{
+    u8 i;
+    POKE(0xD015, 0);
+    cls();
+    POKE(0xD021, BLACK);
+    put_str(1, 0, "The Village Ledger", YELLOW);
+    put_str(1, 2, "Current quest:", PURPLE);
+    log_reset(3, 3);
+    log_add(quest_text[P.main_quest > 2 ? 2 : P.main_quest], WHITE);
+    put_str(1, 7, "The four lands:", PURPLE);
+    for (i = 0; i < NZONE; ++i) {
+        sb_reset(); sb_str(zones[i].dir); sb_str(" - "); sb_str(zones[i].name);
+        put_str(2, 8 + i, sb, WHITE);
+        put_str(30, 8 + i, (P.zones_cleared & (1 << i)) ? "sunny" : "gloom", (P.zones_cleared & (1 << i)) ? YELLOW : BLUE);
+    }
+    put_str(1, 13, "Favors:", PURPLE);
+    put_str(2, 14, "Pip's lost frog", WHITE);
+    put_str(30, 14, P.pip_stage == 2 ? "done" : P.pip_stage ? "open" : "-", CYAN);
+    put_str(2, 15, "Barnaby's cold ovens", WHITE);
+    put_str(30, 15, P.baker_stage == 2 ? "done" : P.baker_stage ? "open" : "-", CYAN);
+    put_str(2, 16, "Willow's stubborn tulips", WHITE);
+    put_str(30, 16, P.willow_stage == 2 ? "done" : P.willow_stage ? "open" : "-", CYAN);
+    sb_reset(); sb_str("Kills: "); sb_num(P.kills); sb_str("   Time: "); sb_num(seconds / 60); sb_str(" min");
+    put_str(1, 19, sb, WHITE);
+    put_str(1, 24, "Fire: back", BLUE);
+    wait_fire();
+}

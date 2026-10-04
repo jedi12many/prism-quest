@@ -4,8 +4,8 @@
 SRC    := src/main.c src/system.c src/data.c src/world.c src/battle.c src/ui.c src/kit.c src/bag.c src/gear.c \
           src/loot.c src/save.c src/rain.c src/rainirq.s src/scroll.s src/input.s src/disk.s src/music.s src/musicdata.s src/hi.s src/ovl.s src/assets.c src/tree.c \
           src/ov_title.c src/ov_talk_a.c src/ov_talk_b.c src/ov_camp.c \
-          src/ov_tree_mage.c src/ov_tree_knight.c src/ov_tree_whisperer.c
-OVLS   := 1 2 3 4 5 6 7
+          src/ov_tree_mage.c src/ov_tree_knight.c src/ov_tree_whisperer.c src/ov_build.c src/ov_ledger.c
+OVLS   := 1 2 3 4 5 6 7 8 9
 PRG    := build/prismquest.prg
 CFLAGS := -t c64 -Oirs -Cl
 # memory layout: see prismquest.cfg
@@ -13,7 +13,7 @@ LDFLAGS := -C prismquest.cfg
 
 all: $(PRG)
 
-src/assets.c src/assets.h: tools/gen_assets.js tools/heroes.js tools/monsters.js ../js/sprites.js
+src/assets.c src/assets.h src/assets.inc: tools/gen_assets.js tools/heroes.js tools/monsters.js ../js/sprites.js
 	node tools/gen_assets.js
 
 src/musicdata.s: tools/gen_music.js tools/music.js

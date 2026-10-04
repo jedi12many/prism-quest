@@ -12,7 +12,7 @@ void calc_stats(void)
 {
     const ClassDef *c = &classes[P.cls];
     u8 l = P.level - 1;
-    P.hpmax = c->hp + 6 * l + 10 /* camp house, level 1 */ + P.bonus_hp + eff(E_HPMAX);
+    P.hpmax = c->hp + 6 * l + P.bonus_hp + eff(E_HPMAX);    /* (the camp's House counts in eff) */
     P.atk = c->atk + l + eff(E_ATKFLAT);
     P.mag = c->mag + l + eff(E_MAGFLAT);
     P.def = (c->def * 2 + l * c->def_grow2) / 2 + eff(E_DEFFLAT);
