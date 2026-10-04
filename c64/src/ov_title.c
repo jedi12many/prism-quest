@@ -92,7 +92,11 @@ u8 title_screen(void)
         if (key_hit(K_3)) { c = 2; break; }
         if (in_new & IN_FIRE) break;
     }
+#ifdef TEST_SEED
+    rng_seed(TEST_SEED);                    /* (tests: the same lands every run) */
+#else
     rng_seed(frame * 31 + PEEK(0xD012));
+#endif
     POKE(0xD015, 0);
     POKE(0xD017, 0); POKE(0xD01D, 0);
     return c;

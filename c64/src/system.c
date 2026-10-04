@@ -43,33 +43,44 @@ void hw_init(void)
     POKE(0xD418, 0x0F);
 }
 
+/* once a frame: as the beam enters the bottom border (watching for one exact
+ * line could miss it under an interrupt) */
 void wait_frame(void)
 {
-    while (PEEK(0xD012) != 251) ;
-    while (PEEK(0xD012) == 251) ;
+    extern volatile u8 vbl;
+    u8 v;
+    if (split_mode) {                       /* the world: the frame interrupt's count */
+        v = vbl;                            /* (its bottom-of-frame work can run */
+        while (vbl == v) ;                  /* past line 256) */
+    } else {
+        while (PEEK(0xD011) & 0x80) ;
+        while (!(PEEK(0xD011) & 0x80)) ;
+    }
     ++frame;
     if (++sec_frames == 50) { sec_frames = 0; ++seconds; }
     sound_tick();
 }
 
-u8 key_down(u8 code)
-{
-    u8 r;
-    POKE(0xDC00, ~(1 << (code >> 3)));
-    r = PEEK(0xDC01);
-    POKE(0xDC00, 0xFF);
-    return !(r & (1 << (code & 7)));
-}
-
+/* the keyboard matrix, read once per input_poll() (kb_scan, input.s):
+ * bit set = key down */
+extern u8 kb[8];
+void kb_scan(void);
 static u8 keys_prev[8];
+static const u8 bitv[8] = { 1, 2, 4, 8, 16, 32, 64, 128 };
+#define KEY(code) (kb[(code) >> 3] & (1 << ((code) & 7)))
+
+u8 key_down(u8 code) { return kb[code >> 3] & bitv[code & 7]; }
+
+/* down now, and wasn't at the last key_hit() for it */
 u8 key_hit(u8 code)
 {
-    u8 col = code >> 3, bit = 1 << (code & 7), r;
-    POKE(0xDC00, ~(1 << col));
-    r = ~PEEK(0xDC01);
-    POKE(0xDC00, 0xFF);
-    if ((r & bit) && !(keys_prev[col] & bit)) { keys_prev[col] |= bit; return 1; }
-    if (!(r & bit)) keys_prev[col] &= ~bit;
+    u8 col = code >> 3, bit = bitv[code & 7];
+    if (kb[col] & bit) {
+        if (keys_prev[col] & bit) return 0;
+        keys_prev[col] |= bit;
+        return 1;
+    }
+    keys_prev[col] &= ~bit;
     return 0;
 }
 
@@ -87,6 +98,7 @@ void input_poll(void)
     u8 j;
     POKE(0xDC00, 0xFF);
     j = ~PEEK(0xDC00) & 0x1F;               /* joystick port 2 */
+    kb_scan();
 #ifdef AUTOPLAY
 #ifdef AUTOPLAY_LOOP
     if (!*ap) ap = autoplay_loop;
@@ -97,12 +109,12 @@ void input_poll(void)
         if (!--ap_left) ap += 2;
     }
 #endif
-    if (key_down(K_W)) j |= IN_UP;
-    if (key_down(K_S)) j |= IN_DOWN;
-    if (key_down(K_A)) j |= IN_LEFT;
-    if (key_down(K_D)) j |= IN_RIGHT;
-    if (key_down(K_SPACE) || key_down(K_RETURN)) j |= IN_FIRE;
-    if (key_down(K_B)) j |= IN_BONK;
+    if (KEY(K_W)) j |= IN_UP;
+    if (KEY(K_S)) j |= IN_DOWN;
+    if (KEY(K_A)) j |= IN_LEFT;
+    if (KEY(K_D)) j |= IN_RIGHT;
+    if (KEY(K_SPACE) || KEY(K_RETURN)) j |= IN_FIRE;
+    if (KEY(K_B)) j |= IN_BONK;
     in_now = j;
     in_new = j & ~in_prev;
     in_prev = j;
@@ -139,7 +151,7 @@ u8 glyph(char c)
 
 void cls(void)
 {
-    rain_off();                             /* every full-screen change stops the rain */
+    irq_stop();                             /* every full-screen change stops the rain */
     POKE(0xD016, 0x08);                     /* plain hi-res text: all 16 colours */
     memset(SCREEN, 0, 1000);
     memset(COLORRAM, WHITE, 1000);

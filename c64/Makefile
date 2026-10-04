@@ -2,7 +2,7 @@
 # Needs cc65 (apt install cc65) and node; VICE for `make run` / `make shot`.
 
 SRC    := src/main.c src/system.c src/data.c src/world.c src/battle.c src/ui.c src/kit.c src/bag.c src/gear.c \
-          src/loot.c src/save.c src/rain.c src/rainirq.s src/disk.s src/hi.s src/ovl.s src/assets.c src/tree.c \
+          src/loot.c src/save.c src/rain.c src/rainirq.s src/scroll.s src/input.s src/disk.s src/hi.s src/ovl.s src/assets.c src/tree.c \
           src/ov_title.c src/ov_talk_a.c src/ov_talk_b.c src/ov_camp.c \
           src/ov_tree_mage.c src/ov_tree_knight.c src/ov_tree_whisperer.c
 OVLS   := 1 2 3 4 5 6 7
@@ -44,7 +44,7 @@ run: $(PRG)
 SCRIPT ?= test/title.h
 CYCLES ?= 30000000
 shot: src/assets.h src/tree.h $(SRC) src/game.h $(SCRIPT) | build
-	cl65 $(CFLAGS) -DAUTOPLAY='"../$(SCRIPT)"' $(LDFLAGS) -m build/test.map -o build/test.prg $(SRC)
+	cl65 $(CFLAGS) $(DEFS) -DAUTOPLAY='"../$(SCRIPT)"' $(LDFLAGS) -m build/test.map -o build/test.prg $(SRC)
 	@rm -f src/*.o
 	tools/vicerun.py build/test.prg build/$(basename $(notdir $(SCRIPT))).png $(CYCLES)
 

@@ -1,4 +1,5 @@
 /* Prism Quest: Rainyday -- Commodore 64 port. */
+#include <string.h>
 #include "game.h"
 
 
@@ -25,6 +26,10 @@ int main(void)
             for (;;) ;
         }
         unpack_hi();
+    }
+    {   /* world.c's variables, in main RAM where crt0 doesn't clear */
+        extern u8 _WBSS_RUN__[], _WBSS_SIZE__[];
+        memset(_WBSS_RUN__, 0, (u16)_WBSS_SIZE__);
     }
     hw_init();
     rain_init();                             /* also enables the raster interrupt */

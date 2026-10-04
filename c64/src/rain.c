@@ -27,6 +27,7 @@ void rain_init(void)
     }
     POKE(0x01, 0x35);
     *(u16 *)0xFFFE = (u16)rain_irq;
+    *(u16 *)0x0314 = (u16)kirq;             /* (the KERNAL's, while disk_op has it in) */
     __asm__("cli");                         /* only the raster interrupt is ever enabled */
 }
 
@@ -35,10 +36,12 @@ static const u8 storm_mask[5] = { 0, 0xA8, 0xB8, 0xF8, 0xF8 };   /* by zone tier
 
 static u8 flash_t;                          /* frames of lightning left */
 static u16 thunder_at;                      /* frame the thunder arrives */
+static u16 strike_t;                        /* frames to the next strike */
 
 void storm_start(u8 tier)
 {
     rain_on(storm_mask[tier]);
+    strike_t = 1 + rnd(1000 / (2 + tier));
     flash_t = 0;
     thunder_at = 0;
 }
@@ -47,13 +50,14 @@ void storm_start(u8 tier)
 void storm_tick(u8 tier, u8 bg)
 {
     if (flash_t) {
-        if (--flash_t == 0) POKE(0xD021, bg);
-    } else if (rnd(1000) < 2 + tier) {      /* now and then, a strike */
+        if (--flash_t == 0) map_bg = bg;
+    } else if (!--strike_t) {               /* now and then, a strike */
+        strike_t = 1 + rnd(1000 / (2 + tier));
         flash_t = 2 + rnd(3);
-        POKE(0xD021, WHITE);
+        map_bg = WHITE;
         thunder_at = frame + 15 + rnd(45);  /* sound travels slower than light */
     }
-    if (thunder_at && frame == thunder_at) { thunder_at = 0; thunder(); }
+    if (thunder_at && (i16)(frame - thunder_at) >= 0) { thunder_at = 0; thunder(); }
 }
 
 /* the champion falls: the rain thins out column by column, then the sun */
@@ -67,7 +71,7 @@ void storm_clears(void)
     }
     rain_off();
     for (i = 0; i < 3; ++i) {               /* a burst of sunlight */
-        POKE(0xD021, YELLOW); wait_frame(); wait_frame();
-        POKE(0xD021, LTGREEN); wait_frame(); wait_frame();
+        map_bg = YELLOW; wait_frame(); wait_frame();
+        map_bg = LTGREEN; wait_frame(); wait_frame();
     }
 }

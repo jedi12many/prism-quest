@@ -71,6 +71,9 @@ A work-in-progress port of the browser game to a stock Commodore 64 (64 KB,
   rumbling down through a resonant low-pass filter. Beat a champion and the
   rain thins out column by column, then sunlight breaks through. The title
   screen has the storm too.
+- **Smooth scrolling:** the map glides 2 pixels a frame at a steady 50 fps,
+  under a fixed status panel (HUD and messages) at the top. See *Smooth
+  scrolling* below.
 - **Sound:** short SID sound effects, plus the thunder.
 
 **Not ported yet:** camp building, dungeons, Prism Facets, pacts, elites, the Rainycastle and the
@@ -143,6 +146,51 @@ overlays out shrank the resident program from 50 KB to 38 KB, leaving about
 10 KB for future resident features. More overlays can be added whenever a
 feature doesn't need to be instant.
 
+## Smooth scrolling
+
+The world screen is split by the frame interrupt (`rainirq.s`):
+
+| Lines | |
+|---|---|
+| rows 0–4 | the status panel: HUD and messages, hi-res text on black, never moves |
+| 90–98 | a black bar. ECM + multicolour is an invalid VIC mode that draws black; it hides the map's moving top edge |
+| 99–246 | the map, in screen rows 5–24 (40 × 20 characters of 2×2-character tiles), shown 38 columns × 24 rows wide so the edges can scroll |
+
+At line 90 the interrupt switches to the map's fine x/y scroll, screen buffer
+and background colour, and at line 250 it switches back. Changing the
+vertical scroll mid-screen is dangerous: if a bad line starts in the middle of
+a raster line (VSP), some real C64s crash. So the scroll is only written
+during lines 90–92, and the scroller only uses the odd values 1, 3, 5 and 7.
+Those can't turn any of those lines bad, and with 2-pixel steps they are all
+it needs. Late writes are skipped for that frame.
+
+When the camera crosses a character boundary, the whole map moves one
+character:
+
+- **Characters** are double-buffered (screens `$E000` and `$C000`). The back
+  screen is built as a shifted copy of the front (`scr_copy`, in two halves),
+  plus the one new column or row (`render`).
+- **Colour RAM** can't be double-buffered. The interrupt shifts it in place
+  during the vertical blank (`col_shift`, about 8,000 cycles, finished before
+  the beam reaches the map) and swaps the screens.
+
+The interrupt drives the walk. As soon as a step starts, the main loop queues
+its frames (scroll registers and hero position) a few frames ahead, and the
+interrupt takes one per frame. A slow main-loop frame (a monster stepping, a
+message being drawn) therefore never stutters the picture. Each crossing is
+planned when the step starts, and its back screen is built in pieces against
+that deadline. If a back screen isn't ready in time, the picture holds for one
+frame; this is rare.
+
+Tiles that change (monsters and villagers stepping, nodes shimmering) are
+queued and redrawn when a frame has time to spare. The heavy parts are
+assembly: `compose()` (which tiles and entities fall in a box) and the cell
+loop. In C they cost about 20 times as much.
+
+Disk access can't keep the split steady: the KERNAL holds interrupts off while
+it waits on the drive. So the screen is blanked during loads in the world, and
+the interrupt doesn't touch the scroll registers meanwhile.
+
 ## Headless testing
 
 The game loads files from disk as it goes, so tests need a real KERNAL and a
@@ -175,9 +223,25 @@ tools/vicerun.py build/test.prg build/load.png 80000000 build/disk.d64
 ```
 
 A script can define `TEST_SETUP` (C statements run at the end of `new_game`)
-to start the hero with gems, gear or skill points. It can also define
+to start the hero with gems, gear or skill points, and `TEST_SEED` to fix the
+random seed so every run builds the same lands. It can also define
 `autoplay_loop[]` (with `#define AUTOPLAY_LOOP`), which is replayed forever
 after the main script ends.
+
+The scroller has its own scripts and switches, passed as `DEFS=`:
+
+```
+make shot SCRIPT=test/scroll.h CYCLES=60000000 DEFS="-DBENCH -DCHECK"   # village laps
+make shot SCRIPT=test/zone.h   CYCLES=80000000 DEFS="-DBENCH -DCHECK"   # laps in the storm
+make shot SCRIPT=test/home.h   CYCLES=50000000                          # out a gate and home
+```
+
+- **`-DBENCH`:** walking never stops. Fights, conversations and dialogue gates
+  are skipped. The HUD shows screen swaps (cyan) and frames the picture held
+  for want of a back screen (red).
+- **`-DCHECK`:** after each swap, renders the whole view from scratch into the
+  idle back screen and compares it with the screen on show. It prints checks
+  (cyan) and mismatches (red), which should be 0.
 
 ## Layout
 
@@ -196,6 +260,10 @@ after the main script ends.
 | `src/save.c` | save/load format, autosave, erase-on-death, loading PQ.HI, the overlay loader `ovl()` |
 | `src/hi.s` | PQ.HI's load address and signature |
 | `src/disk.s` | assembly: switches the KERNAL in and calls its SAVE/LOAD/OPEN, reads the drive's error channel |
+| `src/rainirq.s` | the frame interrupt: the rain multiplexer, the world's split screen, the camera queue |
+| `src/scroll.s` | the scroller's shifts (screen copy, colour RAM), and `compose()` and the cell loop of the map renderer |
+| `src/rain.c` | rain frames, lightning, thunder, the sun breaking through |
+| `src/input.s` | the keyboard matrix, read in one go |
 | `src/data.c` | classes, monsters, zones, spells, minerals (numbers from `js/data.js`) |
 | `src/assets.c` | **generated** by `tools/gen_assets.js` from `js/sprites.js` |
 | `src/tree.c`, `tree_text.h` | **generated** by `tools/gen_data.js` from `js/data.js`: Power Tree effects and class perks (resident); skill names and descriptions (overlays) |
@@ -208,11 +276,12 @@ The C64 has 64 KB, and the game uses nearly all of it. See `prismquest.cfg`.
 |---|---|
 | `$0400–$05EF` | scratch: the save buffer, shared with the map-view buffers |
 | `$05F0–$07FF` | monster, node, gate and villager tables (the KERNAL's old text screen) |
-| `$0801–$C3EF` | the resident program: code, read-only data, initialised data (38 KB used) |
+| `$0801–$BFEF` | the resident program: code, read-only data, initialised data (about 44 KB), then `world.c`'s variables (WBSS, zeroed by `main()`) |
+| `$C000–$C3FF` | the map's second screen (the scroller double-buffers) |
 | `$C400–$CFEF` | the overlay window: PQ.OV1–7 load here on demand |
 | `$D000–$D7FF` | character set, in the RAM under the I/O chips (only the VIC reads it) |
 | `$D800–$DD3F` | sprite art, also under the I/O chips (copied into sprite slots with I/O off) |
-| `$E000` | screen |
+| `$E000` | screen (the status panel always comes from here) |
 | `$E400` | sprite slots |
 | `$E580–$F67F` | the loot engine, loaded from PQ.HI |
 | `$F680–$FF1F` | variables (BSS) |
@@ -226,11 +295,13 @@ the screen will go), the loot engine, and the charset (landing on BSS). At
 startup `unpack_hi()` moves the art and the charset under the I/O chips and
 clears BSS. Only then is the screen set up.
 
-The KERNAL and BASIC ROMs are banked out and interrupts are off. The game syncs
-to the raster beam. The only exception is `disk.s`, which banks the KERNAL in
-for the duration of a disk call, touching only its own data below `$D000` and
-the hardware stack. The save buffer is below the KERNAL too, so its SAVE and
-LOAD can reach it.
+The KERNAL and BASIC ROMs are banked out. The only interrupt is the VIC's
+raster interrupt (vector at `$FFFE`): it drives the rain, and in the world the
+split screen and the camera queue. `disk.s` banks the KERNAL in for the
+duration of a disk call, touching only its own data below `$D000` and the
+hardware stack. It keeps interrupts on if they were on, reached through the
+KERNAL's own vector at `$0314`. The save buffer is below the KERNAL too, so
+its SAVE and LOAD can reach it.
 
 ### C64 and cc65 gotchas
 
@@ -253,5 +324,14 @@ LOAD can reach it.
 - cc65 2.19 miscompiles a bit test whose shift count is a computed expression,
 for example `if (!(P.skills & (1u << (b * 5 + t))))`. It checks only the high
 byte of the result, which quietly turned off half of the Power Tree. Test bits
-with a shift-and-mask (`(P.skills >> n) & 1`) or put the count in a `u8` first. The game syncs
-to the raster beam.
+with a shift-and-mask (`(P.skills >> n) & 1`) or put the count in a `u8` first.
+- Never wait for a raster line with `cpx $D012 / bne`. An interrupt that
+  arrives at the very end of the line spins for a whole frame. Wait while the
+  line is less than the target.
+- In the world, `wait_frame()` waits for the interrupt's frame counter, not a
+  raster line. The interrupt's bottom-of-frame work (rain setup, sometimes the
+  colour shift) can cover any one line.
+- cc65 multiplies for every `array[i].field` access with a non-power-of-two
+  struct size. Walk arrays of structs with a pointer.
+- BSS (`$F680–$FF1F`) is nearly full. New variables go in `.data` (assembly)
+  or WBSS (`world.c`).

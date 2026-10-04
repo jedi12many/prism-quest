@@ -140,23 +140,24 @@ static u8 cur_ovl;
 /* make sure overlay `id` (file PQ.OVid) is in the window */
 void ovl(u8 id)
 {
-    u8 err;
+    u8 err, y;
     const u8 *w = (const u8 *)OVL_START;
     if (cur_ovl == id) return;
     cur_ovl = 0;
+    y = split_mode ? MSG_ROW + MSG_ROWS - 2 : 23;  /* in the world: the message panel */
     for (;;) {
         set_name("pq.ov0");
         disk_name[5] += id;
-        put_str(32, 24, "Loading", GREY);
+        put_str(32, y + 1, "Loading", GREY);
         err = disk_op(OP_LOADHI);
-        put_str(32, 24, "       ", GREY);
+        put_str(32, y + 1, "       ", GREY);
         if (!err && w[0] == 0x4F && w[1] == id) { cur_ovl = id; return; }
         /* keep asking: the game can't go on without it */
         sb_reset(); sb_str("Couldn't load PQ.OV"); sb_num(id); sb_str(" - check the disk, then press fire.");
-        clear_rows(23, 24);
-        wrap(sb, 23, 2, RED);
+        clear_rows(y, y + 1);
+        wrap(sb, y, 2, RED);
         wait_fire();
-        clear_rows(23, 24);
+        clear_rows(y, y + 1);
     }
 }
 

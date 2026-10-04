@@ -26,13 +26,14 @@ extern u8 _OVL_START__[];       /* the overlay window (prismquest.cfg) */
 #define LOWSCRATCH_LEN 0x01F0
 #define COLORRAM  ((u8 *)0xD800)
 #define SPR_PTR   ((u8 *)0xE3F8)
+#define SPR_PTR2  ((u8 *)0xC3F8)  /* the same, for the map's second screen at $C000 */
 #define SPR_SLOT(n) ((u8 *)(SPRITES + (n) * 64))
 
-/* screen layout: row 0 HUD, rows 1-20 map (10 tiles), rows 21-24 messages */
-#define VIEW_W 20
-#define VIEW_H 10
-#define MSG_ROW 21
+/* the world's screen: row 0 HUD, rows 1-4 messages (a fixed panel), then a
+ * black bar and the smooth-scrolling map in rows 5-24 */
+#define MSG_ROW 1
 #define MSG_ROWS 4
+#define MAP_ROW 5
 
 /* colours */
 enum { BLACK, WHITE, RED, CYAN, PURPLE, GREEN, BLUE, YELLOW,
@@ -110,15 +111,26 @@ void sfx(u8 id);
 void sound_tick(void);
 void thunder(void);                      /* SID voice 3: noise through a falling low-pass */
 
-/* ---------- the storm (rain.s, rain.c) ---------- */
+/* ---------- the frame interrupt and the storm (rainirq.s, rain.c) ---------- */
 void rain_init(void);
 void __fastcall__ rain_on(u8 mask);      /* sprites 3-7 as a rain multiplexer */
 void rain_off(void);
+void split_on(void);                     /* the world's split screen */
+void irq_stop(void);                     /* back to a plain text screen */
 void rain_irq(void);
+void kirq(void);
 extern u8 rain_mask;
+extern u8 sc_d011, sc_d016, sc_d018, map_bg;   /* the map's registers */
+extern u8 split_mode;                    /* 1 while the world's split screen is up */
 void storm_start(u8 tier);
 void storm_tick(u8 tier, u8 bg);
 void storm_clears(void);
+
+/* ---------- the scroller's shifts (scroll.s) ---------- */
+void __fastcall__ scr_copy(u8 dir);      /* 0 left, 1 right, 2 up, 3 down */
+void __fastcall__ col_shift(u8 dir);
+extern u8 sc_front;                      /* 0: map on $E000, 1: on $C000 */
+extern u8 edge[40];
 
 /* ---------- sprites ---------- */
 void spr_load(u8 slot, const u8 *data);

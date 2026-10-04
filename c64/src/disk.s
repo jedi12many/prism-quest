@@ -4,6 +4,11 @@
 ; back out. It touches nothing but its own data (below) and the hardware stack,
 ; so it is safe while the KERNAL hides $E000-$FFFF from the CPU.
 ;
+; If interrupts were on, they stay on: the frame interrupt keeps the split
+; screen steady, reached through the KERNAL's $0314 vector (rain.c sets it).
+; The sprites -- hero and rain -- are off meanwhile: their DMA steals cycles
+; the KERNAL's serial timing needs (loads stall or corrupt bytes with them on).
+;
 ;   u8 __fastcall__ disk_op(u8 op);
 ;     op 0  SAVE   disk_name -> file, data disk_start..disk_end (exclusive)
 ;     op 1  LOAD   file disk_name -> disk_start (secondary address 0)
@@ -15,6 +20,7 @@
 
         .export _disk_op, _disk_dev, _disk_name, _disk_namelen
         .export _disk_start, _disk_end, _disk_status
+        .import _rain_mask, _irq_hold, _split_mode
 
 SETLFS  = $FFBA
 SETNAM  = $FFBD
@@ -39,6 +45,7 @@ result:         .byte 0
 loadsa:         .byte 0
 saved01:        .byte 0
 savedspr:       .byte 0
+savedmask:      .byte 0
 savedptr:       .word 0
 
         .code
@@ -48,17 +55,33 @@ _disk_op:
         sei
         lda $01
         sta saved01
-        lda $D015               ; sprites off: their DMA steals cycles the
-        sta savedspr            ; KERNAL's serial timing needs (loads stall
-        lda #0                  ; or corrupt bytes with sprites on)
+        lda _rain_mask          ; sprites off (the interrupt would turn the
+        sta savedmask           ; rain back on)
+        lda $D015
+        sta savedspr
+        lda #0
+        sta _rain_mask
         sta $D015
+        lda _split_mode         ; the world's split screen can't be kept up
+        beq :+                  ; (the KERNAL holds interrupts off): blank
+        jsr border              ; the screen meanwhile
+        lda #$0B
+        sta $D011
+        lda #1
+        sta _irq_hold
+:
         lda PTR
         sta savedptr
         lda PTR+1
         sta savedptr+1
         lda #$36                ; KERNAL + I/O in, BASIC out
         sta $01
-        lda #0
+        pla                     ; were interrupts on when we came in?
+        pha
+        and #$04
+        bne :+
+        cli
+:       lda #0
         sta result
         sta _disk_status
 
@@ -149,6 +172,7 @@ closest:
         jsr CLOSE
 
 done:
+        sei
         lda #$7F                ; the KERNAL may have re-armed the CIA timer
         sta $DC0D               ; interrupt; the game only uses the raster one
         lda $DC0D
@@ -158,11 +182,26 @@ done:
         sta PTR+1
         lda saved01
         sta $01
+        lda savedmask
+        sta _rain_mask
+        lda _irq_hold
+        beq :+
+        jsr border
+        lda #$1B                ; screen back on, status panel settings
+        sta $D011
+        lda #0
+        sta _irq_hold
+:
         lda savedspr
         sta $D015
         plp
         lda result
         ldx #0
+        rts
+
+; wait for the bottom border (line 256+), where changing $D011 is safe
+border: bit $D011
+        bpl border
         rts
 
 setname:

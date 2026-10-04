@@ -100,16 +100,17 @@ static const char *const camp_items[7] = { "Bag & polishing", "Gear", "Spellbook
 void camp_menu(void)
 {
     u8 sel;
-    rain_off();                             /* the menu sits over the map */
     POKE(0xD015, 0);
-    msg_clear();
-    sel = menu_pick(1, MSG_ROW - 3, camp_items, 7, 0);
+    cls();
+    POKE(0xD021, BLACK);
+    put_str(1, 7, "Make camp:", PURPLE);
+    sel = menu_pick(1, 9, camp_items, 7, 0);
     if (sel == 0) open_bag();
     else if (sel == 1) open_gear();
     else if (sel == 2) open_spellbook();
     else if (sel == 3) open_tree();
     else if (sel == 4) open_ledger();
-    else if (sel == 5) { clear_rows(MSG_ROW - 3, 24); save_game(); wait_fire(); }
+    else if (sel == 5) { clear_rows(7, 24); save_game(); wait_fire(); }
 }
 
 /* ---------- the Village Ledger ---------- */
