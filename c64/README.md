@@ -28,6 +28,23 @@ A work-in-progress port of the browser game to a stock Commodore 64 (64 KB,
   same way as `buildZone` in `js/game.js`: lakes, forest scatter, a guaranteed
   path to the lair, themed mineral nodes (Prismatite by the lair), monster packs,
   and the gloom champion. Walk over a node to mine it; nodes regrow after 60 s.
+- **Dungeons:** each zone hides one or two entrances: a Gloom Cave, Sunken
+  Ruins or a Haunted House, two or three floors deep, each generated its own
+  way (as in `js/game.js`):
+  - the cave by cellular automaton, with a drunkard's walk to keep it passable;
+  - the ruins as seven rooms joined by L-shaped corridors;
+  - the house as a 3×3 grid of rooms with doors.
+
+  On every floor but the last, a Warden (a tougher, armoured golem or gazer)
+  holds the key to a locked stair down. On the last floor waits the
+  dungeon's keeper: the Gloomtroll, the Stone Revenant or the Poltergeist,
+  each with its own battle portrait and champion-grade loot. Monsters there
+  fight a tier above the zone's, deeper floors deeper still, and each floor
+  has a Prismatite node. The way out puts you back in the same zone beside
+  the entrance: the zone regrows from its seed, with the monsters you'd
+  already beaten still beaten and the nodes you'd mined still mined. As in
+  the web game a dungeon isn't saved: a save made inside one restarts in its
+  zone.
 - **Monsters:** they wander, chase you within 5 tiles, can ambush you, and
   respawn after 45 s. Beat a champion and its land floods with sunlight, and
   every gloom-thing in it melts away.
@@ -103,7 +120,7 @@ A work-in-progress port of the browser game to a stock Commodore 64 (64 KB,
   bass is a triangle or a sawtooth. See *Music* below.
 - **Sound:** short SID sound effects and the thunder, on the third voice.
 
-**Not ported yet:** dungeons, Prism Facets, pacts, elites, the Rainycastle and the
+**Not ported yet:** Prism Facets, pacts, elites, the Rainycastle and the
 realm.
 
 ## Controls
@@ -164,16 +181,22 @@ reloaded.
 | `PQ.OV5`–`PQ.OV7` | the Power Tree, one per class (each carries only its own class's text) | 2.6–2.7 KB |
 | `PQ.OV8` | building the camp | 2.6 KB |
 | `PQ.OV9` | the Village Ledger | 1.1 KB |
+| `PQ.OV10` | the dungeon floors' generators | 2.6 KB |
+| `PQ.OV11` | the zone generator | 2.7 KB |
 
 On a stock 1541 each takes roughly 5–7 seconds (about 400 bytes a second);
 a "Loading" note shows in the corner meanwhile. Overlays are kept to about
 2–3 KB for that reason.
 
 The world, battles, Bag, Gear, saving and the camp menu stay resident, so
-exploring and fighting never wait on the disk. Resident memory is now nearly
-full (about 1 KB free), so new screens should be overlays; the resident part
-of a feature should be the little the world itself needs (camp building
-keeps only the buildings' effects, positions, names and costs resident).
+exploring and fighting never wait on the disk. Generating a zone or a
+dungeon floor loads its generator behind the transition screen (unless it's
+still in the window from last time: going home and back out loads nothing).
+Resident memory is nearly full (about 1.2 KB free), so new screens should be
+overlays; the resident part of a feature should be the little the world
+itself needs (camp building keeps only the buildings' effects, positions,
+names and costs resident; dungeons keep entering, leaving and the keepers'
+battle art).
 
 ## Smooth scrolling
 
@@ -269,6 +292,8 @@ export ROMDIR=~/vice-roms
 make shot SCRIPT=test/village.h CYCLES=60000000   # walk to the Mayor and talk
 make shot SCRIPT=test/camp.h    CYCLES=90000000   # polish, craft, learn skills
 make shot SCRIPT=test/build.h   CYCLES=56000000   # build the Kitchen, the walls; the Ledger
+make shot SCRIPT=test/delve.h   CYCLES=80000000 DEFS="-DTEST_DUNGEON=1 -DTEST_EMPTY -DTEST_NEAR"   # Warden, key, floor 2
+make shot SCRIPT=test/keeper.h  CYCLES=80000000 DEFS="-DTEST_DUNGEON=0 -DTEST_EMPTY -DTEST_NEAR -DTEST_KEEPER"
 make shot SCRIPT=test/gear.h    CYCLES=50000000   # inspect and equip gear
 make shot SCRIPT=test/battle.h  CYCLES=160000000  # Knight fights through Bogmire
 make shot SCRIPT=test/save.h    CYCLES=60000000   # then, keeping one disk:
@@ -302,6 +327,13 @@ make shot SCRIPT=test/home.h   CYCLES=50000000                          # out a 
 - **`-DJUKEBOX=n`:** the title screen plays tune n (0 title, 1 village,
   2 gloom, 3 battle). Record it with VICE's `-sound -sounddev wav -soundarg
   out.wav -limitcycles 50000000`; the tune starts about 15 s in.
+- **`-DTEST_DUNGEON=n`:** on reaching a zone, go straight down its first
+  dungeon as type n (0 cave, 1 ruins, 2 haunted house). With it:
+  `-DTEST_EMPTY` leaves out the wandering monsters, `-DTEST_NEAR` puts the
+  Warden right east of the entry with the stair (or the keeper) beyond it,
+  and `-DTEST_KEEPER` makes the first floor the last. See `test/dungeon.h`
+  (in and back out), `test/delve.h` (the Warden, the key, floor 2) and
+  `test/keeper.h` (the keeper's fight).
 - **`-DCHECK`:** after each swap, renders the whole view from scratch into the
   idle back screen and compares it with the screen on show. It prints checks
   (cyan) and mismatches (red), which should be 0.
@@ -317,7 +349,7 @@ make shot SCRIPT=test/home.h   CYCLES=50000000                          # out a 
 | `src/kit.c` | skill and building effects, gem helpers, the menu kit, camp menu, doors into the overlays |
 | `src/bag.c` | the Bag: polishing and Summon Dwarves |
 | `src/gear.c` | the Gear screen, item cards, faceting gems, equip/salvage |
-| `src/ov_*.c` | the overlays: title, the two dialogue halves, Spellbook, Power Tree (`ov_tree.inc`, built once per class), building the camp, the Village Ledger |
+| `src/ov_*.c` | the overlays: title, the two dialogue halves, Spellbook, Power Tree (`ov_tree.inc`, built once per class), building the camp, the Village Ledger, the dungeon floors, growing a zone |
 | `src/ovl.s` | overlay file headers: load address and signature |
 | `src/loot.c` | the item engine (rarities, affixes, legendaries, set, drops, stats); lives in PQ.HI |
 | `src/save.c` | save/load format, autosave, erase-on-death, loading PQ.HI, the overlay loader `ovl()` |

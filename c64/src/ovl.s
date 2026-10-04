@@ -3,7 +3,7 @@
 ; in save.c checks after loading.
 ;   1 title + game over   2 talk: Mayor, Grandma, Flint   3 talk: Pip, Barnaby, Willow
 ;   4 Spellbook           5-7 Power Tree for the mage, knight, whisperer
-;   8 building the camp   9 the Village Ledger
+;   8 building the camp   9 the Village Ledger   10 the dungeons' floors   11 growing a zone
         .import __OVL_START__
         .segment "OV1LOAD"
         .word   __OVL_START__
@@ -41,3 +41,11 @@
         .word   __OVL_START__
         .segment "OV9SIG"
         .byte   $4F, 9
+        .segment "OV10LOAD"
+        .word   __OVL_START__
+        .segment "OV10SIG"
+        .byte   $4F, 10
+        .segment "OV11LOAD"
+        .word   __OVL_START__
+        .segment "OV11SIG"
+        .byte   $4F, 11

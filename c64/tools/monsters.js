@@ -107,4 +107,32 @@ module.exports = [
       '...........c', '.........c.c', '.........ccc', '............',
       '............',
     ] },
+  // the dungeon keepers: their art is resident, not under I/O (keeper: true)
+  { name: 'gloomtroll', keeper: true, colors: { o: 0, a: 5, b: 9, c: 1 },   // green, brown loincloth, white eyes and tusks
+    rows: [
+      '............', '.......ooooo', '......oaaaaa', '.....oaaaaaa',
+      '.....oaacoaa', '.....oaaaaaa', '.....oaaaaco', '..oooooaaaaa',
+      '.oaaaaaaaaaa', 'oaaaaaaaaaaa', 'oaaaoaaaaaaa', 'oaaaoaaaaaaa',
+      'oaaaoaaaaaaa', 'oaao.oaaaaaa', 'oaao.obbbbbb', '.oo..obbbbbb',
+      '.....obbbbbb', '......oaaoo.', '......oaao..', '.....oaaao..',
+      '.....ooooo..',
+    ] },
+  { name: 'revenant', keeper: true, colors: { o: 0, a: 12, b: 11, c: 3 },  // grey stone, dark grey, cyan eyes and runes
+    rows: [
+      '......o...o.', '......oo.ooo', '......oaoaaa', '......oaaaaa',
+      '.......obbbb', '.......obcbb', '.......obbbb', '..ooooooaaaa',
+      '.oaaaaobaaaa', 'oaabbaobaaac', 'oaabbaobaacc', 'oaaaaaobaaac',
+      '.oaaaaobaaaa', '..oaao.obaaa', '...oo..obaaa', '.......obaaa',
+      '.......obaaa', '......obbbbb', '.....oaaaaaa', '.....oaaaaaa',
+      '.....ooooooo',
+    ] },
+  { name: 'poltergeist', keeper: true, colors: { o: 0, a: 1, b: 14, c: 4 }, // white, light blue shade, purple eyes and mouth
+    rows: [
+      '............', '........oooo', '......ooaaaa', '.....oaaaaaa',
+      '....oaaaaaaa', '....oaaccaaa', '....oaaccaaa', '....oaaaaaaa',
+      'oo..oaaaaacc', 'oao.oaaaaacc', '.oaooaaaaaaa', '..oaaaaaaaaa',
+      '...ooaaaaaaa', '....obaaaaaa', '....obaaaaaa', '.....obaaaab',
+      '.....obaaabo', '......obabo.', '......obao..', '.......oo...',
+      '............',
+    ] },
 ];

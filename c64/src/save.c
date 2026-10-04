@@ -156,8 +156,9 @@ void ovl(u8 id)
     cur_ovl = 0;
     y = split_mode == 1 ? MSG_ROW + MSG_ROWS - 2 : 23;  /* in the world: the message panel */
     for (;;) {
-        set_name("pq.ov0");
-        disk_name[5] += id;
+        if (id < 10) { set_name("pq.ov0"); err = id; }   /* PQ.OV1 .. PQ.OV11 */
+        else { set_name("pq.ov10"); err = id - 10; }
+        disk_name[disk_namelen - 1] += err;
         put_str(32, y + 1, "Loading", GREY);
         err = disk_op(OP_LOADHI);
         put_str(32, y + 1, "       ", GREY);

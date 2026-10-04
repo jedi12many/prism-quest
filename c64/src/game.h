@@ -173,6 +173,7 @@ extern const ClassDef classes[NCLASS];
 #define MF_BOSS   0x01
 #define MF_POISON 0x02
 #define MF_DREAD  0x04
+#define MF_KEEPER 0x08           /* a dungeon keeper (also MF_BOSS: the loot, never respawns) */
 typedef struct {
     const char *name;
     u8 hp, atk, def, xp;
@@ -183,7 +184,7 @@ typedef struct {
     u8 drop[NMIN];         /* weights */
 } MonsterDef;
 enum { MO_SLIME, MO_BAT, MO_SHROOM, MO_FOX, MO_GOLEM, MO_GAZER, MO_SPAWNLING,
-       MO_BOGMAW, MO_VOLTRA, MO_MILDEW, MO_UMBRELLA, NMON };
+       MO_BOGMAW, MO_VOLTRA, MO_MILDEW, MO_UMBRELLA, MO_TROLL, MO_REVENANT, MO_POLTERGEIST, NMON };
 extern const MonsterDef monsters[NMON];
 
 #define NZONE 4
@@ -300,7 +301,7 @@ void polish_all(u16 bonus);
 /* ---------- world ---------- */
 #define MAP_W 34
 #define MAP_H 26
-enum { MAP_VILLAGE = 0xFF };    /* otherwise a zone id */
+enum { MAP_VILLAGE = 0xFF, MAP_DUNGEON = 0xFE };    /* otherwise a zone id */
 extern u8 map_id;
 extern u8 mw, mh;
 extern u8 map[MAP_H][MAP_W];
@@ -321,7 +322,7 @@ typedef struct { u8 x, y, mineral; u16 respawn; } Node;
 extern Node nodes[MAXNODE];
 extern u8 nnodes;
 
-enum { G_ZONE, G_HOME, G_CLOUD, G_FORGE, G_BOARD };
+enum { G_ZONE, G_HOME, G_CLOUD, G_FORGE, G_BOARD, G_DUNGEON, G_EXIT, G_STAIRS };   /* (G_DUNGEON: zone = its type) */
 #define MAXGATE 12
 typedef struct { u8 x, y, kind, zone; } Gate;
 extern Gate gates[MAXGATE];
@@ -330,7 +331,32 @@ extern u8 ngates;
 typedef struct { u8 x, y, move_t; } Npc;
 extern Npc npcs[NNPC];
 
+/* ---------- dungeons (world.c; the floors themselves: ov_dungeon.c) ----------
+ * Found in the zones; two or three floors down, each with a Warden holding the
+ * key to the stair, and a keeper on the last. Not saved: a save made inside
+ * one restarts in its zone. */
+enum { DG_CAVE, DG_RUINS, DG_HOUSE, NDUNGEON };
+typedef struct {
+    u8 type, zone;         /* which dungeon, found in which zone */
+    u8 tier;               /* the zone's, plus a floor's worth for every floor down */
+    u8 floor, floors;      /* 1.., and how many */
+    u8 has_key;            /* the Warden's fallen: the stair is open */
+    u8 warden;             /* its mob index, 0xFF none */
+    u8 ex, ey;             /* the way out (the floor's entry) */
+} Dungeon;
+extern Dungeon dg;
+u8 combat_tier(void);              /* the difficulty where we stand */
+void build_dungeon(void);          /* ov_dungeon.c: the floor dg.floor of dg.type */
+extern const char *const dungeon_name[NDUNGEON];   /* (resident: the HUD) */
+void add_mob(u8 x, u8 y, u8 type, u8 move_t, u16 respawn);
+void add_node(u8 x, u8 y, u8 m);
+void add_gate(u8 x, u8 y, u8 kind, u8 zone);
 void build_map(u8 id);
+void build_zone(u8 z);             /* ov_lands.c */
+void blank_map(u8 w, u8 h);        /* grass, ringed with trees */
+u8 cheb(u8 x1, u8 y1, u8 x2, u8 y2);
+u8 node_at(u8 x, u8 y);
+u8 gate_at(u8 x, u8 y);
 u8 walkable(u8 x, u8 y);
 void draw_map(void);
 void draw_hud(void);
@@ -371,7 +397,9 @@ void show_tree_whisperer(void);
 enum { OV_TITLE = 1, OV_TALKA, OV_TALKB, OV_CAMP, OV_TREE };   /* OV_TREE + class */
 #define OV_BUILD 8
 #define OV_LEDGER 9
-#define OV_COUNT 9
+#define OV_DUNGEON 10                   /* the dungeon floors' generators */
+#define OV_LANDS 11                     /* the zone generator */
+#define OV_COUNT 11
 void ovl(u8 id);
 void camp_menu(void);
 void show_spellbook(void);

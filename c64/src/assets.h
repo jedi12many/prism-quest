@@ -19,33 +19,34 @@
 #define T_STALLS 10
 #define T_TRAINING 11
 #define T_PLOT 12
-#define T_SIGN 13
-#define T_HOMESIGN 14
-#define T_CLOUDGATE 15
-#define T_BOARD 16
-#define T_FORGE 17
-#define T_NODE 18
-#define T_GLINT 19
-#define T_DUNGEON 20
-#define T_PATH 21
-#define T_M_SLIME 22
-#define T_M_BAT 23
-#define T_M_SHROOM 24
-#define T_M_FOX 25
-#define T_M_GOLEM 26
-#define T_M_GAZER 27
-#define T_M_SPAWNLING 28
-#define T_M_BOGMAW 29
-#define T_M_VOLTRA 30
-#define T_M_MILDEW 31
-#define T_M_UMBRELLA 32
-#define T_N_MAYOR 33
-#define T_N_GRANDMA 34
-#define T_N_FOREMAN 35
-#define T_N_PIP 36
-#define T_N_BAKER 37
-#define T_N_WILLOW 38
-#define T_COUNT 39
+#define T_ROCK 13
+#define T_SIGN 14
+#define T_HOMESIGN 15
+#define T_CLOUDGATE 16
+#define T_BOARD 17
+#define T_FORGE 18
+#define T_NODE 19
+#define T_GLINT 20
+#define T_DUNGEON 21
+#define T_PATH 22
+#define T_M_SLIME 23
+#define T_M_BAT 24
+#define T_M_SHROOM 25
+#define T_M_FOX 26
+#define T_M_GOLEM 27
+#define T_M_GAZER 28
+#define T_M_SPAWNLING 29
+#define T_M_BOGMAW 30
+#define T_M_VOLTRA 31
+#define T_M_MILDEW 32
+#define T_M_UMBRELLA 33
+#define T_N_MAYOR 34
+#define T_N_GRANDMA 35
+#define T_N_FOREMAN 36
+#define T_N_PIP 37
+#define T_N_BAKER 38
+#define T_N_WILLOW 39
+#define T_COUNT 40
 
 #define CH_HEART 90
 #define CH_GEM 91
@@ -54,17 +55,19 @@
 #define CH_STAR 94
 #define CH_POINTER 95
 
-#define CHARSET_BYTES 2016
+#define CHARSET_BYTES 2048
 extern const unsigned char charset[CHARSET_BYTES];
 extern const unsigned char tile_color[T_COUNT][4];
 #define PLAYER_SPRITES 3
-#define BATTLE_SPRITES 11
+#define BATTLE_SPRITES 14
 /* heroes: outline, detail (hi-res), fill (multicolour; $D025/$D026 = hero_mc) */
 extern const unsigned char hero_spr[PLAYER_SPRITES][3][63];
 extern const unsigned char hero_col[PLAYER_SPRITES][3];
 extern const unsigned char hero_mc[PLAYER_SPRITES][2];
 /* battle portraits: hi-res layers, left halves, packed (under the I/O chips): mon_sprites() */
 extern const unsigned char mon_art[];
+#define KEEPER_SPRITE0 11   /* from here on, the art is keeper_art[] (resident) */
+extern const unsigned char keeper_art[];
 extern const unsigned int mon_off[BATTLE_SPRITES];
 extern const unsigned char mon_nl[BATTLE_SPRITES];
 extern const unsigned char mon_col[BATTLE_SPRITES][4];

@@ -26,22 +26,28 @@ static u8 hud_dirty;
 u8 gate_t[MAXGATE];                     /* each gate's tile (see compose) */
 u8 mob_tile[MAXMON];                    /* each monster's */
 static u8 gate_tile(u8 i);
+static void enter_dungeon(u8 type);
 static u8 gate_armed;
 static u16 heal_at;
 
 #define ABSD(a, b) ((a) > (b) ? (a) - (b) : (b) - (a))
-static u8 cheb(u8 x1, u8 y1, u8 x2, u8 y2)
+u8 cheb(u8 x1, u8 y1, u8 x2, u8 y2)
 {
     u8 dx = ABSD(x1, x2), dy = ABSD(y1, y2);
     return dx > dy ? dx : dy;
 }
 
-static u8 in_zone(void) { return map_id != MAP_VILLAGE; }
+Dungeon dg;
+const char *const dungeon_name[NDUNGEON] = { "Gloom Cave", "Sunken Ruins", "Haunted House" };
+static const u8 dungeon_bg[NDUNGEON] = { DKGREY, GREY, BROWN };   /* (the floors' ground) */
+
+static u8 in_zone(void) { return map_id < NZONE; }
+static u8 in_wilds(void) { return map_id != MAP_VILLAGE; }     /* a zone or a dungeon */
 static u8 zone_sunny(void) { return in_zone() && (P.zones_cleared & (1 << map_id)); }
 
 /* ---------- building ---------- */
 
-static void blank_map(u8 w, u8 h)
+void blank_map(u8 w, u8 h)
 {
     u8 x, y, t;
     mw = w; mh = h;
@@ -53,7 +59,7 @@ static void blank_map(u8 w, u8 h)
         }
 }
 
-static void add_gate(u8 x, u8 y, u8 kind, u8 zone)
+void add_gate(u8 x, u8 y, u8 kind, u8 zone)
 {
     Gate *g = &gates[ngates++];
     g->x = x; g->y = y; g->kind = kind; g->zone = zone;
@@ -116,7 +122,6 @@ static u8 camp_plot(u8 x, u8 y)
     return 0xFF;
 }
 
-static u8 clampu(i16 v, i16 lo, i16 hi) { return (u8)(v < lo ? lo : v > hi ? hi : v); }
 
 /* (pointers, not mobs[i].x: cc65 multiplies for every indexed field) */
 static u8 mob_at(u8 x, u8 y)
@@ -128,7 +133,7 @@ static u8 mob_at(u8 x, u8 y)
     return 0xFF;
 }
 
-static u8 node_at(u8 x, u8 y)
+u8 node_at(u8 x, u8 y)
 {
     u8 i;
     const Node *n = nodes;
@@ -137,7 +142,7 @@ static u8 node_at(u8 x, u8 y)
     return 0xFF;
 }
 
-static u8 gate_at(u8 x, u8 y)
+u8 gate_at(u8 x, u8 y)
 {
     u8 i;
     const Gate *g = gates;
@@ -150,152 +155,65 @@ static u8 npc_at(u8 x, u8 y)
 {
     u8 i;
     const Npc *n = npcs;
-    if (in_zone()) return 0xFF;
+    if (in_wilds()) return 0xFF;
     for (i = 0; i < NNPC; ++i, ++n)
         if (n->x == x && n->y == y) return i;
     return 0xFF;
 }
 
-/* a directional zone: a fresh procedural level with a champion at the far end.
- * (Written with small helpers and globals: cc65 turns the obvious version of
- * this into 3 KB of code.) */
-#define ZW 34
-#define ZH 26
-static u8 gx, gy;                       /* candidate tile */
-
-static void fill(u8 x0, u8 y0, u8 x1, u8 y1, u8 t)
-{
-    u8 x;
-    for (; y0 <= y1; ++y0) for (x = x0; x <= x1; ++x) map[y0][x] = t;
-}
-
-/* a random tile at least `m` in from the edges */
-static void spot(u8 m)
-{
-    gx = m + rnd(ZW - 2 * m);
-    gy = m + rnd(ZH - 2 * m);
-}
-
-static u8 is_grass(u8 x, u8 y) { return map[y][x] == T_GRASS || map[y][x] == T_GRASS2; }
-
-static u8 near_node(u8 d)
-{
-    u8 i;
-    for (i = 0; i < nnodes; ++i) if (cheb(nodes[i].x, nodes[i].y, gx, gy) < d) return 1;
-    return 0;
-}
-
-static u8 near_mob(u8 d)
-{
-    u8 i;
-    for (i = 0; i < nmobs; ++i) if (cheb(mobs[i].x, mobs[i].y, gx, gy) < d) return 1;
-    return 0;
-}
-
-static void add_node(u8 x, u8 y, u8 m)
+void add_node(u8 x, u8 y, u8 m)
 {
     Node *n = &nodes[nnodes++];
     n->x = x; n->y = y; n->mineral = m; n->respawn = 0;
 }
 
-static void add_mob(u8 x, u8 y, u8 type, u8 move_t, u16 respawn)
+void add_mob(u8 x, u8 y, u8 type, u8 move_t, u16 respawn)
 {
     Mob *m = &mobs[nmobs++];
     m->x = m->hx = x; m->y = m->hy = y;
     m->type = type; m->alive = 1; m->move_t = move_t; m->respawn = respawn;
 }
 
-static void build_zone(u8 z)
-{
-    const ZoneDef *zd = &zones[z];
-    u8 i, k, n, ex = zd->entry[0], ey = zd->entry[1], lx = zd->lair[0], ly = zd->lair[1];
-    u16 guard;
-    i16 dx, dy, rx2, ry2;
-    u8 *row;
-
-    blank_map(ZW, ZH);
-    /* lakes: 2-3 ellipses */
-    for (n = 2 + rnd(2); n; --n) {
-        spot(6);
-        gy = 5 + rnd(ZH - 10);
-        rx2 = 2 + rnd(3); rx2 *= rx2;
-        ry2 = 2 + rnd(2); ry2 *= ry2;
-        for (i = 2; i < ZH - 2; ++i) {
-            dy = i - gy;
-            row = map[i];
-            for (k = 2; k < ZW - 2; ++k) {
-                dx = k - gx;
-                if (dx * dx * ry2 + dy * dy * rx2 < rx2 * ry2) row[k] = T_WATER;
-            }
-        }
-    }
-    /* forest scatter */
-    for (i = 2; i < ZH - 2; ++i) {
-        row = map[i];
-        for (k = 2; k < ZW - 2; ++k) if (row[k] != T_WATER && chance(9)) row[k] = T_TREE;
-    }
-    /* clearings at the entry and the lair */
-    fill(ex - 2, ey - 2, ex + 2, ey + 2, T_GRASS);
-    fill(lx - 2, ly - 2, lx + 2, ly + 2, T_GRASS);
-    /* carve a wandering path from entry to lair so it's always traversable */
-    gx = ex; gy = ey;
-    for (guard = 0; (gx != lx || gy != ly) && guard < 800; ++guard) {
-        dx = lx > gx ? 1 : lx < gx ? -1 : 0;
-        dy = ly > gy ? 1 : ly < gy ? -1 : 0;
-        if (ABSD(lx, gx) > ABSD(ly, gy)) {
-            gx = clampu(gx + dx, 3, ZW - 4);
-            if (dy && chance(40)) gy = clampu(gy + dy, 3, ZH - 4);
-        } else {
-            gy = clampu(gy + dy, 3, ZH - 4);
-            if (dx && chance(40)) gx = clampu(gx + dx, 3, ZW - 4);
-        }
-        row = map[gy];
-        row[gx] = T_PATH;
-        if (gx + 1 < ZW - 2 && row[gx + 1] != T_WATER) row[gx + 1] = T_GRASS;
-    }
-    /* way-home 2x2 gate at the entry */
-    for (i = 0; i < 4; ++i) add_gate(ex - 1 + (i & 1), ey - 1 + (i >> 1), G_HOME, z);
-
-    /* mineral nodes (themed pool); legendary prismatite by the lair */
-    for (guard = 0; nnodes < 10 && guard < 3000; ++guard) {
-        spot(3);
-        if (is_grass(gx, gy) && cheb(gx, gy, ex, ey) >= 3 && !near_node(2))
-            add_node(gx, gy, zd->minerals[rnd(4)]);
-    }
-    add_node(lx + 1, ly + 1, PRISMATITE);
-    add_node(lx - 1, ly + 1, PRISMATITE);
-
-    /* monsters + the champion (none once the zone is cleared) */
-    if (P.zones_cleared & (1 << z)) return;
-    for (k = 0; k < 4; ++k)
-        for (i = zd->pack_n[k], guard = 0; i && guard < 3000 && nmobs < MAXMON - 1; ++guard) {
-            spot(3);
-            if (walkable(gx, gy) && cheb(gx, gy, ex, ey) >= 5 && cheb(gx, gy, lx, ly) >= 2
-                && !near_mob(3) && node_at(gx, gy) == 0xFF) {
-                add_mob(gx, gy, zd->pack_type[k], 50 + rnd(100), 0);
-                --i;
-            }
-        }
-    add_mob(lx, ly, zd->champion, 0xFF, 0xFFFF);   /* champions hold their ground */
-}
-
 static void set_palette(void)
 {
     u8 bg = GREEN;
     if (in_zone()) bg = zone_sunny() ? zones[map_id].bg_sun : zones[map_id].bg;
+    else if (map_id == MAP_DUNGEON) bg = dungeon_bg[dg.type];
     map_bg = bg;                            /* the frame interrupt sets it under the panel */
     POKE(0xD020, in_zone() && !zone_sunny() ? DKGREY : BLACK);
 }
 
-void build_map(u8 id)
+/* the gates' and monsters' tiles, once a map's built */
+static void map_tables(void)
 {
     u8 i;
+    for (i = 0; i < ngates; ++i) gate_t[i] = gate_tile(i);
+    for (i = 0; i < nmobs; ++i) mob_tile[i] = monsters[mobs[i].type].tile;
+}
+
+/* A zone grows from its seed, so coming back up out of a dungeon can grow
+ * the very same one again (only its living monsters are kept, in zone_*). */
+static u16 zone_seed;
+static void make_map(u8 id)
+{
+    u16 keep;
     map_id = id;
     nmobs = nnodes = ngates = 0;
     if (id == MAP_VILLAGE) build_village();
-    else build_zone(id);
-    for (i = 0; i < ngates; ++i) gate_t[i] = gate_tile(i);
-    for (i = 0; i < nmobs; ++i) mob_tile[i] = monsters[mobs[i].type].tile;
+    else {
+        ovl(OV_LANDS);                  /* (the zone generator) */
+        keep = rnd16();
+        rng_seed(zone_seed);
+        build_zone(id);
+        rng_seed(keep);
+    }
+    map_tables();
+}
+
+void build_map(u8 id)
+{
+    zone_seed = rnd16();
+    make_map(id);
 }
 
 u8 walkable(u8 x, u8 y)
@@ -370,7 +288,9 @@ static u8 gate_tile(u8 i)
     case G_HOME:  return (i & 3) == 0 ? T_HOMESIGN : T_PATH;
     case G_CLOUD: return T_CLOUDGATE;
     case G_FORGE: return T_FORGE;
-    default:      return T_BOARD;
+    case G_BOARD: return T_BOARD;
+    case G_EXIT:  return T_HOMESIGN;
+    default:      return T_DUNGEON;     /* a dungeon's mouth, or a stair down */
     }
 }
 
@@ -639,6 +559,10 @@ void draw_hud(void)
     sb_reset(); sb_num(P.xp); sb_str("/"); sb_num(xp_next[P.level]); sb_str("xp");
     put_str(14, 0, sb, CYAN);
     if (in_zone()) put_str(40 - strlen(zones[map_id].name), 0, zones[map_id].name, zone_sunny() ? YELLOW : PURPLE);
+    else if (map_id == MAP_DUNGEON) {
+        sb_reset(); sb_str(dungeon_name[dg.type]); sb_str(" F"); sb_num(dg.floor);
+        put_str(40 - strlen(sb), 0, sb, PURPLE);
+    }
     else put_str(29, 0, "Drizzlewick", YELLOW);
 }
 
@@ -654,10 +578,8 @@ static void redraw_all(void)
     split_on();
     draw_map();
     place_player_sprite();
-    if (in_zone() && !zone_sunny()) {
-        storm_start(zones[map_id].tier);
-        music(TUNE_WILDS);
-    } else music(TUNE_VILLAGE);
+    if (in_zone() && !zone_sunny()) storm_start(zones[map_id].tier);
+    music(map_id == MAP_DUNGEON || (in_zone() && !zone_sunny()) ? TUNE_WILDS : TUNE_VILLAGE);
 }
 
 /* ---------- actions ---------- */
@@ -681,6 +603,78 @@ static void travel(u8 id, u8 x, u8 y)
     } else {
         msg("Drizzlewick: always sunny, always safe. Rest here to heal.");
     }
+#ifdef TEST_DUNGEON                     /* (tests: straight down the zone's first dungeon, as type n) */
+    for (id = 0; id < ngates; ++id)
+        if (gates[id].kind == G_DUNGEON) { gates[id].zone = TEST_DUNGEON; enter_dungeon(TEST_DUNGEON); break; }
+#endif
+}
+
+/* ---------- dungeons ---------- */
+
+static u8 zone_x, zone_y;               /* where the hero went down */
+static u8 zone_alive[MAXMON];           /* the zone's monsters and nodes as they were */
+static u16 zone_resp[MAXMON], zone_node[MAXNODE];
+
+u8 combat_tier(void)
+{
+    if (map_id == MAP_DUNGEON) return dg.tier + 1;     /* deadlier than its zone */
+    return in_zone() ? zones[map_id].tier : 1;
+}
+
+/* build floor dg.floor and put the hero on its way out */
+static void dungeon_floor(void)
+{
+    sfx(SFX_GATE);
+    POKE(0xD015, 0);
+    cls();
+    sb_reset(); sb_str(dungeon_name[dg.type]); sb_str(", floor "); sb_num(dg.floor); sb_str("...");
+    put_center(12, sb, GREY);
+    ovl(OV_DUNGEON);
+    map_id = MAP_DUNGEON;
+    nmobs = nnodes = ngates = 0;
+    dg.has_key = 0;
+    dg.warden = 0xFF;
+    build_dungeon();
+    map_tables();
+    P.x = dg.ex; P.y = dg.ey;
+    gate_armed = 0;                     /* (standing on the way out) */
+    redraw_all();
+}
+
+static void enter_dungeon(u8 type)
+{
+    u8 i;
+    zone_x = P.x; zone_y = P.y;
+    for (i = 0; i < nmobs; ++i) { zone_alive[i] = mobs[i].alive; zone_resp[i] = mobs[i].respawn; }
+    for (i = 0; i < nnodes; ++i) zone_node[i] = nodes[i].respawn;
+    dg.type = type;
+    dg.zone = map_id;
+    dg.tier = zones[map_id].tier;
+    dg.floor = 1;
+    dg.floors = 2 + chance(50);
+#ifdef TEST_KEEPER
+    dg.floors = 1;                      /* (tests: the keeper's floor first) */
+#endif
+    dungeon_floor();
+    sb_reset(); sb_str("You enter the "); sb_str(dungeon_name[type]); sb_str(" - ");
+    sb_num(dg.floors); sb_str(" floors deep. Deadly, but rich.");
+    msg(sb);
+}
+
+static void leave_dungeon(void)
+{
+    u8 i;
+    sfx(SFX_GATE);
+    POKE(0xD015, 0);
+    cls();
+    put_center(12, "Back up into the open...", GREY);
+    make_map(dg.zone);                  /* the same zone again, from its seed */
+    for (i = 0; i < nmobs; ++i) { mobs[i].alive = zone_alive[i]; mobs[i].respawn = zone_resp[i]; }
+    for (i = 0; i < nnodes; ++i) nodes[i].respawn = zone_node[i];
+    P.x = zone_x; P.y = zone_y;
+    gate_armed = 0;                     /* (standing on the entrance) */
+    redraw_all();
+    msg("You climb back out into the open.");
 }
 
 static void on_gate(u8 gi)
@@ -700,9 +694,22 @@ static void on_gate(u8 gi)
     case G_FORGE:
         say("The Glassworks Kiln", "The kiln has been cold for a hundred years. Prism Facets can be fused here - in a later version of this port.");
         break;
-    default:
+    case G_BOARD:
         open_ledger();
         redraw_all();
+        break;
+    case G_DUNGEON:
+        enter_dungeon(g->zone);
+        break;
+    case G_EXIT:
+        leave_dungeon();
+        break;
+    default:                            /* G_STAIRS */
+        if (!dg.has_key) { msg("The way down is locked. Defeat the Warden to claim its key."); break; }
+        ++dg.floor; ++dg.tier;
+        dungeon_floor();
+        sb_reset(); sb_str("You descend to floor "); sb_num(dg.floor); sb_str(". The gloom thickens...");
+        msg(sb);
         break;
     }
 }
@@ -746,7 +753,7 @@ static void zone_cleared(void)
 /* fight the mob at index mi; returns 1 if the hero died */
 static u8 fight(u8 mi, u8 ambush)
 {
-    u8 r, i;
+    u8 r, i, k;
     static const i8 hop[4][2] = { { 0, 1 }, { 0, -1 }, { 1, 0 }, { -1, 0 } };
 #ifdef BENCH
     return 0;                           /* (scroller tests: just keep walking) */
@@ -763,7 +770,12 @@ static u8 fight(u8 mi, u8 ambush)
     }
     redraw_all();
     if (r == 1) {
-        if (monsters[mobs[mi].type].flags & MF_BOSS) zone_cleared();
+        k = monsters[mobs[mi].type].flags;
+        if (map_id == MAP_DUNGEON) {
+            if (mi == dg.warden) { dg.has_key = 1; msg("The Warden drops a heavy key - the stair is open!"); }
+            else if (k & MF_KEEPER) msg("The keeper falls, and its hoard is yours. The way out is behind you.");
+        }
+        else if (k & MF_BOSS) zone_cleared();
         else if (map_id == Z_SOUTH && P.pip_stage == 1 && P.pip_n < 5) {
             if (++P.pip_n == 5) msg("That should scare the swamp quiet - tell Pip!");
         }
@@ -876,7 +888,7 @@ static void arrive(u8 x, u8 y)
     u8 k;
     if ((k = gate_at(x, y)) == 0xFF) gate_armed = 1;
 #ifdef BENCH                            /* (scroller tests: just keep walking) */
-    else if (gate_armed && gates[k].kind <= G_HOME) { on_gate(k); return; }
+    else if (gate_armed && (gates[k].kind <= G_HOME || gates[k].kind >= G_DUNGEON)) { on_gate(k); return; }
 #else
     else if (gate_armed) { on_gate(k); return; }
 #endif
@@ -982,9 +994,9 @@ void world_loop(void)
 #endif
         scroll_build();                 /* the next crossing's back screen comes first */
 
-        if (in_zone()) {
+        if (in_wilds()) {
             if (update_mobs()) return;
-            if (!zone_sunny()) storm_tick(zones[map_id].tier, zones[map_id].bg);
+            if (in_zone() && !zone_sunny()) storm_tick(zones[map_id].tier, zones[map_id].bg);
         }
         else {
             update_npcs();

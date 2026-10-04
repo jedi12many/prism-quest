@@ -424,10 +424,14 @@ u8 battle(u8 mi, u8 ambush)
     u8 i, act, sp;
     mob = &mobs[mi];
     md = &monsters[mob->type];
-    tier = map_id == MAP_VILLAGE ? 1 : zones[map_id].tier;
+    tier = combat_tier();
     mhpmax = mhp = (md->hp * (10 + 4 * (tier - 1)) + 5) / 10;
     atk_scale = 100 + 22 * (tier - 1);
     mdef = md->def;
+    if (map_id == MAP_DUNGEON && mi == dg.warden) {   /* the Warden: armored, and tougher */
+        mhpmax = mhp += mhp >> 1;
+        mdef += 2;
+    }
     m_burn_t = m_pois_t = m_weak_t = 0;
     p_shield_t = p_pois_t = p_dread_t = 0;
     uni_t = 0;
@@ -453,7 +457,9 @@ u8 battle(u8 mi, u8 ambush)
     if (md->flags & MF_BOSS) { sb_str(md->name); sb_str(" bars your way!"); }
     else { sb_str("A wild "); sb_str(md->name); sb_str(" appears!"); }
     blog(sb, WHITE);
-    if (md->flags & MF_BOSS) blog("A champion of the gloom! Defeat it and the light returns to this land!", YELLOW);
+    if (md->flags & MF_KEEPER) blog("The keeper of this place stirs - deadly, but its hoard is legendary!", YELLOW);
+    else if (md->flags & MF_BOSS) blog("A champion of the gloom! Defeat it and the light returns to this land!", YELLOW);
+    else if (map_id == MAP_DUNGEON && mi == dg.warden) blog("The Warden! It carries the key to the stair.", YELLOW);
     if (ambush && !eff(E_FLEESURE)) { blog("Ambush! It strikes first!", RED); monster_hit(); }
 
     while (!over) {

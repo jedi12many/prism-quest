@@ -273,6 +273,9 @@ spriteTile('STALLS', 'bld_stalls', { bgOk: true });
 spriteTile('TRAINING', 'bld_training', { bgOk: true });
 artTile('PLOT', ['', '', '.o....o', '.bccccb', '.b....b', '.b.oo.b', '.b.oob.b', '.b..b.b', '.b..b.b', '.bccccb', '.b....b',
   '', '', '', '', ''], 7);
+// cave rock, for the Gloom Cave's walls
+artTile('ROCK', ['oobbbbbo', 'obcbbbbb', 'bbbbbobb', 'bbbbobbb', 'obbbbbbo', 'oobbbboo', 'bbobbbcb', 'bbbobbbb',
+  'bbbbobbb', 'obbbbbbb', 'bcbbbboo', 'bbbbbobb', 'bbboobbb', 'bbbbbbbc', 'obbbbbbb', 'oobbbbbo'], 1);
 // a signpost pointing out of the village / back home
 artTile('SIGN', ['', '', '.oooooo', '.occccco', '.occccco', '.oooooo', '...bb', '...bb', '...bb', '...bb', '...bb',
   '...bb', '..bbbb', '', '', ''], 7);
@@ -379,6 +382,8 @@ h += 'extern const unsigned char hero_col[PLAYER_SPRITES][3];\n';
 h += 'extern const unsigned char hero_mc[PLAYER_SPRITES][2];\n';
 h += '/* battle portraits: hi-res layers, left halves, packed (under the I/O chips): mon_sprites() */\n';
 h += 'extern const unsigned char mon_art[];\n';
+h += `#define KEEPER_SPRITE0 ${MONSTERS.findIndex(m => m.keeper)}   /* from here on, the art is keeper_art[] (resident) */\n`;
+h += 'extern const unsigned char keeper_art[];\n';
 h += 'extern const unsigned int mon_off[BATTLE_SPRITES];\n';
 h += 'extern const unsigned char mon_nl[BATTLE_SPRITES];\n';
 h += 'extern const unsigned char mon_col[BATTLE_SPRITES][4];\n';
@@ -394,13 +399,20 @@ c += '#pragma rodata-name(pop)\n\n';
 c += 'const unsigned char tile_color[T_COUNT][4] = {\n' +
   tiles.map(t => `  { ${t.colors.join(', ')} }, /* ${t.name} */`).join('\n') + '\n};\n\n';
 const mons = MONSTERS.map(monsterLayers);
-const blob = [], offs = [];
-mons.forEach(m => { offs.push(blob.length); m.layers.forEach(d => blob.push(...pack(d))); });
+// the dungeon keepers' art (keeper: true) stays resident: no room under I/O
+const blob = [], kblob = [], offs = [];
+const KEEPER0 = MONSTERS.findIndex(m => m.keeper);
+mons.forEach((m, i) => {
+  const b = MONSTERS[i].keeper ? kblob : blob;
+  if (!!MONSTERS[i].keeper !== i >= KEEPER0) throw new Error('the keepers must come last in monsters.js');
+  offs.push(b.length); m.layers.forEach(d => b.push(...pack(d)));
+});
 const ART_MAX = 0x580 - 0x100;          // (PQ.HI's art area, less the music's share)
 if (blob.length > ART_MAX) throw new Error(`monster art: ${blob.length} bytes, room for ${ART_MAX}`);
 c += '#pragma rodata-name(push, "HISPR")\n';
 c += `const unsigned char mon_art[${blob.length}] = {\n` + hexBytes(blob) + '\n};\n';
 c += '#pragma rodata-name(pop)\n\n';
+c += `const unsigned char keeper_art[${kblob.length}] = {\n` + hexBytes(kblob) + '\n};\n\n';
 c += `const unsigned int mon_off[BATTLE_SPRITES] = { ${offs.join(', ')} };\n`;
 c += `const unsigned char mon_nl[BATTLE_SPRITES] = { ${mons.map(m => m.layers.length).join(', ')} };\n`;
 c += 'const unsigned char mon_col[BATTLE_SPRITES][4] = {\n' + mons.map((m, i) =>

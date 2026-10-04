@@ -40,6 +40,10 @@ const MonsterDef monsters[NMON] = {
     { "Voltra the Storm Serpent", 55, 11, 2, 70, MF_BOSS,            35, 0, T_M_VOLTRA,    8, { 0, 0, 2, 0, 0, 0, 1 } },
     { "Mildew Prime",           65, 10, 3, 80, MF_BOSS,               0, 2, T_M_MILDEW,    9, { 0, 0, 0, 0, 2, 0, 1 } },
     { "The Umbrella King",      60, 10, 4, 75, MF_BOSS | MF_DREAD,    0, 0, T_M_UMBRELLA, 10, { 0, 0, 0, 0, 0, 2, 1 } },
+    /* the dungeon keepers (their map tiles borrow a look-alike's) */
+    { "Gloomtroll",             85, 13, 3, 110, MF_BOSS | MF_KEEPER,  0, 3, T_M_BOGMAW,   11, { 0, 0, 0, 0, 2, 0, 1 } },
+    { "Stone Revenant",        100, 12, 5, 120, MF_BOSS | MF_KEEPER, 30, 0, T_M_GOLEM,    12, { 0, 0, 0, 2, 0, 0, 1 } },
+    { "Poltergeist",            78, 14, 2, 118, MF_BOSS | MF_KEEPER | MF_DREAD, 40, 0, T_M_GAZER, 13, { 0, 0, 0, 0, 0, 2, 1 } },
 };
 
 const ZoneDef zones[NZONE] = {
