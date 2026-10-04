@@ -133,8 +133,8 @@ extern u8 sc_front;                      /* 0: map on $E000, 1: on $C000 */
 extern u8 edge[40];
 
 /* ---------- sprites ---------- */
-void spr_load(u8 slot, const u8 *data);
 void hero_sprites(u8 cls);
+u8 mon_sprites(u8 m);
 void spr_pos(u8 n, u16 x, u8 y);
 void spr_hide_all(void);
 

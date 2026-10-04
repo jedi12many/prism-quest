@@ -331,17 +331,6 @@ void sound_tick(void)
 }
 
 /* ---------- sprites ---------- */
-/* sprite art is stored as 16x16 (2 bytes a row) under the I/O chips at
- * $D800; bank I/O out to read it, and pad it to the 24x21 slot */
-void spr_load(u8 slot, const u8 *data)
-{
-    u8 *p = SPR_SLOT(slot);
-    u8 y;
-    POKE(0x01, 0x34);
-    for (y = 0; y < 16; ++y) { p[0] = data[0]; p[1] = data[1]; p[2] = 0; p += 3; data += 2; }
-    memset(p, 0, 15);
-    POKE(0x01, 0x35);
-}
 
 /* the hero in sprites 0-2: outline and detail (hi-res) over the multicolour
  * fill -- 24x21, drawn for the C64 (tools/heroes.js) */
@@ -356,6 +345,45 @@ void hero_sprites(u8 cls)
     POKE(0xD025, hero_mc[cls][0]);
     POKE(0xD026, hero_mc[cls][1]);
     POKE(0xD01C, (PEEK(0xD01C) & 0xF8) | 0x04);
+}
+
+/* a battle portrait in sprites 3-6: hi-res layers, drawn for the C64
+ * (tools/monsters.js). They're packed under the I/O chips as left halves (2
+ * bytes a row, 6 bytes of mask first: which bytes aren't 0); this unpacks and
+ * mirrors them into the map's second screen at $C000, idle during a battle.
+ * Returns how many layers. */
+#define MON_SLOT(n) ((u8 *)(0xC000 + (n) * 64))   /* sprite pointer n in bank 3 */
+static u8 rev8(u8 b)
+{
+    u8 r = 0, i;
+    for (i = 0; i < 8; ++i) { r = (r << 1) | (b & 1); b >>= 1; }
+    return r;
+}
+
+u8 mon_sprites(u8 m)
+{
+    static u8 half[42];
+    static const u8 bit[8] = { 0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01 };
+    const u8 *src = mon_art + mon_off[m];
+    u8 n = mon_nl[m], l, i, k, b0, b1;
+    u8 *d;
+    for (l = 0; l < n; ++l) {
+        POKE(0x01, 0x34);                   /* (the art is under I/O) */
+        for (i = 0, k = 6; i < 42; ++i) half[i] = (src[i >> 3] & bit[i & 7]) ? src[k++] : 0;
+        POKE(0x01, 0x35);
+        src += k;
+        d = MON_SLOT(l);
+        for (i = 0; i < 42; i += 2) {
+            b0 = half[i]; b1 = half[i + 1];
+            d[0] = b0;
+            d[1] = (b1 & 0xF0) | (rev8(b1) & 0x0F);
+            d[2] = rev8(b0);
+            d += 3;
+        }
+        SPR_PTR[3 + l] = l;
+        POKE(0xD027 + 3 + l, mon_col[m][l]);
+    }
+    return n;
 }
 
 void spr_pos(u8 n, u16 x, u8 y)

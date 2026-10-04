@@ -58,7 +58,10 @@ extern const unsigned char tile_color[T_COUNT][4];
 extern const unsigned char hero_spr[PLAYER_SPRITES][3][63];
 extern const unsigned char hero_col[PLAYER_SPRITES][3];
 extern const unsigned char hero_mc[PLAYER_SPRITES][2];
-extern const unsigned char battle_spr[BATTLE_SPRITES][3][32];
-extern const unsigned char battle_spr_col[BATTLE_SPRITES][3];
+/* battle portraits: hi-res layers, left halves, packed (under the I/O chips): mon_sprites() */
+extern const unsigned char mon_art[];
+extern const unsigned int mon_off[BATTLE_SPRITES];
+extern const unsigned char mon_nl[BATTLE_SPRITES];
+extern const unsigned char mon_col[BATTLE_SPRITES][4];
 
 #endif

@@ -59,13 +59,19 @@ A work-in-progress port of the browser game to a stock Commodore 64 (64 KB,
   zone.
 - **Rogue-like death:** when your hero falls, the run ends, the save on disk is
   scratched with them, and you start a new hero.
-- **Art:** map tiles and battle portraits are converted automatically from
-  `js/sprites.js`. Tiles become multicolour characters; portraits become
-  stacked hi-res hardware sprites. The heroes are drawn for the C64 at full
-  sprite size, 24×21 (`tools/heroes.js`): a hi-res black outline and a hi-res
-  detail colour over a multicolour fill, five colours in three stacked
-  sprites. They are doubled on the title screen and in battle. The 8×8 font is
-  hand-drawn, so no Commodore ROM data is used.
+- **Art:** map tiles are converted automatically from `js/sprites.js` into
+  multicolour characters. The heroes and the battle portraits are drawn for
+  the C64 at full sprite size, 24×21, and doubled on the title screen and in
+  battle:
+  - **Heroes** (`tools/heroes.js`): a hi-res black outline and a hi-res detail
+    colour over a multicolour fill, five colours in three stacked sprites.
+  - **Monsters** (`tools/monsters.js`): an outline and up to three colours, one
+    hi-res sprite each (sprites 3–6). They can't use multicolour, because the
+    hero's fill owns the shared sprite colours. They're stored as mirrored left
+    halves, packed (885 bytes for all eleven), and unpacked into the map's idle
+    second screen when a battle starts.
+
+  The 8×8 font is hand-drawn, so no Commodore ROM data is used.
 - **The storm:** in gloomy lands it rains, using a raster-interrupt sprite
   multiplexer (`rainirq.s`). Five double-wide hardware sprites are reused seven
   times down the map, giving about 245 animated raindrops from 35 sprite
@@ -243,6 +249,8 @@ make shot SCRIPT=test/home.h   CYCLES=50000000                          # out a 
 - **`-DBENCH`:** walking never stops. Fights, conversations and dialogue gates
   are skipped. The HUD shows screen swaps (cyan) and frames the picture held
   for want of a back screen (red).
+- **`-DGALLERY=n`:** skips the game and shows monster n's battle portrait
+  next to the hero (with `test/idle.h`).
 - **`-DCHECK`:** after each swap, renders the whole view from scratch into the
   idle back screen and compares it with the screen on show. It prints checks
   (cyan) and mismatches (red), which should be 0.
@@ -269,7 +277,7 @@ make shot SCRIPT=test/home.h   CYCLES=50000000                          # out a 
 | `src/rain.c` | rain frames, lightning, thunder, the sun breaking through |
 | `src/input.s` | the keyboard matrix, read in one go |
 | `src/data.c` | classes, monsters, zones, spells, minerals (numbers from `js/data.js`) |
-| `src/assets.c` | **generated** by `tools/gen_assets.js` from `js/sprites.js` and `tools/heroes.js` (the heroes' C64 art) |
+| `src/assets.c` | **generated** by `tools/gen_assets.js` from `js/sprites.js`, `tools/heroes.js` and `tools/monsters.js` (the C64 art for the heroes and battle portraits) |
 | `src/tree.c`, `tree_text.h` | **generated** by `tools/gen_data.js` from `js/data.js`: Power Tree effects and class perks (resident); skill names and descriptions (overlays) |
 
 ### Memory map
@@ -284,7 +292,7 @@ The C64 has 64 KB, and the game uses nearly all of it. See `prismquest.cfg`.
 | `$C000–$C3FF` | the map's second screen (the scroller double-buffers) |
 | `$C400–$CFEF` | the overlay window: PQ.OV1–7 load here on demand |
 | `$D000–$D7FF` | character set, in the RAM under the I/O chips (only the VIC reads it) |
-| `$D800–$DD3F` | sprite art, also under the I/O chips (copied into sprite slots with I/O off) |
+| `$D800–$DD3F` | the battle portraits, packed, also under the I/O chips (then the rain's frames from `$DD40`) |
 | `$E000` | screen (the status panel always comes from here) |
 | `$E400` | sprite slots |
 | `$E580–$F67F` | the loot engine, loaded from PQ.HI |

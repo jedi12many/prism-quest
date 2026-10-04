@@ -855,6 +855,19 @@ void world_loop(void)
     u8 last_sec = 0, k;
     i8 dx, dy;
 
+#ifdef GALLERY
+    {   /* test builds: a battle portrait (-DGALLERY=n) next to the hero */
+        u8 i;
+        cls();
+        hero_sprites(P.cls);
+        mon_sprites(GALLERY);
+        for (i = 0; i < 7; ++i) spr_pos(i, i < 3 ? 56 : 224, 68);
+        POKE(0xD017, 0x7F); POKE(0xD01D, 0x7F); POKE(0xD01C, 0x04);
+        POKE(0xD015, 0x7F);
+        put_str(1, 0, monsters[GALLERY].name, WHITE);
+        for (;;) wait_frame();
+    }
+#endif
     build_map(P.map);
     if (!walkable(P.x, P.y) && gate_at(P.x, P.y) == 0xFF) {
         /* a freshly generated zone may have a tree where you stood: go to its gate */

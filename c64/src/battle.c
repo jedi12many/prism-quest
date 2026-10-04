@@ -73,15 +73,20 @@ static void draw_status(void)
     memcpy(sb, sb_keep, sizeof(sb));
 }
 
+/* the foe's portrait: sprites 3-6, as many as it has layers */
+static u8 foe_spr;
+static const u8 foe_mask[5] = { 0x00, 0x08, 0x18, 0x38, 0x78 };
+
+/* shake the hero (first = 0: sprites 0-2) or the foe (3: sprites 3-6) */
 static void shake(u8 first)
 {
-    u8 i, k;
+    u8 i, k, last = first ? 7 : 3;
     u8 x0 = PEEK(0xD000 + first * 2);
     for (k = 0; k < 6; ++k) {
-        for (i = first; i < first + 3; ++i) POKE(0xD000 + i * 2, x0 + ((k & 1) ? 3 : -3));
+        for (i = first; i < last; ++i) POKE(0xD000 + i * 2, x0 + ((k & 1) ? 3 : -3));
         wait_frame();
     }
-    for (i = first; i < first + 3; ++i) POKE(0xD000 + i * 2, x0);
+    for (i = first; i < last; ++i) POKE(0xD000 + i * 2, x0);
 }
 
 static void flash(u8 col)
@@ -347,7 +352,7 @@ static void defeat(void)
 {
     over = 1; result = 2;
     sfx(SFX_DEATH);
-    POKE(0xD015, 0x38);                         /* the hero falls */
+    POKE(0xD015, foe_spr);                      /* the hero falls */
     sb_reset(); sb_str(classes[P.cls].name); sb_str(" has fallen. The gloom claims another hero...");
     blog(sb, RED);
 }
@@ -435,15 +440,12 @@ u8 battle(u8 mi, u8 ambush)
     POKE(0xD020, BLACK);
     put_str(1, 0, md->name, (md->flags & MF_BOSS) ? YELLOW : WHITE);
     hero_sprites(P.cls);
-    for (i = 0; i < 3; ++i) {
-        spr_load(3 + i, battle_spr[md->sprite][i]);
-        SPR_PTR[3 + i] = SPR_BASE + 3 + i;
-        POKE(0xD027 + 3 + i, battle_spr_col[md->sprite][i]);
-        spr_pos(i, 56, 68);             /* (the hero doubled: 48x42, feet level with the foe's) */
-        spr_pos(3 + i, 236, 78);
-    }
-    POKE(0xD017, 0x3F); POKE(0xD01D, 0x3F);
-    POKE(0xD015, 0x3F);
+    foe_spr = foe_mask[mon_sprites(md->sprite)];
+    for (i = 0; i < 7; ++i)             /* both doubled: 48x42, feet level */
+        spr_pos(i, i < 3 ? 56 : 224, 68);
+    POKE(0xD017, 0x7F); POKE(0xD01D, 0x7F);
+    POKE(0xD01C, 0x04);                 /* (the hero's fill is multicolour) */
+    POKE(0xD015, 0x07 | foe_spr);
     draw_status();
     log_reset(LOG_Y, LOG_ROWS);
     sb_reset();
