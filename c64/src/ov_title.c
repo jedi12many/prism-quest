@@ -79,6 +79,11 @@ u8 title_screen(void)
     show_class(c);
     put_center(24, "Joystick 2 or W/S + fire/space", BLUE);
     rain_on(0xF8);                          /* "...beneath one endless storm" */
+#ifdef JUKEBOX
+    music(JUKEBOX);                         /* (tests: hear any tune) */
+#else
+    music(TUNE_TITLE);
+#endif
     for (;;) {
         wait_frame(); input_poll();
         if (in_new & IN_UP) { c = c ? c - 1 : NCLASS; show_class(c); }
@@ -103,6 +108,7 @@ u8 title_screen(void)
 void game_over(void)
 {
     POKE(0xD015, 0);
+    music(TUNE_NONE);
     erase_save();                       /* one life: the save falls with the hero */
     cls();
     POKE(0xD020, BLACK); POKE(0xD021, BLACK);

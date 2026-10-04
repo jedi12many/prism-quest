@@ -110,6 +110,11 @@ enum { SFX_MINE, SFX_BONK, SFX_CRIT, SFX_HURT, SFX_SPELL, SFX_WIN, SFX_LEVEL, SF
 void sfx(u8 id);
 void sound_tick(void);
 void thunder(void);                      /* SID voice 3: noise through a falling low-pass */
+/* music: SID voices 1-2, played by the frame interrupt (music.s, tools/music.js) */
+enum { TUNE_TITLE, TUNE_VILLAGE, TUNE_WILDS, TUNE_BATTLE, TUNE_NONE = 0xFF };
+void music(u8 tune);                     /* (carries on if it's already playing) */
+void __fastcall__ music_play(u8 tune);
+void music_stop(void);
 
 /* ---------- the frame interrupt and the storm (rainirq.s, rain.c) ---------- */
 void rain_init(void);
@@ -121,7 +126,7 @@ void rain_irq(void);
 void kirq(void);
 extern u8 rain_mask;
 extern u8 sc_d011, sc_d016, sc_d018, map_bg;   /* the map's registers */
-extern u8 split_mode;                    /* 1 while the world's split screen is up */
+extern u8 split_mode;                    /* 1 while the world's split screen is up (2: quiet) */
 void storm_start(u8 tier);
 void storm_tick(u8 tier, u8 bg);
 void storm_clears(void);

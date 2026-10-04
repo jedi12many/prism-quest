@@ -387,7 +387,7 @@ c += 'const unsigned char tile_color[T_COUNT][4] = {\n' +
 const mons = MONSTERS.map(monsterLayers);
 const blob = [], offs = [];
 mons.forEach(m => { offs.push(blob.length); m.layers.forEach(d => blob.push(...pack(d))); });
-const ART_MAX = 0xDD40 - 0xD800;        // up to the rain's frames
+const ART_MAX = 0x580 - 0x100;          // (PQ.HI's art area, less the music's share)
 if (blob.length > ART_MAX) throw new Error(`monster art: ${blob.length} bytes, room for ${ART_MAX}`);
 c += '#pragma rodata-name(push, "HISPR")\n';
 c += `const unsigned char mon_art[${blob.length}] = {\n` + hexBytes(blob) + '\n};\n';

@@ -84,10 +84,14 @@ A work-in-progress port of the browser game to a stock Commodore 64 (64 KB,
 - **Smooth scrolling:** the map glides 2 pixels a frame at a steady 50 fps,
   under a fixed status panel (HUD and messages) at the top. See *Smooth
   scrolling* below.
-- **Sound:** short SID sound effects, plus the thunder.
+- **Music:** four two-voice SID tunes: the title ("Rainyday", A minor),
+  Drizzlewick (a bright C major), the gloomy lands (D minor, slow) and
+  battle (E minor, fast). The melody is a pulse wave whose width sweeps; the
+  bass is a triangle or a sawtooth. See *Music* below.
+- **Sound:** short SID sound effects and the thunder, on the third voice.
 
 **Not ported yet:** camp building, dungeons, Prism Facets, pacts, elites, the Rainycastle and the
-realm, and music.
+realm.
 
 ## Controls
 
@@ -201,6 +205,31 @@ Disk access can't keep the split steady: the KERNAL holds interrupts off while
 it waits on the drive. So the screen is blanked during loads in the world, and
 the interrupt doesn't touch the scroll registers meanwhile.
 
+## Music
+
+`tools/music.js` holds the tunes as text: patterns of notes (`"E5/4"` is E in
+octave 5 for 4 steps) and, per voice, an order of patterns with transposes.
+`tools/gen_music.js` packs them into `src/musicdata.s` (about 450 bytes):
+
+- a note is one byte: its length (1, 2, 4 or 8 steps) in the top two bits, the
+  pitch (A1 up, or a rest or a hold) in the rest;
+- the frequency table holds only the top octave, and lower notes halve it.
+
+`src/music.s` plays voices 1 and 2, ticked once a frame by the frame
+interrupt in every mode, so the tempo holds steady whatever the game is
+doing. When the rain is off, a "quiet" mode keeps one interrupt a frame for
+it. The sound effects and the thunder share voice 3 (an effect cuts the
+thunder short). Which tune plays: the title on the title screen, Drizzlewick
+in the village and in sunny lands, the gloomy tune where it rains, battle in
+a fight, and silence on game over.
+
+The tunes live under the I/O chips with the battle portraits, so the player
+banks I/O out to read them and back in to play them. The once-a-frame part of
+the player sits at the top of the overlay window; `music_play` runs from the
+tape buffer. During disk calls the music pauses and the volume drops to 0:
+the KERNAL holds interrupts off while it waits on the drive, which would make
+the tune stumble.
+
 ## Headless testing
 
 The game loads files from disk as it goes, so tests need a real KERNAL and a
@@ -251,6 +280,12 @@ make shot SCRIPT=test/home.h   CYCLES=50000000                          # out a 
   for want of a back screen (red).
 - **`-DGALLERY=n`:** skips the game and shows monster n's battle portrait
   next to the hero (with `test/idle.h`).
+- **`-DNOMUSIC`:** no tunes, to measure what the player costs the scroller.
+  In the storm (`test/zone.h`) it adds about 13 held frames per 234 swaps; in
+  the village none.
+- **`-DJUKEBOX=n`:** the title screen plays tune n (0 title, 1 village,
+  2 gloom, 3 battle). Record it with VICE's `-sound -sounddev wav -soundarg
+  out.wav -limitcycles 50000000`; the tune starts about 15 s in.
 - **`-DCHECK`:** after each swap, renders the whole view from scratch into the
   idle back screen and compares it with the screen on show. It prints checks
   (cyan) and mismatches (red), which should be 0.
@@ -275,6 +310,8 @@ make shot SCRIPT=test/home.h   CYCLES=50000000                          # out a 
 | `src/rainirq.s` | the frame interrupt: the rain multiplexer, the world's split screen, the camera queue |
 | `src/scroll.s` | the scroller's shifts (screen copy, colour RAM), and `compose()` and the cell loop of the map renderer |
 | `src/rain.c` | rain frames, lightning, thunder, the sun breaking through |
+| `src/music.s` | the music player (two SID voices, ticked by the frame interrupt) |
+| `src/musicdata.s` | **generated** by `tools/gen_music.js` from `tools/music.js`: the tunes |
 | `src/input.s` | the keyboard matrix, read in one go |
 | `src/data.c` | classes, monsters, zones, spells, minerals (numbers from `js/data.js`) |
 | `src/assets.c` | **generated** by `tools/gen_assets.js` from `js/sprites.js`, `tools/heroes.js` and `tools/monsters.js` (the C64 art for the heroes and battle portraits) |
@@ -286,30 +323,43 @@ The C64 has 64 KB, and the game uses nearly all of it. See `prismquest.cfg`.
 
 | Address | Contents |
 |---|---|
+| `$0334–$03FB` | the music player's start and stop (the tape buffer: no tape here) |
 | `$0400–$05EF` | scratch: the save buffer, shared with the map-view buffers |
 | `$05F0–$07FF` | monster, node, gate and villager tables (the KERNAL's old text screen) |
 | `$0801–$BFEF` | the resident program: code, read-only data, initialised data (about 44 KB), then `world.c`'s variables (WBSS, zeroed by `main()`) |
 | `$C000–$C3FF` | the map's second screen (the scroller double-buffers) |
-| `$C400–$CFEF` | the overlay window: PQ.OV1–7 load here on demand |
+| `$C400–$CE9F` | the overlay window: PQ.OV1–7 load here on demand |
+| `$CEA0–$CFFF` | the music player's once-a-frame code |
 | `$D000–$D7FF` | character set, in the RAM under the I/O chips (only the VIC reads it) |
-| `$D800–$DD3F` | the battle portraits, packed, also under the I/O chips (then the rain's frames from `$DD40`) |
+| `$D800–$DDFF` | the battle portraits (packed) and the tunes, also under the I/O chips |
+| `$DE00–$DFBF` | the rain's sprite frames |
 | `$E000` | screen (the status panel always comes from here) |
 | `$E400` | sprite slots |
 | `$E580–$F67F` | the loot engine, loaded from PQ.HI |
-| `$F680–$FF1F` | variables (BSS) |
+| `$F680–$FEFF` | variables (BSS) |
+| `$FF00–$FF1F` | the startup code's variables (PQ.HI's tail lands on BSS until it's unpacked) |
 | `…–$FFEF` | C stack (cc65's `-Cl` keeps locals static, so it only carries arguments) |
 
 Everything from `$E000` up is the RAM under the KERNAL ROM. The VIC chip reads
 it directly (bank 3), and the CPU can reach it once the ROMs are banked out.
 
-`PQ.HI` is one file loaded at `$E000`. It holds the sprite art (landing where
-the screen will go), the loot engine, and the charset (landing on BSS). At
-startup `unpack_hi()` moves the art and the charset under the I/O chips and
-clears BSS. Only then is the screen set up.
+`PQ.HI` is one file loaded at `$E000`. It holds the sprite art and the tunes
+(landing where the screen will go), the loot engine, then the charset and the
+music player's frame code (landing on BSS). At startup `unpack_hi()` moves
+the art, tunes and charset under the I/O chips and the player above the
+overlay window, then clears BSS. Only then is the screen set up. Anything
+written to BSS before that would corrupt the file's tail, so the startup
+functions keep their (static) locals in `EARLYBSS` at `$FF00`.
+
+The main file carries two things past the end of the program, where
+`world.c`'s variables will go: the tape-buffer code, which `main()` copies
+down first, and the one-time startup code (`INITCODE`: hardware setup, rain
+frames, loading PQ.HI), which runs in place. Then `main()` clears that space
+for the variables.
 
 The KERNAL and BASIC ROMs are banked out. The only interrupt is the VIC's
-raster interrupt (vector at `$FFFE`): it drives the rain, and in the world the
-split screen and the camera queue. `disk.s` banks the KERNAL in for the
+raster interrupt (vector at `$FFFE`): it drives the rain and the music, and in
+the world the split screen and the camera queue. `disk.s` banks the KERNAL in for the
 duration of a disk call, touching only its own data below `$D000` and the
 hardware stack. It keeps interrupts on if they were on, reached through the
 KERNAL's own vector at `$0314`. The save buffer is below the KERNAL too, so

@@ -14,6 +14,13 @@ int main(void)
     __asm__("sei");
     POKE(0x00, 0x2F);
     POKE(0x01, 0x35);
+    {   /* the music player's start/stop code rides past the end of the
+         * program, where world.c's variables go: move it to the tape buffer */
+        extern u8 _CASSCODE_LOAD__[], _CASSCODE_RUN__[], _CASSCODE_SIZE__[];
+        memcpy(_CASSCODE_RUN__, _CASSCODE_LOAD__, (u16)_CASSCODE_SIZE__);
+    }
+    /* the startup functions up to rain_init run where they loaded, in the
+     * same space (INITCODE): only then is it cleared for world.c */
     disk_init();
     /* the second file: loot code, plus the charset and sprite art. (A test
      * harness may have put everything in place already: then skip it all.) */
@@ -27,12 +34,12 @@ int main(void)
         }
         unpack_hi();
     }
+    hw_init();
+    rain_init();                             /* also enables the raster interrupt */
     {   /* world.c's variables, in main RAM where crt0 doesn't clear */
         extern u8 _WBSS_RUN__[], _WBSS_SIZE__[];
         memset(_WBSS_RUN__, 0, (u16)_WBSS_SIZE__);
     }
-    hw_init();
-    rain_init();                             /* also enables the raster interrupt */
     for (;;) {
         u8 c;
         ovl(OV_TITLE);

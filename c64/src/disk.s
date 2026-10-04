@@ -20,7 +20,7 @@
 
         .export _disk_op, _disk_dev, _disk_name, _disk_namelen
         .export _disk_start, _disk_end, _disk_status
-        .import _rain_mask, _irq_hold, _split_mode
+        .import _rain_mask, _irq_hold, _split_mode, _music_hold
 
 SETLFS  = $FFBA
 SETNAM  = $FFBD
@@ -62,8 +62,13 @@ _disk_op:
         lda #0
         sta _rain_mask
         sta $D015
+        lda #1                  ; the music waits (its timing would stumble),
+        sta _music_hold         ; silent
+        lda #0
+        sta $D418
         lda _split_mode         ; the world's split screen can't be kept up
-        beq :+                  ; (the KERNAL holds interrupts off): blank
+        cmp #1
+        bne :+                  ; (the KERNAL holds interrupts off): blank
         jsr border              ; the screen meanwhile
         lda #$0B
         sta $D011
@@ -194,6 +199,10 @@ done:
 :
         lda savedspr
         sta $D015
+        lda #$0F
+        sta $D418
+        lda #0
+        sta _music_hold
         plp
         lda result
         ldx #0

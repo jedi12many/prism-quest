@@ -8,7 +8,7 @@
 ; continuous rain -- 35 sprite images, ~245 drops, from 5 hardware sprites.
 ; Every band and column runs its own phase so there's no visible grid.
 ;
-; Two modes:
+; Three modes:
 ;   plain (title)  rain over rows 1-19 of an ordinary text screen
 ;   world          rows 0-4 are a fixed status panel (hi-res text on black).
 ;                  At line 90 the interrupt switches to the map's settings --
@@ -17,6 +17,8 @@
 ;                  (ECM + multicolour is an invalid mode: the VIC draws black)
 ;                  to hide the map's moving top edge. Line 250 switches back.
 ;                  The rain falls over the map, lines 99-245.
+;   quiet          no rain, no split: one interrupt at line 250
+; All three tick the music (music.s) once a frame.
 ;
 ; Changing the vertical scroll mid-screen is touchy: a bad line must never
 ; start in the middle of a raster line. The status panel ends on line 90, so
@@ -52,14 +54,16 @@
         .export _split_mode
         .export _cq, _cq_head, _cq_n, _cq_ready, _cq_swaps, _cq_done, _cq_stalls
         .import _col_shift, _sc_front
+        .import music_tick
 
 NB      = 7                     ; bands
-PTR0    = $75                   ; sprite pointer of frame 0: $DD40 in bank 3
+PTR0    = $78                   ; sprite pointer of frame 0: $DE00 in bank 3
 SPRPTR  = $E3F8                 ; sprite pointers for the screen at $E000
 SPRPTR2 = $C3F8                 ; ...and for the map's second screen at $C000
 EV_SPLIT  = 0                   ; world events (the band counter's values)
 EV_UNMASK = 1
 EV_BOTTOM = 8
+QLINE   = 250                   ; quiet mode's line
 
         .bss
 band:           .res 1          ; plain: band 0-6; world: event 0-8
@@ -75,7 +79,7 @@ _sc_d018:       .byte $84       ; which screen holds the map ($E000 or $C000)
 _map_bg:        .byte 5         ; the land's background colour (lightning: white)
 _vbl:           .byte 0         ; world frames shown (the scroller's tests check it)
 _split_mode:                    ; (C's name for it)
-mode:           .byte 0         ; 0 plain, 1 world
+mode:           .byte 0         ; 0 plain, 1 world, 2 quiet (just the music)
 _irq_hold:      .byte 0         ; disk_op is running: the screen is blanked (below)
 
 ; The camera queue. The world's main loop queues the hero's walk a few frames
@@ -138,8 +142,14 @@ body:   lda $01
         jmp done
 raster: sta $D019               ; acknowledge the raster interrupt
         lda mode
-        bne world
+        bne :+
         jmp plain
+:       cmp #1
+        beq world
+        jsr music_tick          ; quiet: just the music, once a frame
+        lda #QLINE
+        sta $D012
+        jmp done
 
 ; ---------- world mode ----------
 world:  ldx band
@@ -227,6 +237,7 @@ world:  ldx band
         inc _vbl
         jsr camera
         jsr nextanim
+        jsr music_tick
         jsr claim               ; rain sprites for the next frame, band 0
         ldx #0
         lda wtop
@@ -250,6 +261,7 @@ plain:  ldx band
         cpx #NB
         bcc @n
         jsr nextanim
+        jsr music_tick
         ldx #0
 @n:     stx band
         lda irqline,x
@@ -392,8 +404,10 @@ _rain_on:
         sei
         sta _rain_mask
         lda mode
-        bne :+                  ; the world's chain is already running
+        cmp #1
+        beq :+                  ; the world's chain is already running
         lda #0
+        sta mode
         sta band
         lda #40
         jsr start
@@ -426,13 +440,16 @@ _split_on:
 _irq_stop:
         php
         sei
-        lda #0
-        sta $D01A               ; raster interrupt off
+        lda #0                  ; quiet: one interrupt a frame, for the music
         sta _rain_mask
-        sta mode
         sta $D021
+        lda #2
+        sta mode
+        lda #QLINE
+        sta $D012
         lda #$01
         sta $D019
+        sta $D01A
         jsr release
 :       bit $D011               ; wait for the bottom border (line 256+): a new
         bpl :-                  ; y scroll mid-screen could start a bad line mid-line

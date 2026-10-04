@@ -3,9 +3,11 @@
 #include <string.h>
 #include "game.h"
 
-#define RAIN_FRAMES 0xDD40          /* 7 sprite frames, under the I/O chips */
+#define RAIN_FRAMES 0xDE00          /* 7 sprite frames, under the I/O chips */
 
 /* one cluster of slanted streaks in a 24x21 sprite (x, y of each streak's top) */
+#pragma code-name (push, "INITCODE")      /* (startup only: see main) */
+#pragma rodata-name (push, "INITCODE")
 static const u8 drop_x[7] = { 3, 10, 17, 22, 6, 14, 20 };
 static const u8 drop_y[7] = { 0, 7, 14, 3, 11, 18, 9 };
 
@@ -30,6 +32,8 @@ void rain_init(void)
     *(u16 *)0x0314 = (u16)kirq;             /* (the KERNAL's, while disk_op has it in) */
     __asm__("cli");                         /* only the raster interrupt is ever enabled */
 }
+#pragma rodata-name (pop)
+#pragma code-name (pop)
 
 /* how hard it rains: the deeper the land, the heavier the storm */
 static const u8 storm_mask[5] = { 0, 0xA8, 0xB8, 0xF8, 0xF8 };   /* by zone tier */

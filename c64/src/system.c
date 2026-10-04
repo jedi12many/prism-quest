@@ -10,6 +10,7 @@ static u8 sec_frames;
 
 static const u8 rti_op = 0x40;
 
+#pragma code-name (push, "INITCODE")      /* (startup only: see main) */
 void hw_init(void)
 {
     __asm__("sei");
@@ -42,6 +43,7 @@ void hw_init(void)
     memset((void *)0xD400, 0, 25);          /* SID */
     POKE(0xD418, 0x0F);
 }
+#pragma code-name (pop)
 
 /* once a frame: as the beam enters the bottom border (watching for one exact
  * line could miss it under an interrupt) */
@@ -49,7 +51,7 @@ void wait_frame(void)
 {
     extern volatile u8 vbl;
     u8 v;
-    if (split_mode) {                       /* the world: the frame interrupt's count */
+    if (split_mode == 1) {                  /* the world: the frame interrupt's count */
         v = vbl;                            /* (its bottom-of-frame work can run */
         while (vbl == v) ;                  /* past line 256) */
     } else {
@@ -266,19 +268,22 @@ void log_add(const char *s, u8 col)
     }
 }
 
-/* ---------- sound: one SID voice of short effects ---------- */
-static u8 snd_t, snd_id;
+/* ---------- sound: effects on SID voice 3 (the music has 1 and 2) ---------- */
+static u8 snd_t, snd_id, snd_wave;
 static u16 snd_f;
+static u8 thunder_t, cutoff;
 
 static void voice(u16 f, u8 wave, u8 ad, u8 sr)
 {
-    POKE(0xD404, 0);
-    POKE(0xD400, f & 0xFF); POKE(0xD401, f >> 8);
-    POKE(0xD402, 0x00); POKE(0xD403, 0x08);
-    POKE(0xD405, ad); POKE(0xD406, sr);
-    POKE(0xD404, wave | 1);
+    thunder_t = 0;                          /* (an effect cuts the thunder short) */
+    POKE(0xD417, 0x00); POKE(0xD418, 0x0F);
+    POKE(0xD412, 0);
+    POKE(0xD40E, f & 0xFF); POKE(0xD40F, f >> 8);
+    POKE(0xD410, 0x00); POKE(0xD411, 0x08);
+    POKE(0xD413, ad); POKE(0xD414, sr);
+    snd_wave = wave;
+    POKE(0xD412, wave | 1);
 }
-
 void sfx(u8 id)
 {
     snd_id = id;
@@ -296,10 +301,22 @@ void sfx(u8 id)
     }
 }
 
-/* thunder on voice 3: a burst of noise rumbling down through the filter */
-static u8 thunder_t, cutoff;
+static u8 tune_now = TUNE_NONE;
+void music(u8 tune)
+{
+#ifdef NOMUSIC
+    return;                                 /* (tests: the scroller without it) */
+#endif
+    if (tune == tune_now) return;
+    tune_now = tune;
+    if (tune == TUNE_NONE) music_stop();
+    else music_play(tune);
+}
+
+/* thunder, also on voice 3: a burst of noise rumbling down through the filter */
 void thunder(void)
 {
+    snd_t = 0;
     POKE(0xD40E, 0x00); POKE(0xD40F, 0x05); /* low noise */
     POKE(0xD413, 0x0A); POKE(0xD414, 0x0B); /* instant crack, long decay and release */
     POKE(0xD417, 0xF4);                     /* resonant filter on voice 3 */
@@ -326,8 +343,8 @@ void sound_tick(void)
     case SFX_WIN: case SFX_LEVEL: if (!(snd_t & 3)) snd_f += snd_f >> 2; break;
     case SFX_HURT: case SFX_DEATH: snd_f -= snd_f >> 4; break;
     }
-    POKE(0xD400, snd_f & 0xFF); POKE(0xD401, snd_f >> 8);
-    if (!snd_t) POKE(0xD404, PEEK(0xD404) & 0xFE);   /* release */
+    POKE(0xD40E, snd_f & 0xFF); POKE(0xD40F, snd_f >> 8);
+    if (!snd_t) POKE(0xD412, snd_wave);     /* release */
 }
 
 /* ---------- sprites ---------- */

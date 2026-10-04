@@ -446,6 +446,7 @@ u8 battle(u8 mi, u8 ambush)
     POKE(0xD017, 0x7F); POKE(0xD01D, 0x7F);
     POKE(0xD01C, 0x04);                 /* (the hero's fill is multicolour) */
     POKE(0xD015, 0x07 | foe_spr);
+    music(TUNE_BATTLE);
     draw_status();
     log_reset(LOG_Y, LOG_ROWS);
     sb_reset();

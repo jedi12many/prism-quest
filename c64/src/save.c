@@ -18,6 +18,10 @@ enum { OP_SAVE, OP_LOAD, OP_CMD, OP_LOADHI };
 #define SAVE_LEN (3 + sizeof(Player) + 2 + 1)
 #define savebuf ((u8 *)LOWSCRATCH)
 
+/* The startup functions (disk_init .. unpack_hi) keep their locals -- static,
+ * under -Cl -- out of BSS: PQ.HI loads its tail on top of BSS, so anything
+ * written there before unpack_hi has copied it away would corrupt it. */
+#pragma bss-name (push, "EARLYBSS")
 static void set_name(const char *s)
 {
     disk_namelen = strlen(s);
@@ -44,11 +48,13 @@ static void report(const char *what, u8 err)
     else { sb_str(" Drive says: "); sb_str(disk_status); }
 }
 
+#pragma code-name (push, "INITCODE")      /* (startup only: see main) */
 void disk_init(void)
 {
     u8 d = PEEK(0xBA);                  /* the KERNAL's last-used device */
     disk_dev = (d >= 8 && d <= 30) ? d : 8;
 }
+#pragma code-name (pop)
 
 u8 save_game(void)
 {
@@ -97,6 +103,7 @@ u8 load_game(void)
     return 1;
 }
 
+#pragma code-name (push, "INITCODE")      /* (startup only: see main) */
 /* PQ.HI holds code and data for $E580-$F67F (the loot engine). It's loaded once
  * at startup, unless it's already there (e.g. a test harness put it there). */
 u8 hi_present(void)
@@ -116,11 +123,13 @@ u8 load_hi(void)
     return hi_present();
 }
 
-/* PQ.HI carries the sprite art (landing on the not-yet-used screen) and the
- * charset (landing on BSS): move both under the I/O chips, then clear BSS. Runs with
- * interrupts off, before anything has used BSS. */
+/* PQ.HI carries the sprite art and tunes (landing on the not-yet-used screen)
+ * and the charset (landing on BSS): move them under the I/O chips, and the
+ * music player's frame code (after the charset) above the overlay window,
+ * then clear BSS. Runs with interrupts off, before anything has used BSS. */
 extern u8 _HICHR_LOAD__[], _HICHR_RUN__[], _HICHR_SIZE__[];
 extern u8 _HISPR_LOAD__[], _HISPR_RUN__[], _HISPR_SIZE__[];
+extern u8 _MUSCODE_LOAD__[], _MUSCODE_RUN__[], _MUSCODE_SIZE__[];
 extern u8 _BSS_RUN__[], _BSS_SIZE__[];
 void unpack_hi(void)
 {
@@ -129,11 +138,15 @@ void unpack_hi(void)
     memcpy(_HICHR_RUN__, _HICHR_LOAD__, (u16)_HICHR_SIZE__);
     memset(_HICHR_RUN__ + (u16)_HICHR_SIZE__, 0, 2048 - (u16)_HICHR_SIZE__);
     memcpy(_HISPR_RUN__, _HISPR_LOAD__, (u16)_HISPR_SIZE__);
+    memcpy(_MUSCODE_RUN__, _MUSCODE_LOAD__, (u16)_MUSCODE_SIZE__);
     memset(_BSS_RUN__, 0, (u16)_BSS_SIZE__);
     POKE(0x01, port);
 }
+#pragma code-name (pop)
 
 /* ---------- overlays ---------- */
+
+#pragma bss-name (pop)
 
 static u8 cur_ovl;
 
@@ -144,7 +157,7 @@ void ovl(u8 id)
     const u8 *w = (const u8 *)OVL_START;
     if (cur_ovl == id) return;
     cur_ovl = 0;
-    y = split_mode ? MSG_ROW + MSG_ROWS - 2 : 23;  /* in the world: the message panel */
+    y = split_mode == 1 ? MSG_ROW + MSG_ROWS - 2 : 23;  /* in the world: the message panel */
     for (;;) {
         set_name("pq.ov0");
         disk_name[5] += id;

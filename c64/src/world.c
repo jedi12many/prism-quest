@@ -397,7 +397,9 @@ static void draw_tile(u8 tx, u8 ty)
  * each, so they wait for frames with time to spare */
 #define TQ 48                           /* (16 monsters x old + new spot, nodes) */
 static u8 tq_x[TQ], tq_y[TQ], tq_n;
+#pragma bss-name(push, "BSS")           /* (room for it up there too) */
 static u8 tq_bits[(MAP_W * MAP_H + 7) / 8];   /* one bit a map tile: queued? */
+#pragma bss-name(pop)
 static const u8 bitv8[8] = { 1, 2, 4, 8, 16, 32, 64, 128 };
 
 /* does tile (x, y) show for origin (oc_, orb_)? */
@@ -620,7 +622,10 @@ static void redraw_all(void)
     split_on();
     draw_map();
     place_player_sprite();
-    if (in_zone() && !zone_sunny()) storm_start(zones[map_id].tier);
+    if (in_zone() && !zone_sunny()) {
+        storm_start(zones[map_id].tier);
+        music(TUNE_WILDS);
+    } else music(TUNE_VILLAGE);
 }
 
 /* ---------- actions ---------- */
@@ -693,6 +698,7 @@ static void zone_cleared(void)
     u8 i, n = 0;
     storm_clears();                         /* the rain thins out, then the sun */
     P.zones_cleared |= 1 << map_id;
+    music(TUNE_VILLAGE);
     for (i = 0; i < nmobs; ++i) { mobs[i].alive = 0; mobs[i].respawn = 0xFFFF; }
     for (i = 0; i < NZONE; ++i) if (P.zones_cleared & (1 << i)) ++n;
     set_palette();
