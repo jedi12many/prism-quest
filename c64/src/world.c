@@ -193,6 +193,26 @@ static void map_tables(void)
 
 /* A zone grows from its seed, so coming back up out of a dungeon can grow
  * the very same one again (only its living monsters are kept, in zone_*). */
+/* the zone's Prism Facet, buried in the grass well away from the entry
+ * (part of growing the zone: the same seed, the same spot) */
+static void place_facet(u8 z)
+{
+    u8 x, y, i, guard;
+    const u8 *e = zones[z].entry;
+    for (guard = 0; guard < 250; ++guard) {
+        x = 3 + rnd(mw - 6); y = 3 + rnd(mh - 6);
+#ifdef TEST_FACET
+        x = e[0] + 2; y = e[1];                 /* (tests: right by the entry) */
+#else
+        if (map[y][x] != T_GRASS || cheb(x, y, e[0], e[1]) < 7) continue;
+#endif
+        for (i = 0; i < ngates && cheb(gates[i].x, gates[i].y, x, y) >= 2; ++i) ;
+        if (i < ngates || node_at(x, y) != 0xFF || mob_at(x, y) != 0xFF) continue;
+        add_gate(x, y, G_FACET, z);
+        return;
+    }
+}
+
 static u16 zone_seed;
 static void make_map(u8 id)
 {
@@ -205,6 +225,7 @@ static void make_map(u8 id)
         keep = rnd16();
         rng_seed(zone_seed);
         build_zone(id);
+        if (!(P.facets & (1 << id))) place_facet(id);
         rng_seed(keep);
     }
     map_tables();
@@ -290,6 +311,7 @@ static u8 gate_tile(u8 i)
     case G_FORGE: return T_FORGE;
     case G_BOARD: return T_BOARD;
     case G_EXIT:  return T_HOMESIGN;
+    case G_FACET: return T_GLINT;
     default:      return T_DUNGEON;     /* a dungeon's mouth, or a stair down */
     }
 }
@@ -360,7 +382,7 @@ static u8 on_view(u8 x, u8 y, u8 oc_, u8 orb_)
     return (u8)(x * 2 + 1 - oc_) <= 40 && (u8)(y * 2 + 3 - orb_) <= 20;
 }
 
-static void queue_tile(u8 x, u8 y)
+void queue_tile(u8 x, u8 y)
 {
     u16 b;
     if (!on_view(x, y, foc, forb) && !(staged && on_view(x, y, soc, sorb))) return;
@@ -692,7 +714,13 @@ static void on_gate(u8 gi)
         say("The Cloudgate", "An old rainbow arch, cold and dormant. The Mayor says it only wakes once all four lands shine.");
         break;
     case G_FORGE:
-        say("The Glassworks Kiln", "The kiln has been cold for a hundred years. Prism Facets can be fused here - in a later version of this port.");
+        ovl(OV_GLASS);
+        show_glassworks();
+        redraw_all();
+        break;
+    case G_FACET:
+        ovl(OV_DIG);
+        dig_facet(gi);
         break;
     case G_BOARD:
         open_ledger();
@@ -898,11 +926,16 @@ static void arrive(u8 x, u8 y)
 /* once a second: prismatite shimmers, mined nodes grow back */
 static void shimmer(void)
 {
-    u8 i;
+    u8 i, k;
     if (++prism_col > 7) prism_col = 1;
     for (i = 0; i < nnodes; ++i)
         if (nodes[i].mineral == PRISMATITE || nodes[i].respawn == seconds)
             queue_tile(nodes[i].x, nodes[i].y);
+    for (i = 0; i < ngates; ++i)                /* a buried facet: a shy glint in the rain, */
+        if (gates[i].kind == G_FACET) {         /* plain to see once the sun's out */
+            k = zone_sunny() || !(seconds & 3) ? T_GLINT : map[gates[i].y][gates[i].x];
+            if (gate_t[i] != k) { gate_t[i] = k; queue_tile(gates[i].x, gates[i].y); }
+        }
 }
 
 void world_loop(void)

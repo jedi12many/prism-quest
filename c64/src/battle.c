@@ -417,6 +417,27 @@ static u8 choose(void)
     }
 }
 
+/* what falls out of a defeated monster (js/loot.js rollMonsterLoot); leaves a
+ * log line in sb (or "") */
+void monster_loot(u8 type)
+{
+    static Item it;
+    const MonsterDef *md = &monsters[type];
+    u8 ilvl = (md->xp + 6) / 12, r;
+    if (ilvl < 1) ilvl = 1;
+    if (ilvl > 10) ilvl = 10;
+    sb_reset();
+    if (md->flags & MF_BOSS) {                 /* a gloom champion */
+        r = rnd(100);
+        roll_item(&it, ilvl, r < 25 ? R_SET : r < 45 ? R_LEGEND : R_RARE, 0xFF);
+    } else if (chance(25)) roll_item(&it, ilvl, 0xFF, 0xFF);
+    else return;
+    if (!give_item(&it)) { sb_str("Bag full! The item crumbled into 2 raw Quartz."); return; }
+    sb_str("Loot: "); sb_item_name(&it); sb_str(" (");
+    sb_str(rarity_name[ITEM_RARITY(&it)]); sb_str(" "); sb_str(slot_name[ITEM_SLOT(&it)]); sb_str(")");
+}
+
+
 /* ---------- entry ---------- */
 
 u8 battle(u8 mi, u8 ambush)

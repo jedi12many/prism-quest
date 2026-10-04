@@ -1,8 +1,9 @@
 /* Diablo-style loot: random drops, affixes, sockets, legendaries and the
  * Rainbow Raiment set -- ported from js/loot.js (same tables and odds).
  *
- * The item engine (tables, rolling, stats) lives in PQ.HI at $E600, loaded
- * at startup; the gear screens are in gear.c in the main program. */
+ * The item engine (tables, rolling) lives in PQ.HI at $E580, loaded at
+ * startup; stats and names are in items.c, and the gear screens in gear.c,
+ * in the main program. */
 #include <string.h>
 #include "game.h"
 
@@ -10,27 +11,27 @@
 #pragma rodata-name(push, "HIDATA")
 
 const char *const slot_name[NSLOT] = { "Weapon", "Helm", "Armor", "Boots", "Charm" };
-const char *const rarity_name[5] = { "Common", "Magic", "Rare", "Legendary", "Set" };
-const u8 rarity_color[5] = { LTGREY, LTBLUE, YELLOW, ORANGE, LTGREEN };
+const char *const rarity_name[6] = { "Common", "Magic", "Rare", "Legendary", "Set", "Prism" };
+const u8 rarity_color[6] = { LTGREY, LTBLUE, YELLOW, ORANGE, LTGREEN, PURPLE };
 
 /* implicit base stat per slot */
-static const char *const base_name[NSLOT][3] = {
+const char *const base_name[NSLOT][3] = {
     { "Wand", "Rod", "Staff" }, { "Cap", "Hood", "Circlet" }, { "Cloak", "Robe", "Raincoat" },
     { "Boots", "Striders", "Galoshes" }, { "Charm", "Amulet", "Locket" },
 };
-static const u8 base_key[NSLOT] = { E_ATKFLAT, E_MAGFLAT, E_DEFFLAT, E_DODGE, E_HPMAX };
+const u8 base_key[NSLOT] = { E_ATKFLAT, E_MAGFLAT, E_DEFFLAT, E_DODGE, E_HPMAX };
 static const u8 base_min[NSLOT] = { 1, 1, 1, 2, 6 };
 static const u8 base_max[NSLOT] = { 4, 3, 3, 5, 14 };
 
 /* affixes: percentages are stored as whole percent */
 #define NAFFIX 12
-static const u8 affix_key[NAFFIX] = { E_ATKFLAT, E_MAGFLAT, E_DEFFLAT, E_HPMAX, E_BASICDMG, E_SPELLDMG,
+const u8 affix_key[NAFFIX] = { E_ATKFLAT, E_MAGFLAT, E_DEFFLAT, E_HPMAX, E_BASICDMG, E_SPELLDMG,
                                       E_CRIT, E_DODGE, E_HEALPOWER, E_UNICORN, E_XPGAIN, E_RARELUCK };
 static const u8 affix_min[NAFFIX] = { 1, 1, 1, 8, 6, 6, 3, 3, 10, 10, 5, 5 };
 static const u8 affix_max[NAFFIX] = { 4, 4, 3, 24, 18, 18, 8, 8, 25, 30, 15, 12 };
-static const char *const affix_pre[NAFFIX] = { "Sharp", "Arcane", "Sturdy", "Vital", "Brutal", "Radiant",
+const char *const affix_pre[NAFFIX] = { "Sharp", "Arcane", "Sturdy", "Vital", "Brutal", "Radiant",
                                                "Keen", "Nimble", "Blessed", "Gleaming", "Scholarly", "Lucky" };
-static const char *const affix_suf[NAFFIX] = { "of Fangs", "of Stars", "of Stone", "of the Bear", "of Bonking",
+const char *const affix_suf[NAFFIX] = { "of Fangs", "of Stars", "of Stone", "of the Bear", "of Bonking",
                                                "of Rainbows", "of the Fox", "of Puddles", "of Blooms", "of the Herd",
                                                "of Tales", "of Clover" };
 
@@ -130,47 +131,6 @@ void roll_item(Item *it, u8 ilvl, u8 rarity, u8 slot)
 
 /* ---------- stats ---------- */
 
-static u8 affix_of(u8 key)
-{
-    u8 a;
-    for (a = 0; a < NAFFIX && affix_key[a] != key; ++a) ;
-    return a;
-}
-
-/* one item's total for an effect: base + affixes + faceted gems */
-i16 item_stat(const Item *it, u8 key)
-{
-    i16 v = 0;
-    u8 i, g;
-    if (it->kind == 0xFF) return 0;
-    if (ITEM_RARITY(it) < R_LEGEND && base_key[ITEM_SLOT(it)] == key) v += it->base;
-    for (i = 0; i < 3; ++i) if (it->key[i] == key) v += it->val[i];
-    for (i = 0; i < 2; ++i) {
-        g = it->gem[i];
-        if (g != 0xFF && gem_key[g & 15] == key) v += gem_val[g & 15][g >> 4];
-    }
-    return v;
-}
-
-u8 set_count(void)
-{
-    u8 s, n = 0;
-    for (s = 0; s < NSLOT; ++s) if (P.equip[s].kind != 0xFF && ITEM_RARITY(&P.equip[s]) == R_SET) ++n;
-    return n;
-}
-
-/* everything worn, plus the Rainbow Raiment bonuses */
-i16 gear_eff(u8 key)
-{
-    i16 v = 0;
-    u8 s, n;
-    for (s = 0; s < NSLOT; ++s) v += item_stat(&P.equip[s], key);
-    n = set_count();
-    if (n >= 3) { if (key == E_SPELLDMG) v += 15; if (key == E_CRIT) v += 10; }
-    if (n == 5) { if (key == E_CHARGESAVE) v += 30; if (key == E_SPELLDMG) v += 25; if (key == E_UNICORN) v += 25; }
-    return v;
-}
-
 /* a quick power rating: offensive + defensive stats, weighted as in loot.js */
 static const u8 rate_key[12] = { E_ATKFLAT, E_MAGFLAT, E_SPELLDMG, E_BASICDMG, E_CRIT, E_UNICORN, E_CHARGESAVE,
                                  E_DEFFLAT, E_HPMAX, E_DODGE, E_REGEN, E_HEALPOWER };
@@ -186,16 +146,6 @@ u16 item_power(const Item *it)
 
 /* ---------- text ---------- */
 
-void sb_item_name(const Item *it)
-{
-    u8 r = ITEM_RARITY(it), s = ITEM_SLOT(it);
-    if (r == R_LEGEND) { sb_str(legend_name[s]); return; }
-    if (r == R_SET) { sb_str(set_name[s]); return; }
-    if (r >= R_MAGIC) { sb_str(affix_pre[affix_of(it->key[0])]); sb_str(" "); }
-    sb_str(base_name[s][it->name]);
-    if (r == R_RARE) { sb_str(" "); sb_str(affix_suf[affix_of(it->key[1])]); }
-}
-
 void sb_stat(u8 key, i16 v)
 {
     sb_str(v < 0 ? "-" : "+");
@@ -203,18 +153,6 @@ void sb_stat(u8 key, i16 v)
     if (!is_flat(key)) sb_str("%");
     sb_str(" ");
     sb_str(stat_label[key]);
-}
-
-/* every stat line of an item, in order, as "+3 Attack" etc; returns the count */
-u8 item_lines(const Item *it, u8 *keys, i16 *vals)
-{
-    u8 n = 0, i, k;
-    if (ITEM_RARITY(it) < R_LEGEND) { keys[n] = base_key[ITEM_SLOT(it)]; vals[n++] = it->base; }
-    for (i = 0; i < 3; ++i) {
-        if (!(k = it->key[i])) continue;
-        keys[n] = k; vals[n++] = it->val[i];
-    }
-    return n;
 }
 
 /* ---------- drops ---------- */
@@ -225,25 +163,6 @@ u8 give_item(const Item *it)
     if (P.ninv >= INV_CAP) { P.raw[QUARTZ] += 2; return 0; }
     P.inv[P.ninv++] = *it;
     return 1;
-}
-
-/* what falls out of a defeated monster; leaves a log line in sb (or "") */
-void monster_loot(u8 type)
-{
-    static Item it;
-    const MonsterDef *md = &monsters[type];
-    u8 ilvl = (md->xp + 6) / 12, r;
-    if (ilvl < 1) ilvl = 1;
-    if (ilvl > 10) ilvl = 10;
-    sb_reset();
-    if (md->flags & MF_BOSS) {                 /* a gloom champion */
-        r = rnd(100);
-        roll_item(&it, ilvl, r < 25 ? R_SET : r < 45 ? R_LEGEND : R_RARE, 0xFF);
-    } else if (chance(25)) roll_item(&it, ilvl, 0xFF, 0xFF);
-    else return;
-    if (!give_item(&it)) { sb_str("Bag full! The item crumbled into 2 raw Quartz."); return; }
-    sb_str("Loot: "); sb_item_name(&it); sb_str(" (");
-    sb_str(rarity_name[ITEM_RARITY(&it)]); sb_str(" "); sb_str(slot_name[ITEM_SLOT(&it)]); sb_str(")");
 }
 
 /* (no pops: cc65 emits string literals at the end of the file, and they

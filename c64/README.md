@@ -28,6 +28,19 @@ A work-in-progress port of the browser game to a stock Commodore 64 (64 KB,
   same way as `buildZone` in `js/game.js`: lakes, forest scatter, a guaranteed
   path to the lair, themed mineral nodes (Prismatite by the lair), monster packs,
   and the gloom champion. Walk over a node to mine it; nodes regrow after 60 s.
+- **Prism Facets:** each zone hides one of the four facets of the shattered
+  Prismblade (Azure, Amber, Verdant, Crimson), buried in the grass:
+  - In the rain it's a shy glint, showing one second in four; once the land
+    is sunny it glints plainly. Walk onto it to dig it up.
+  - A facet is a weapon with three bonuses and a socket, and each one brings
+    a whisper of the truth beneath the rain.
+  - At the Glassworks kiln in the village, two or more fuse into the
+    Twinlight Prism, Trilight Prism or THE PRISMBLADE (two, three or four
+    facets). Fusing melts down everything prismatic you carry, an earlier
+    prism weapon too, so another facet always lets you reforge stronger.
+    Socketed gems come back.
+  - Prism relics can't be salvaged. The C64's Prismblade has two sockets,
+    not the web game's three.
 - **Dungeons:** each zone hides one or two entrances: a Gloom Cave, Sunken
   Ruins or a Haunted House, two or three floors deep, each generated its own
   way (as in `js/game.js`):
@@ -120,7 +133,7 @@ A work-in-progress port of the browser game to a stock Commodore 64 (64 KB,
   bass is a triangle or a sawtooth. See *Music* below.
 - **Sound:** short SID sound effects and the thunder, on the third voice.
 
-**Not ported yet:** Prism Facets, pacts, elites, the Rainycastle and the
+**Not ported yet:** pacts, elites, the Rainycastle and the
 realm.
 
 ## Controls
@@ -180,19 +193,22 @@ reloaded.
 | `PQ.OV4` | the Spellbook | 2.7 KB |
 | `PQ.OV5`–`PQ.OV7` | the Power Tree, one per class (each carries only its own class's text) | 2.6–2.7 KB |
 | `PQ.OV8` | building the camp | 2.6 KB |
-| `PQ.OV9` | the Village Ledger | 1.1 KB |
+| `PQ.OV9` | the Village Ledger, and saving and loading | 2.4 KB |
 | `PQ.OV10` | the dungeon floors' generators | 2.6 KB |
 | `PQ.OV11` | the zone generator | 2.7 KB |
+| `PQ.OV12` | digging up a Prism Facet, and its whispers | 1.2 KB |
+| `PQ.OV13` | the Glassworks kiln | 2.2 KB |
 
 On a stock 1541 each takes roughly 5–7 seconds (about 400 bytes a second);
 a "Loading" note shows in the corner meanwhile. Overlays are kept to about
 2–3 KB for that reason.
 
-The world, battles, Bag, Gear, saving and the camp menu stay resident, so
-exploring and fighting never wait on the disk. Generating a zone or a
+The world, battles, Bag, Gear and the camp menu stay resident, so exploring
+and fighting never wait on the disk. Saving loads its code with the Ledger
+first: it's a disk operation anyway. Generating a zone or a
 dungeon floor loads its generator behind the transition screen (unless it's
 still in the window from last time: going home and back out loads nothing).
-Resident memory is nearly full (about 1.2 KB free), so new screens should be
+Resident memory is nearly full (about 0.8 KB free), so new screens should be
 overlays; the resident part of a feature should be the little the world
 itself needs (camp building keeps only the buildings' effects, positions,
 names and costs resident; dungeons keep entering, leaving and the keepers'
@@ -294,6 +310,9 @@ make shot SCRIPT=test/camp.h    CYCLES=90000000   # polish, craft, learn skills
 make shot SCRIPT=test/build.h   CYCLES=56000000   # build the Kitchen, the walls; the Ledger
 make shot SCRIPT=test/delve.h   CYCLES=80000000 DEFS="-DTEST_DUNGEON=1 -DTEST_EMPTY -DTEST_NEAR"   # Warden, key, floor 2
 make shot SCRIPT=test/keeper.h  CYCLES=80000000 DEFS="-DTEST_DUNGEON=0 -DTEST_EMPTY -DTEST_NEAR -DTEST_KEEPER"
+make shot SCRIPT=test/facet.h   CYCLES=56000000 DEFS="-DTEST_FACET"   # dig up the Crimson Facet
+make shot SCRIPT=test/forge.h   CYCLES=40000000   # fuse two facets at the Glassworks
+make shot SCRIPT=test/blade.h   CYCLES=36000000   # THE PRISMBLADE's Gear card
 make shot SCRIPT=test/gear.h    CYCLES=50000000   # inspect and equip gear
 make shot SCRIPT=test/battle.h  CYCLES=160000000  # Knight fights through Bogmire
 make shot SCRIPT=test/save.h    CYCLES=60000000   # then, keeping one disk:
@@ -327,6 +346,7 @@ make shot SCRIPT=test/home.h   CYCLES=50000000                          # out a 
 - **`-DJUKEBOX=n`:** the title screen plays tune n (0 title, 1 village,
   2 gloom, 3 battle). Record it with VICE's `-sound -sounddev wav -soundarg
   out.wav -limitcycles 50000000`; the tune starts about 15 s in.
+- **`-DTEST_FACET`:** a zone's facet is buried two steps east of its entry.
 - **`-DTEST_DUNGEON=n`:** on reaching a zone, go straight down its first
   dungeon as type n (0 cave, 1 ruins, 2 haunted house). With it:
   `-DTEST_EMPTY` leaves out the wandering monsters, `-DTEST_NEAR` puts the
@@ -349,10 +369,11 @@ make shot SCRIPT=test/home.h   CYCLES=50000000                          # out a 
 | `src/kit.c` | skill and building effects, gem helpers, the menu kit, camp menu, doors into the overlays |
 | `src/bag.c` | the Bag: polishing and Summon Dwarves |
 | `src/gear.c` | the Gear screen, item cards, faceting gems, equip/salvage |
-| `src/ov_*.c` | the overlays: title, the two dialogue halves, Spellbook, Power Tree (`ov_tree.inc`, built once per class), building the camp, the Village Ledger, the dungeon floors, growing a zone |
+| `src/ov_*.c` | the overlays: title, the two dialogue halves, Spellbook, Power Tree (`ov_tree.inc`, built once per class), building the camp, the Village Ledger (with saving and loading), the dungeon floors, growing a zone, digging up a facet, the Glassworks |
 | `src/ovl.s` | overlay file headers: load address and signature |
-| `src/loot.c` | the item engine (rarities, affixes, legendaries, set, drops, stats); lives in PQ.HI |
-| `src/save.c` | save/load format, autosave, erase-on-death, loading PQ.HI, the overlay loader `ovl()` |
+| `src/loot.c` | the item engine (rarities, affixes, legendaries, set, rolling); lives in PQ.HI |
+| `src/items.c` | item stats and names (in PQ.HI too), and the Prism relics' table (resident) |
+| `src/save.c` | the doors into saving and loading (`ov_save.c`, with the Ledger), erase-on-death, loading PQ.HI, the overlay loader `ovl()` |
 | `src/hi.s` | PQ.HI's load address and signature |
 | `src/disk.s` | assembly: switches the KERNAL in and calls its SAVE/LOAD/OPEN, reads the drive's error channel |
 | `src/rainirq.s` | the frame interrupt: the rain multiplexer, the world's split screen, the camera queue |

@@ -14,7 +14,7 @@ static const char *const quest_text[3] = {
 
 void show_ledger(void)
 {
-    u8 i;
+    u8 i, k;
     POKE(0xD015, 0);
     cls();
     POKE(0xD021, BLACK);
@@ -35,6 +35,9 @@ void show_ledger(void)
     put_str(30, 15, P.baker_stage == 2 ? "done" : P.baker_stage ? "open" : "-", CYAN);
     put_str(2, 16, "Willow's stubborn tulips", WHITE);
     put_str(30, 16, P.willow_stage == 2 ? "done" : P.willow_stage ? "open" : "-", CYAN);
+    for (i = 0, k = 0; i < NZONE; ++i) if (P.facets & (1 << i)) ++k;
+    put_str(2, 17, "Prism Facets found", WHITE);
+    put_ch(30, 17, glyph('0' + k), CYAN); put_str(31, 17, "/4", CYAN);
     sb_reset(); sb_str("Kills: "); sb_num(P.kills); sb_str("   Time: "); sb_num(seconds / 60); sb_str(" min");
     put_str(1, 19, sb, WHITE);
     put_str(1, 24, "Fire: back", BLUE);

@@ -1,5 +1,6 @@
-/* Saving and loading the hero on disk (device 8 by default, or whichever
- * drive the game was loaded from). The KERNAL calls live in disk.s. */
+/* The disk: overlays, PQ.HI at startup, and the doors into saving and
+ * loading (ov_save.c). Device 8 by default, or whichever drive the game was
+ * loaded from. The KERNAL calls live in disk.s. */
 #include <string.h>
 #include "game.h"
 
@@ -11,41 +12,19 @@ extern char disk_status[40];
 
 enum { OP_SAVE, OP_LOAD, OP_CMD, OP_LOADHI };
 
-#define SAVE_VERSION 3                  /* 3: camp buildings */
-/* "PQ", version, the Player struct, the play clock, a checksum. The buffer
- * is LOWSCRATCH ($0400), below the KERNAL where its SAVE/LOAD can reach it;
- * the map view shares it (it's rebuilt after every save or load). */
-#define SAVE_LEN (3 + sizeof(Player) + 2 + 1)
-#define savebuf ((u8 *)LOWSCRATCH)
+/* saving and loading themselves ride with the Village Ledger (ov_save.c):
+ * a disk operation anyway, so one more short load costs little */
+u8 save_game(void) { ovl(OV_LEDGER); return do_save(); }
+u8 load_game(void) { ovl(OV_LEDGER); return do_load(); }
 
 /* The startup functions (disk_init .. unpack_hi) keep their locals -- static,
  * under -Cl -- out of BSS: PQ.HI loads its tail on top of BSS, so anything
  * written there before unpack_hi has copied it away would corrupt it. */
 #pragma bss-name (push, "EARLYBSS")
-static void set_name(const char *s)
+void disk_file(const char *s)
 {
     disk_namelen = strlen(s);
     memcpy(disk_name, s, disk_namelen);
-}
-
-static u8 checksum(void)
-{
-    u16 i;                              /* the save is longer than 255 bytes */
-    u8 c = 0x5A;
-    for (i = 0; i < SAVE_LEN - 1; ++i) c = (c << 1 | c >> 7) ^ savebuf[i];
-    return c;
-}
-
-/* "00, OK,00,00" and "01, FILES SCRATCHED,01,00" are fine */
-static u8 drive_ok(void) { return disk_status[0] == '0' && disk_status[1] <= '1'; }
-
-static void report(const char *what, u8 err)
-{
-    sb_reset(); sb_str(what);
-    if (err == 5) sb_str(" No disk drive found.");
-    else if (err == 4) sb_str(" No saved hero on this disk.");
-    else if (err) { sb_str(" Disk error "); sb_num(err); sb_str("."); }
-    else { sb_str(" Drive says: "); sb_str(disk_status); }
 }
 
 #pragma code-name (push, "INITCODE")      /* (startup only: see main) */
@@ -55,53 +34,6 @@ void disk_init(void)
     disk_dev = (d >= 8 && d <= 30) ? d : 8;
 }
 #pragma code-name (pop)
-
-u8 save_game(void)
-{
-    u8 err;
-    savebuf[0] = 'P'; savebuf[1] = 'Q'; savebuf[2] = SAVE_VERSION;
-    memcpy(savebuf + 3, &P, sizeof(Player));
-    savebuf[3 + sizeof(Player)] = seconds & 0xFF;
-    savebuf[4 + sizeof(Player)] = seconds >> 8;
-    savebuf[SAVE_LEN - 1] = checksum();
-
-    msg("Saving your hero to disk...");
-    set_name("s0:pq.save");             /* replace any older save */
-    err = disk_op(OP_CMD);
-    if (!err) {
-        set_name("pq.save");
-        disk_start = (u16)savebuf;
-        disk_end = (u16)savebuf + SAVE_LEN;
-        err = disk_op(OP_SAVE);
-    }
-    if (err || !drive_ok()) {
-        report("Couldn't save.", err);
-        msg(sb);
-        return 0;
-    }
-    msg("Hero saved to disk.");
-    return 1;
-}
-
-/* returns 1 and fills P on success; otherwise leaves a reason in sb */
-u8 load_game(void)
-{
-    u8 err;
-    set_name("pq.save");
-    disk_start = (u16)savebuf;
-    memset(savebuf, 0, SAVE_LEN);
-    err = disk_op(OP_LOAD);
-    if (err) { report("Couldn't load.", err); return 0; }
-    if (savebuf[0] != 'P' || savebuf[1] != 'Q' || savebuf[2] != SAVE_VERSION
-        || savebuf[SAVE_LEN - 1] != checksum()) {
-        sb_reset(); sb_str("That save is from another version, or damaged.");
-        return 0;
-    }
-    memcpy(&P, savebuf + 3, sizeof(Player));
-    seconds = savebuf[3 + sizeof(Player)] | (savebuf[4 + sizeof(Player)] << 8);
-    calc_stats();
-    return 1;
-}
 
 #pragma code-name (push, "INITCODE")      /* (startup only: see main) */
 /* PQ.HI holds code and data for $E580-$F67F (the loot engine). It's loaded once
@@ -118,7 +50,7 @@ u8 hi_present(void)
 
 u8 load_hi(void)
 {
-    set_name("pq.hi");
+    disk_file("pq.hi");
     disk_op(OP_LOADHI);
     return hi_present();
 }
@@ -156,8 +88,8 @@ void ovl(u8 id)
     cur_ovl = 0;
     y = split_mode == 1 ? MSG_ROW + MSG_ROWS - 2 : 23;  /* in the world: the message panel */
     for (;;) {
-        if (id < 10) { set_name("pq.ov0"); err = id; }   /* PQ.OV1 .. PQ.OV11 */
-        else { set_name("pq.ov10"); err = id - 10; }
+        if (id < 10) { disk_file("pq.ov0"); err = id; }   /* PQ.OV1 .. PQ.OV11 */
+        else { disk_file("pq.ov10"); err = id - 10; }
         disk_name[disk_namelen - 1] += err;
         put_str(32, y + 1, "Loading", GREY);
         err = disk_op(OP_LOADHI);
@@ -175,6 +107,6 @@ void ovl(u8 id)
 /* rogue-like: a fallen hero's save goes with them */
 void erase_save(void)
 {
-    set_name("s0:pq.save");
+    disk_file("s0:pq.save");
     disk_op(OP_CMD);
 }

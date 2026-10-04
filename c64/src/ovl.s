@@ -4,6 +4,7 @@
 ;   1 title + game over   2 talk: Mayor, Grandma, Flint   3 talk: Pip, Barnaby, Willow
 ;   4 Spellbook           5-7 Power Tree for the mage, knight, whisperer
 ;   8 building the camp   9 the Village Ledger   10 the dungeons' floors   11 growing a zone
+;   12 digging up a Prism Facet   13 the Glassworks
         .import __OVL_START__
         .segment "OV1LOAD"
         .word   __OVL_START__
@@ -49,3 +50,11 @@
         .word   __OVL_START__
         .segment "OV11SIG"
         .byte   $4F, 11
+        .segment "OV12LOAD"
+        .word   __OVL_START__
+        .segment "OV12SIG"
+        .byte   $4F, 12
+        .segment "OV13LOAD"
+        .word   __OVL_START__
+        .segment "OV13SIG"
+        .byte   $4F, 13

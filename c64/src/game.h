@@ -213,7 +213,13 @@ extern const u16 xp_next[13];
 /* ---------- loot (loot.c, in PQ.HI) ---------- */
 #define NSLOT 5
 enum { SL_WEAPON, SL_HELM, SL_ARMOR, SL_BOOTS, SL_CHARM };
-enum { R_COMMON, R_MAGIC, R_RARE, R_LEGEND, R_SET };
+enum { R_COMMON, R_MAGIC, R_RARE, R_LEGEND, R_SET, R_PRISM };
+/* Prism relics (items.c): a weapon whose name byte says which -- a facet (by
+ * zone id) or a fused prism weapon; its bonuses are in prism_eff */
+enum { PRISM_TWIN = NZONE, PRISM_TRI, PRISM_BLADE, PRISM_COUNT };
+#define PRISM_EFFS 7
+extern const char *const prism_name[PRISM_COUNT];
+extern const Eff prism_eff[PRISM_COUNT][PRISM_EFFS];
 #define INV_CAP 24
 typedef struct {
     u8 kind;               /* slot | rarity << 4; 0xFF = no item */
@@ -226,8 +232,8 @@ typedef struct {
 #define ITEM_SLOT(it)   ((it)->kind & 15)
 #define ITEM_RARITY(it) ((it)->kind >> 4)
 extern const char *const slot_name[NSLOT];
-extern const char *const rarity_name[5];
-extern const u8 rarity_color[5];
+extern const char *const rarity_name[6];
+extern const u8 rarity_color[6];
 extern const char *const legend_lore[NSLOT];
 extern const u8 gem_key[NMIN];
 extern const u8 gem_val[NMIN][3];
@@ -279,6 +285,7 @@ typedef struct {
     u8 pip_stage, pip_n;
     u8 baker_stage, willow_stage;
     u8 base[NBLD];         /* camp building levels, 0 = not built */
+    u8 facets;             /* Prism Facets dug up, bitmask by zone id */
     u8 x, y;
     u8 map;                /* MAP_VILLAGE or a zone id */
     Item equip[NSLOT];
@@ -322,7 +329,8 @@ typedef struct { u8 x, y, mineral; u16 respawn; } Node;
 extern Node nodes[MAXNODE];
 extern u8 nnodes;
 
-enum { G_ZONE, G_HOME, G_CLOUD, G_FORGE, G_BOARD, G_DUNGEON, G_EXIT, G_STAIRS };   /* (G_DUNGEON: zone = its type) */
+enum { G_ZONE, G_HOME, G_CLOUD, G_FORGE, G_BOARD, G_FACET, G_DUNGEON, G_EXIT, G_STAIRS };
+/* (G_FACET: a zone's buried Prism Facet; G_DUNGEON: zone = the dungeon's type) */
 #define MAXGATE 12
 typedef struct { u8 x, y, kind, zone; } Gate;
 extern Gate gates[MAXGATE];
@@ -399,7 +407,13 @@ enum { OV_TITLE = 1, OV_TALKA, OV_TALKB, OV_CAMP, OV_TREE };   /* OV_TREE + clas
 #define OV_LEDGER 9
 #define OV_DUNGEON 10                   /* the dungeon floors' generators */
 #define OV_LANDS 11                     /* the zone generator */
-#define OV_COUNT 11
+#define OV_DIG 12                       /* digging up a Prism Facet */
+#define OV_GLASS 13                     /* the Glassworks */
+#define OV_COUNT 13
+void show_glassworks(void);
+void dig_facet(u8 gate);
+void queue_tile(u8 x, u8 y);            /* world.c: redraw this map tile soon */
+extern u8 gate_t[MAXGATE];              /* world.c: each gate's tile */
 void ovl(u8 id);
 void camp_menu(void);
 void show_spellbook(void);
@@ -416,6 +430,8 @@ u8 load_hi(void);
 void unpack_hi(void);
 u8 save_game(void);
 u8 load_game(void);
+u8 do_save(void);                  /* ov_save.c, in PQ.OV9 */
+u8 do_load(void);
 void erase_save(void);
 
 #endif

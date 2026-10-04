@@ -94,8 +94,8 @@ static u8 pick_gem(void)
  * Returns 1 if the item moved (equipped, unequipped or salvaged). */
 static u8 item_card(u8 slot, u8 idx)
 {
-    static u8 keys[6];
-    static i16 vals[6];
+    static u8 keys[PRISM_EFFS];
+    static i16 vals[PRISM_EFFS];
     static const char *const bag_acts[4] = { "Equip", "Facet a gem", "Salvage", "Back" };
     static const char *const worn_acts[3] = { "Unequip", "Facet a gem", "Back" };
     Item *it = slot == 0xFF ? &P.inv[idx] : &P.equip[slot];
@@ -147,6 +147,8 @@ static u8 item_card(u8 slot, u8 idx)
             if (old.kind != 0xFF) *it = old;
             else { --P.ninv; memmove(it, it + 1, (P.ninv - idx) * sizeof(Item)); }
             sfx(SFX_GATE);
+        } else if (ITEM_RARITY(it) == R_PRISM) {         /* (js: "Prism relics are sacred") */
+            log_reset(23, 2); log_add("A Prism relic can't be salvaged - take it to the Glassworks.", RED); wait_fire(); continue;
         } else {                                         /* salvage: gems back, plus quartz */
             for (i = 0; i < 2; ++i) if ((g = it->gem[i]) != 0xFF) ++P.polished[g & 15][g >> 4];
             P.raw[QUARTZ] += ITEM_RARITY(it) >= R_LEGEND ? 3 : 1;
