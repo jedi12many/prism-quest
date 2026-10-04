@@ -59,9 +59,13 @@ A work-in-progress port of the browser game to a stock Commodore 64 (64 KB,
   zone.
 - **Rogue-like death:** when your hero falls, the run ends, the save on disk is
   scratched with them, and you start a new hero.
-- **Art:** converted automatically from `js/sprites.js`. Map tiles become
-  multicolour characters; the hero and battle portraits become stacked hi-res
-  hardware sprites. The 8×8 font is hand-drawn, so no Commodore ROM data is used.
+- **Art:** map tiles and battle portraits are converted automatically from
+  `js/sprites.js`. Tiles become multicolour characters; portraits become
+  stacked hi-res hardware sprites. The heroes are drawn for the C64 at full
+  sprite size, 24×21 (`tools/heroes.js`): a hi-res black outline and a hi-res
+  detail colour over a multicolour fill, five colours in three stacked
+  sprites. They are doubled on the title screen and in battle. The 8×8 font is
+  hand-drawn, so no Commodore ROM data is used.
 - **The storm:** in gloomy lands it rains, using a raster-interrupt sprite
   multiplexer (`rainirq.s`). Five double-wide hardware sprites are reused seven
   times down the map, giving about 245 animated raindrops from 35 sprite
@@ -265,7 +269,7 @@ make shot SCRIPT=test/home.h   CYCLES=50000000                          # out a 
 | `src/rain.c` | rain frames, lightning, thunder, the sun breaking through |
 | `src/input.s` | the keyboard matrix, read in one go |
 | `src/data.c` | classes, monsters, zones, spells, minerals (numbers from `js/data.js`) |
-| `src/assets.c` | **generated** by `tools/gen_assets.js` from `js/sprites.js` |
+| `src/assets.c` | **generated** by `tools/gen_assets.js` from `js/sprites.js` and `tools/heroes.js` (the heroes' C64 art) |
 | `src/tree.c`, `tree_text.h` | **generated** by `tools/gen_data.js` from `js/data.js`: Power Tree effects and class perks (resident); skill names and descriptions (overlays) |
 
 ### Memory map

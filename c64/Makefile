@@ -13,7 +13,7 @@ LDFLAGS := -C prismquest.cfg
 
 all: $(PRG)
 
-src/assets.c src/assets.h: tools/gen_assets.js ../js/sprites.js
+src/assets.c src/assets.h: tools/gen_assets.js tools/heroes.js ../js/sprites.js
 	node tools/gen_assets.js
 
 src/tree.c src/tree_text.h src/tree.h: tools/gen_data.js ../js/data.js

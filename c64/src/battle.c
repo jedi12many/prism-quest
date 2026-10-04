@@ -434,14 +434,12 @@ u8 battle(u8 mi, u8 ambush)
     POKE(0xD021, BLACK);
     POKE(0xD020, BLACK);
     put_str(1, 0, md->name, (md->flags & MF_BOSS) ? YELLOW : WHITE);
+    hero_sprites(P.cls);
     for (i = 0; i < 3; ++i) {
-        spr_load(i, player_spr[P.cls][i]);
         spr_load(3 + i, battle_spr[md->sprite][i]);
-        SPR_PTR[i] = SPR_BASE + i;
         SPR_PTR[3 + i] = SPR_BASE + 3 + i;
-        POKE(0xD027 + i, player_spr_col[P.cls][i]);
         POKE(0xD027 + 3 + i, battle_spr_col[md->sprite][i]);
-        spr_pos(i, 64, 78);
+        spr_pos(i, 56, 68);             /* (the hero doubled: 48x42, feet level with the foe's) */
         spr_pos(3 + i, 236, 78);
     }
     POKE(0xD017, 0x3F); POKE(0xD01D, 0x3F);

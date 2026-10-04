@@ -461,9 +461,9 @@ static void frame_regs(u16 x, u16 y, u8 orb_)
     cam_for(x, y);
     qe[0] = 0x10 | ((3 + (u8)(orb_ * 8 - 8 - ccy)) & 7);   /* the map starts 0-6 lines down */
     qe[1] = 0x10 | (7 - (ccx & 7));
-    sx = 31 + x - ccx;
+    sx = 31 - 4 + x - ccx;              /* (24x21: centred on the tile, feet on its floor) */
     qe[2] = sx; qe[3] = sx & 0x100 ? 7 : 0;
-    qe[4] = 98 + y - ccy;
+    qe[4] = 98 - 5 + y - ccy;
     qe[5] = 0;
 }
 
@@ -586,12 +586,7 @@ void draw_map(void)
 
 void place_player_sprite(void)
 {
-    u8 i;
-    for (i = 0; i < 3; ++i) {
-        spr_load(i, player_spr[P.cls][i]);
-        SPR_PTR[i] = SPR_PTR2[i] = SPR_BASE + i;
-        POKE(0xD027 + i, player_spr_col[P.cls][i]);
-    }
+    hero_sprites(P.cls);
     /* sprites 0-2 only: 3-7 belong to the rain */
     POKE(0xD017, PEEK(0xD017) & 0xF8); POKE(0xD01D, PEEK(0xD01D) & 0xF8);
     POKE(0xD01B, PEEK(0xD01B) & 0xF8);

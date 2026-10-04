@@ -47,12 +47,8 @@ static void show_class(u8 c)
         wrap("Load your saved hero from the disk in the drive.", 18, 2, CYAN);
         return;
     }
-    for (i = 0; i < 3; ++i) {
-        spr_load(i, player_spr[c][i]);
-        SPR_PTR[i] = SPR_BASE + i;
-        POKE(0xD027 + i, player_spr_col[c][i]);
-        spr_pos(i, 248, 118);
-    }
+    hero_sprites(c);
+    for (i = 0; i < 3; ++i) spr_pos(i, 240, 108);   /* (doubled: 48x42) */
     POKE(0xD017, 0x07); POKE(0xD01D, 0x07);
     POKE(0xD015, 0x07);
     for (i = 0; i < NCLASS; ++i) {

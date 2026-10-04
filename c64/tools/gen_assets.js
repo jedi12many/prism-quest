@@ -5,8 +5,10 @@
 //  * Map tiles (terrain, buildings, monsters, villagers) become 2x2 blocks of
 //    multicolour characters: 8x16 "fat" pixels, using the shared colours
 //    black + MC2 plus one free colour (0-7) per character cell.
-//  * The player and battle portraits become hi-res hardware sprites, split into
-//    up to three single-colour layers that are stacked on top of each other.
+//  * The battle portraits become hi-res hardware sprites, split into up to
+//    three single-colour layers that are stacked on top of each other.
+//  * The heroes are drawn for the C64 (tools/heroes.js): 24x21, an outline
+//    and a detail sprite (hi-res) over a multicolour fill.
 //  * A hand-drawn 8x8 font (upper + lower case) fills the first 96 characters.
 //
 // Run from the repo root or c64/: `node c64/tools/gen_assets.js`.
@@ -327,7 +329,30 @@ function spriteLayers(key) {
   return { data, colors: layers };
 }
 
+// the heroes: drawn for the C64 at full sprite size (tools/heroes.js) --
+// outline (hi-res), detail (hi-res) and fill (multicolour), 63 bytes each
+const HEROES = require('./heroes.js');
 const PLAYERS = ['mage', 'knight', 'whisperer'];
+function heroSprites(name) {
+  const h = HEROES[name];
+  const rows = h.rows.map(r => r + r.split('').reverse().join(''));
+  if (rows.length !== 21 || rows.some(r => r.length !== 24)) throw new Error('hero ' + name + ': rows must be 21 x 12');
+  const out = [new Uint8Array(63), new Uint8Array(63), new Uint8Array(63)];
+  const MC = { A: 1, C: 2, B: 3 };      // %01 $D025, %10 the sprite's colour, %11 $D026
+  rows.forEach((r, y) => {
+    for (let x = 0; x < 24; x++) {
+      const ch = r[x];
+      if (ch === 'o') out[0][y * 3 + (x >> 3)] |= 0x80 >> (x & 7);
+      else if (ch === 'd') out[1][y * 3 + (x >> 3)] |= 0x80 >> (x & 7);
+      else if (ch !== '.' && !MC[ch]) throw new Error(`hero ${name}: '${ch}'`);
+    }
+    for (let x = 0; x < 24; x += 2) {      // the fill, a pair at a time
+      const f = [r[x], r[x + 1]].find(ch => MC[ch]);
+      if (f) out[2][y * 3 + (x >> 3)] |= MC[f] << (6 - (x & 7));
+    }
+  });
+  return { data: out, colors: [h.colors.o, h.colors.d, h.colors.C], mc: [h.colors.A, h.colors.B] };
+}
 const BATTLE = ['slime', 'bat', 'shroom', 'fox', 'golem', 'gazer', 'spawnling', 'bogmaw', 'voltra', 'mildew', 'umbrella'];
 
 // ---------- emit C ----------
@@ -348,8 +373,10 @@ h += `#define CHARSET_BYTES ${(TILE_BASE + tiles.length * 4) * 8}\n`;
 h += 'extern const unsigned char charset[CHARSET_BYTES];\n';
 h += 'extern const unsigned char tile_color[T_COUNT][4];\n';
 h += `#define PLAYER_SPRITES ${PLAYERS.length}\n#define BATTLE_SPRITES ${BATTLE.length}\n`;
-h += 'extern const unsigned char player_spr[PLAYER_SPRITES][3][32];\n';
-h += 'extern const unsigned char player_spr_col[PLAYER_SPRITES][3];\n';
+h += '/* heroes: outline, detail (hi-res), fill (multicolour; $D025/$D026 = hero_mc) */\n';
+h += 'extern const unsigned char hero_spr[PLAYER_SPRITES][3][63];\n';
+h += 'extern const unsigned char hero_col[PLAYER_SPRITES][3];\n';
+h += 'extern const unsigned char hero_mc[PLAYER_SPRITES][2];\n';
 h += 'extern const unsigned char battle_spr[BATTLE_SPRITES][3][32];\n';
 h += 'extern const unsigned char battle_spr_col[BATTLE_SPRITES][3];\n';
 h += '\n#endif\n';
@@ -371,13 +398,15 @@ function sprBlock(name, keys, part) {
   s += all.map((sp, i) => `  { /* ${keys[i]} */\n` + sp.data.map(d => '   {' + hexBytes(d, 16).replace(/\n {2}/g, '\n    ') + '}').join(',\n') + '\n  }').join(',\n');
   return s + '\n};\n\n';
 }
-const PLAYER_KEYS = PLAYERS.map(p => 'player_' + p);
 c += '#pragma rodata-name(push, "HISPR")\n';
-c += sprBlock('player_spr', PLAYER_KEYS, 'data');
 c += sprBlock('battle_spr', BATTLE, 'data');
 c += '#pragma rodata-name(pop)\n\n';
-c += sprBlock('player_spr', PLAYER_KEYS, 'cols');
 c += sprBlock('battle_spr', BATTLE, 'cols');
+const heroes = PLAYERS.map(heroSprites);
+c += 'const unsigned char hero_spr[PLAYER_SPRITES][3][63] = {\n' + heroes.map((hs, i) =>
+  `  { /* ${PLAYERS[i]} */\n` + hs.data.map(d => '   {' + hexBytes(d, 21).replace(/\n {2}/g, '\n    ') + '}').join(',\n') + '\n  }').join(',\n') + '\n};\n\n';
+c += 'const unsigned char hero_col[PLAYER_SPRITES][3] = {\n' + heroes.map((hs, i) => `  { ${hs.colors.join(', ')} }, /* ${PLAYERS[i]} */`).join('\n') + '\n};\n\n';
+c += 'const unsigned char hero_mc[PLAYER_SPRITES][2] = {\n' + heroes.map((hs, i) => `  { ${hs.mc.join(', ')} }, /* ${PLAYERS[i]} */`).join('\n') + '\n};\n';
 
 fs.writeFileSync(path.join(OUT, 'assets.h'), h);
 fs.writeFileSync(path.join(OUT, 'assets.c'), c);

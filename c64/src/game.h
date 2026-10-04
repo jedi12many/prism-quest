@@ -134,6 +134,7 @@ extern u8 edge[40];
 
 /* ---------- sprites ---------- */
 void spr_load(u8 slot, const u8 *data);
+void hero_sprites(u8 cls);
 void spr_pos(u8 n, u16 x, u8 y);
 void spr_hide_all(void);
 

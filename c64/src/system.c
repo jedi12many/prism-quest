@@ -343,6 +343,21 @@ void spr_load(u8 slot, const u8 *data)
     POKE(0x01, 0x35);
 }
 
+/* the hero in sprites 0-2: outline and detail (hi-res) over the multicolour
+ * fill -- 24x21, drawn for the C64 (tools/heroes.js) */
+void hero_sprites(u8 cls)
+{
+    u8 i;
+    for (i = 0; i < 3; ++i) {
+        memcpy(SPR_SLOT(i), hero_spr[cls][i], 63);
+        SPR_PTR[i] = SPR_PTR2[i] = SPR_BASE + i;
+        POKE(0xD027 + i, hero_col[cls][i]);
+    }
+    POKE(0xD025, hero_mc[cls][0]);
+    POKE(0xD026, hero_mc[cls][1]);
+    POKE(0xD01C, (PEEK(0xD01C) & 0xF8) | 0x04);
+}
+
 void spr_pos(u8 n, u16 x, u8 y)
 {
     POKE(0xD000 + n * 2, x & 0xFF);
