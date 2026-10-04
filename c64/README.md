@@ -64,6 +64,17 @@ A work-in-progress port of the browser game to a stock Commodore 64 (64 KB,
   already beaten still beaten and the nodes you'd mined still mined. As in
   the web game a dungeon isn't saved: a save made inside one restarts in its
   zone.
+- **Elites:** now and then a monster spawns with one of the web game's six
+  mods: Vicious, Armored, Swift, Venomous, Cursed or Radiant. The odds are
+  about 10% in Bogmire, rising 4% a tier, and higher in dungeons.
+  - In battle: more HP; Vicious hits harder, Armored has more defense,
+    Swift often strikes twice, Venomous poisons harder, Cursed brings dread.
+  - Rewards: more XP, a guaranteed item drop, and Radiant drops rare or
+    better.
+  - The dungeon Warden is an Armored elite, and tougher still.
+  - On the map an elite flickers to a sparkle every other second, the C64's
+    version of the web game's coloured aura (the character set has no room
+    for more tiles).
 - **Monsters:** they wander, chase you within 5 tiles, can ambush you, and
   respawn after 45 s. Beat a champion and its land floods with sunlight, and
   every gloom-thing in it melts away.
@@ -139,7 +150,7 @@ A work-in-progress port of the browser game to a stock Commodore 64 (64 KB,
   bass is a triangle or a sawtooth. See *Music* below.
 - **Sound:** short SID sound effects and the thunder, on the third voice.
 
-**Not ported yet:** elites, the Rainycastle and the
+**Not ported yet:** the Rainycastle and the
 realm.
 
 ## Controls
@@ -202,7 +213,7 @@ reloaded.
 | `PQ.OV9` | the Village Ledger, and saving and loading | 2.4 KB |
 | `PQ.OV10` | the dungeon floors' generators | 2.6 KB |
 | `PQ.OV11` | the zone generator | 2.7 KB |
-| `PQ.OV12` | digging up a Prism Facet, and its whispers | 1.2 KB |
+| `PQ.OV12` | digging up a Prism Facet, a land freed, the village's layout | 2.4 KB |
 | `PQ.OV13` | the Glassworks kiln | 2.2 KB |
 | `PQ.OV14` | the Gloom Pact offer | 1.2 KB |
 
@@ -215,7 +226,7 @@ and fighting never wait on the disk. Saving loads its code with the Ledger
 first: it's a disk operation anyway. Generating a zone or a
 dungeon floor loads its generator behind the transition screen (unless it's
 still in the window from last time: going home and back out loads nothing).
-Resident memory is nearly full (about 0.5 KB free), so new screens should be
+Resident memory is nearly full (about 0.7 KB free), so new screens should be
 overlays; the resident part of a feature should be the little the world
 itself needs (camp building keeps only the buildings' effects, positions,
 names and costs resident; dungeons keep entering, leaving and the keepers'
@@ -322,6 +333,8 @@ make shot SCRIPT=test/forge.h   CYCLES=40000000   # fuse two facets at the Glass
 make shot SCRIPT=test/blade.h   CYCLES=36000000   # THE PRISMBLADE's Gear card
 make shot SCRIPT=test/pact.h    CYCLES=54000000 DEFS="-DTEST_PACT"   # seal Turtle's Patience in Bogmire
 make shot SCRIPT=test/pactledger.h CYCLES=42000000   # a pact in the Ledger
+make shot SCRIPT=test/elite.h   CYCLES=76000000 DEFS="-DTEST_ELITE=6 -DTEST_DUNGEON=0"   # a Radiant elite's spoils
+make shot SCRIPT=test/champion.h CYCLES=48000000 DEFS="-DTEST_CLEAR"   # a land freed
 make shot SCRIPT=test/gear.h    CYCLES=50000000   # inspect and equip gear
 make shot SCRIPT=test/battle.h  CYCLES=160000000  # Knight fights through Bogmire
 make shot SCRIPT=test/save.h    CYCLES=60000000   # then, keeping one disk:
@@ -355,6 +368,8 @@ make shot SCRIPT=test/home.h   CYCLES=50000000                          # out a 
 - **`-DJUKEBOX=n`:** the title screen plays tune n (0 title, 1 village,
   2 gloom, 3 battle). Record it with VICE's `-sound -sounddev wav -soundarg
   out.wav -limitcycles 50000000`; the tune starts about 15 s in.
+- **`-DTEST_ELITE=n`:** every monster that could be elite is mod n (1-6).
+- **`-DTEST_CLEAR`:** a zone is freed the moment you enter it.
 - **`-DTEST_PACT`:** test builds skip the Gloom Pact offer (the scripts
   predate it); this brings it back.
 - **`-DTEST_FACET`:** a zone's facet is buried two steps east of its entry.
@@ -380,7 +395,7 @@ make shot SCRIPT=test/home.h   CYCLES=50000000                          # out a 
 | `src/kit.c` | skill and building effects, gem helpers, the menu kit, camp menu, doors into the overlays |
 | `src/bag.c` | the Bag: polishing and Summon Dwarves |
 | `src/gear.c` | the Gear screen, item cards, faceting gems, equip/salvage |
-| `src/ov_*.c` | the overlays: title, the two dialogue halves, Spellbook, Power Tree (`ov_tree.inc`, built once per class), building the camp, the Village Ledger (with saving and loading), the dungeon floors, growing a zone, digging up a facet, the Glassworks, the Gloom Pact offer |
+| `src/ov_*.c` | the overlays: title, the two dialogue halves, Spellbook, Power Tree (`ov_tree.inc`, built once per class), building the camp, the Village Ledger (with saving and loading), the dungeon floors, growing a zone, digging up a facet, the Glassworks, the Gloom Pact offer, the village's layout and a land freed (`ov_village.c`) |
 | `src/ovl.s` | overlay file headers: load address and signature |
 | `src/loot.c` | the item engine (rarities, affixes, legendaries, set, rolling); lives in PQ.HI |
 | `src/items.c` | item stats and names (in PQ.HI too), and the Prism relics' table (resident) |
