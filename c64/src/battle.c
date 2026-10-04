@@ -10,7 +10,18 @@
 static const MonsterDef *md;
 static Mob *mob;
 static i16 mhp, mhpmax;
-static u8 mdef, tier, atk_scale;
+static u8 mdef, tier;
+static u16 atk_scale;                   /* x100 */
+static u8 el;                           /* elite: 0, or 1 + its mod */
+
+/* elites (js/data.js ELITE_MODS): name, colour, HP and attack (%), defense,
+ * XP (%). Swift strikes twice more often, Venomous poisons harder, Cursed
+ * dreads, Radiant drops something rare. */
+static const char *const elite_name[NELITE] = { "Vicious", "Armored", "Swift", "Venomous", "Cursed", "Radiant" };
+static const u8 elite_col[NELITE] = { LTRED, LTBLUE, LTGREEN, PURPLE, PURPLE, YELLOW };
+static const u8 elite_hp[NELITE] = { 6, 20, 6, 7, 8, 12 };   /* +twentieths: x1.3, x2, x1.3, x1.35, x1.4, x1.6 */
+static const u8 elite_def[NELITE] = { 0, 3, 0, 0, 0, 0 };
+static const u8 elite_xp[NELITE] = { 16, 16, 16, 16, 18, 30 };   /* +twentieths: x1.8 .. x2.5 */
 static u8 m_burn_t, m_burn_d, m_pois_t, m_pois_d, m_weak_t;
 static u8 p_shield_t, p_shield_red, p_pois_t, p_pois_d, p_dread_t;
 static u8 uni_t;
@@ -172,8 +183,8 @@ static void monster_hit(void)
     draw_status();
     if (over) return;
 
-    if ((md->flags & MF_POISON) && chance(40)) {
-        p_pois_t = 3; p_pois_d = 2;
+    if ((md->flags & MF_POISON || el == EL_VENOMOUS) && chance(40)) {
+        p_pois_t = 3; p_pois_d = el == EL_VENOMOUS ? 3 : 2;
         blog("You've been poisoned!", PURPLE);
     }
     if (p_pois_t) {
@@ -184,7 +195,7 @@ static void monster_hit(void)
         draw_status();
         if (over) return;
     }
-    if ((md->flags & MF_DREAD) && chance(35)) {
+    if ((md->flags & MF_DREAD || el == EL_CURSED) && chance(35)) {
         p_dread_t = 2;
         blog("It whispers something you should not have heard... (your damage -25%)", BLUE);
     }
@@ -201,8 +212,8 @@ static void enemy_turn(void)
 {
     if (over) return;
     monster_hit();
-    if (!over && md->double_hit && chance(md->double_hit)) {
-        blog("It attacks again!", YELLOW);
+    if (!over && chance(md->double_hit + (el == EL_SWIFT ? 50 : 0))) {
+        blog(el == EL_SWIFT ? "It blurs and strikes again!" : "It attacks again!", YELLOW);
         monster_hit();
     }
 }
@@ -318,6 +329,7 @@ static void victory(void)
     sb_reset(); sb_str(md->name); sb_str(" is defeated!");
     blog(sb, YELLOW);
     xp = (md->xp * (10 + 3 * (tier - 1)) + 5) / 10;
+    if (el) xp += xp * elite_xp[el - 1] / 20;
     xp = gain_xp(xp);
     sb_reset(); sb_str("+"); sb_num(xp); sb_str(" XP");
     blog(sb, CYAN);
@@ -430,7 +442,10 @@ void monster_loot(u8 type)
     if (md->flags & MF_BOSS) {                 /* a gloom champion */
         r = rnd(100);
         roll_item(&it, ilvl, r < 25 ? R_SET : r < 45 ? R_LEGEND : R_RARE, 0xFF);
-    } else if (chance(25)) roll_item(&it, ilvl, 0xFF, 0xFF);
+    } else if (el == EL_RADIANT)               /* radiant: something rare, at least */
+        roll_item(&it, tier < 2 ? 2 : tier * 2, chance(30) ? R_LEGEND : R_RARE, 0xFF);
+    else if (el) roll_item(&it, tier * 2, 0xFF, 0xFF);   /* elites always drop */
+    else if (chance(25)) roll_item(&it, ilvl, 0xFF, 0xFF);
     else return;
     if (!give_item(&it)) { sb_str("Bag full! The item crumbled into 2 raw Quartz."); return; }
     sb_str("Loot: "); sb_item_name(&it); sb_str(" (");
@@ -449,9 +464,14 @@ u8 battle(u8 mi, u8 ambush)
     mhpmax = mhp = (md->hp * (10 + 4 * (tier - 1)) + 5) / 10;
     atk_scale = 100 + 22 * (tier - 1);
     mdef = md->def;
-    if (map_id == MAP_DUNGEON && mi == dg.warden) {   /* the Warden: armored, and tougher */
-        mhpmax = mhp += mhp >> 1;
-        mdef += 2;
+    if ((el = mob_elite[mi])) {
+        mhpmax = mhp += (u16)mhp * elite_hp[el - 1] / 20;
+        if (el == EL_VICIOUS) atk_scale += atk_scale * 9 / 20;   /* x1.45 */
+        mdef += elite_def[el - 1];
+    }
+    if (map_id == MAP_DUNGEON && mi == dg.warden) {   /* the Warden (an armored elite): tougher still */
+        mhpmax = mhp += (u16)mhp * 3 / 5;
+        atk_scale += atk_scale * 3 / 20;
     }
     m_burn_t = m_pois_t = m_weak_t = 0;
     p_shield_t = p_pois_t = p_dread_t = 0;
@@ -463,7 +483,10 @@ u8 battle(u8 mi, u8 ambush)
     cls();
     POKE(0xD021, BLACK);
     POKE(0xD020, BLACK);
-    put_str(1, 0, md->name, (md->flags & MF_BOSS) ? YELLOW : WHITE);
+    sb_reset();
+    if (el) { sb_str(elite_name[el - 1]); sb_str(" "); }
+    sb_str(md->name);
+    put_str(1, 0, sb, el ? elite_col[el - 1] : (md->flags & MF_BOSS) ? YELLOW : WHITE);
     hero_sprites(P.cls);
     foe_spr = foe_mask[mon_sprites(md->sprite)];
     for (i = 0; i < 7; ++i)             /* both doubled: 48x42, feet level */
@@ -476,7 +499,10 @@ u8 battle(u8 mi, u8 ambush)
     log_reset(LOG_Y, LOG_ROWS);
     sb_reset();
     if (md->flags & MF_BOSS) { sb_str(md->name); sb_str(" bars your way!"); }
-    else { sb_str("A wild "); sb_str(md->name); sb_str(" appears!"); }
+    else {
+        sb_str("A wild "); if (el) { sb_str(elite_name[el - 1]); sb_str(" "); }
+        sb_str(md->name); sb_str(" appears!");
+    }
     blog(sb, WHITE);
     if (md->flags & MF_KEEPER) blog("The keeper of this place stirs - deadly, but its hoard is legendary!", YELLOW);
     else if (md->flags & MF_BOSS) blog("A champion of the gloom! Defeat it and the light returns to this land!", YELLOW);

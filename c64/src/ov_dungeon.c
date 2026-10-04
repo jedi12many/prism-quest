@@ -150,6 +150,7 @@ void build_dungeon(void)
 #endif
                     dg.warden = nmobs;
                     add_mob(x, y, dg.type == DG_HOUSE ? MO_GAZER : MO_GOLEM, 0xFF, 0xFFFF);
+                    mob_elite[dg.warden] = EL_ARMORED;   /* (js: an armored elite) */
                 }
     }
 #ifndef TEST_EMPTY                      /* (tests: no wandering monsters) */
@@ -158,6 +159,7 @@ void build_dungeon(void)
             spot();
             if (dist(x, y, ex, ey) < 4 || dist(x, y, bx, by) < 2 || crowded(2)) continue;
             add_mob(x, y, kind[t], 50 + rnd(100), 0);
+            maybe_elite(dg.tier + 1);           /* dungeons crawl with elites */
             --n;
         }
 #endif

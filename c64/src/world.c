@@ -25,6 +25,7 @@ u8 ngates;
 static u8 hud_dirty;
 u8 gate_t[MAXGATE];                     /* each gate's tile (see compose) */
 u8 mob_tile[MAXMON];                    /* each monster's */
+u8 mob_elite[MAXMON];
 static u8 gate_tile(u8 i);
 static void enter_dungeon(u8 type);
 static u8 gate_armed;
@@ -63,31 +64,6 @@ void add_gate(u8 x, u8 y, u8 kind, u8 zone)
 {
     Gate *g = &gates[ngates++];
     g->x = x; g->y = y; g->kind = kind; g->zone = zone;
-}
-
-static const u8 village_cottages[5][2] = { { 16, 3 }, { 21, 5 }, { 24, 9 }, { 20, 12 }, { 15, 12 } };
-static const u8 village_decor[8][2] = { { 16, 10 }, { 19, 11 }, { 22, 8 }, { 24, 12 }, { 14, 12 }, { 18, 13 }, { 21, 14 }, { 12, 13 } };
-
-static void build_village(void)
-{
-    u8 i, z;
-    blank_map(28, 18);
-    for (i = 0; i < 5; ++i) map[village_cottages[i][1]][village_cottages[i][0]] = T_COTTAGE;
-    for (i = 0; i < 8; ++i) map[village_decor[i][1]][village_decor[i][0]] = T_FLOWER;
-    place_buildings();                        /* your camp */
-    add_gate(18, 4, G_CLOUD, 0);
-    add_gate(12, 7, G_FORGE, 0);
-    add_gate(15, 4, G_BOARD, 0);
-    for (z = 0; z < NZONE; ++z)
-        for (i = 0; i < 2; ++i) {
-            map[zones[z].gate[i][1]][zones[z].gate[i][0]] = T_PATH;
-            add_gate(zones[z].gate[i][0], zones[z].gate[i][1], G_ZONE, z);
-        }
-    for (i = 0; i < NNPC; ++i) {
-        npcs[i].x = npc_home[i][0];
-        npcs[i].y = npc_home[i][1];
-        npcs[i].move_t = 50 + rnd(150);
-    }
 }
 
 /* the camp: each building, or its empty plot; walls round it once built,
@@ -167,14 +143,25 @@ void add_node(u8 x, u8 y, u8 m)
     n->x = x; n->y = y; n->mineral = m; n->respawn = 0;
 }
 
+/* ~10% elite in the gentlest land, 4% more each tier up (js maybeElite) */
+void maybe_elite(u8 tier)
+{
+#ifdef TEST_ELITE
+    mob_elite[nmobs - 1] = TEST_ELITE;          /* (tests: every one, as mod n) */
+#else
+    if (chance(6 + 4 * tier)) mob_elite[nmobs - 1] = 1 + rnd(NELITE);
+#endif
+}
+
 void add_mob(u8 x, u8 y, u8 type, u8 move_t, u16 respawn)
 {
-    Mob *m = &mobs[nmobs++];
+    Mob *m = &mobs[nmobs];
+    mob_elite[nmobs++] = 0;
     m->x = m->hx = x; m->y = m->hy = y;
     m->type = type; m->alive = 1; m->move_t = move_t; m->respawn = respawn;
 }
 
-static void set_palette(void)
+void set_palette(void)
 {
     u8 bg = GREEN;
     if (in_zone()) bg = zone_sunny() ? zones[map_id].bg_sun : zones[map_id].bg;
@@ -219,7 +206,7 @@ static void make_map(u8 id)
     u16 keep;
     map_id = id;
     nmobs = nnodes = ngates = 0;
-    if (id == MAP_VILLAGE) build_village();
+    if (id == MAP_VILLAGE) { ovl(OV_DIG); build_village(); }   /* (its layout rides with the dig overlay) */
     else {
         ovl(OV_LANDS);                  /* (the zone generator) */
         keep = rnd16();
@@ -628,6 +615,9 @@ static void travel(u8 id, u8 x, u8 y)
     } else {
         msg("Drizzlewick: always sunny, always safe. Rest here to heal.");
     }
+#ifdef TEST_CLEAR                       /* (tests: the land freed at once) */
+    if (in_zone()) { ovl(OV_DIG); zone_cleared(); }
+#endif
 #ifdef TEST_DUNGEON                     /* (tests: straight down the zone's first dungeon, as type n) */
     for (id = 0; id < ngates; ++id)
         if (gates[id].kind == G_DUNGEON) { gates[id].zone = TEST_DUNGEON; enter_dungeon(TEST_DUNGEON); break; }
@@ -763,24 +753,6 @@ static void mine(u8 ni)
     queue_tile(n->x, n->y);
 }
 
-static void zone_cleared(void)
-{
-    u8 i, n = 0;
-    storm_clears();                         /* the rain thins out, then the sun */
-    P.zones_cleared |= 1 << map_id;
-    music(TUNE_VILLAGE);
-    for (i = 0; i < nmobs; ++i) { mobs[i].alive = 0; mobs[i].respawn = 0xFFFF; }
-    for (i = 0; i < NZONE; ++i) if (P.zones_cleared & (1 << i)) ++n;
-    set_palette();
-    draw_map();
-    sb_reset(); sb_str("Sunlight floods "); sb_str(zones[map_id].name); sb_str("! The gloom-things melt into dew.");
-    say(0, sb);
-    if (n == NZONE) {
-        P.main_quest = 2;
-        say(0, "The last land brightens - and all the rain rushes UP at once, into a castle of cloud. The RAINYCASTLE has risen. Report to Mayor Puddle.");
-    }
-}
-
 /* fight the mob at index mi; returns 1 if the hero died */
 static u8 fight(u8 mi, u8 ambush)
 {
@@ -806,7 +778,7 @@ static u8 fight(u8 mi, u8 ambush)
             if (mi == dg.warden) { dg.has_key = 1; msg("The Warden drops a heavy key - the stair is open!"); }
             else if (k & MF_KEEPER) msg("The keeper falls, and its hoard is yours. The way out is behind you.");
         }
-        else if (k & MF_BOSS) zone_cleared();
+        else if (k & MF_BOSS) { ovl(OV_DIG); zone_cleared(); }
         else if (map_id == Z_SOUTH && P.pip_stage == 1 && P.pip_n < 5) {
             if (++P.pip_n == 5) msg("That should scare the swamp quiet - tell Pip!");
         }
@@ -930,14 +902,21 @@ static void arrive(u8 x, u8 y)
 static void shimmer(void)
 {
     u8 i, k;
+    const Node *n = nodes;
+    const Mob *m = mobs;
+    const Gate *g = gates;
     if (++prism_col > 7) prism_col = 1;
-    for (i = 0; i < nnodes; ++i)
-        if (nodes[i].mineral == PRISMATITE || nodes[i].respawn == seconds)
-            queue_tile(nodes[i].x, nodes[i].y);
-    for (i = 0; i < ngates; ++i)                /* a buried facet: a shy glint in the rain, */
-        if (gates[i].kind == G_FACET) {         /* plain to see once the sun's out */
-            k = zone_sunny() || !(seconds & 3) ? T_GLINT : map[gates[i].y][gates[i].x];
-            if (gate_t[i] != k) { gate_t[i] = k; queue_tile(gates[i].x, gates[i].y); }
+    for (i = 0; i < nnodes; ++i, ++n)
+        if (n->mineral == PRISMATITE || n->respawn == seconds) queue_tile(n->x, n->y);
+    for (i = 0; i < nmobs; ++i, ++m)            /* an elite flickers with its aura */
+        if (mob_elite[i] && m->alive) {
+            mob_tile[i] = seconds & 1 ? T_GLINT : monsters[m->type].tile;
+            queue_tile(m->x, m->y);
+        }
+    for (i = 0; i < ngates; ++i, ++g)           /* a buried facet: a shy glint in the rain, */
+        if (g->kind == G_FACET) {               /* plain to see once the sun's out */
+            k = zone_sunny() || !(seconds & 3) ? T_GLINT : map[g->y][g->x];
+            if (gate_t[i] != k) { gate_t[i] = k; queue_tile(g->x, g->y); }
         }
 }
 

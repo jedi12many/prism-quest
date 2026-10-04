@@ -324,6 +324,11 @@ typedef struct {
 } Mob;
 extern Mob mobs[MAXMON];
 extern u8 nmobs;
+/* elites (js/data.js ELITE_MODS): 0 none, else 1 + one of these */
+enum { EL_VICIOUS = 1, EL_ARMORED, EL_SWIFT, EL_VENOMOUS, EL_CURSED, EL_RADIANT };
+#define NELITE 6
+extern u8 mob_elite[MAXMON];            /* world.c, beside mobs[] (scroll.s reads those) */
+void maybe_elite(u8 tier);              /* the mob just added: elite now and then */
 
 #define MAXNODE 14
 typedef struct { u8 x, y, mineral; u16 respawn; } Node;
@@ -419,6 +424,9 @@ extern const Eff pact_eff[NPACT][4];    /* data.c (resident: eff() adds it in) *
 void offer_pact(u8 zone);               /* ov_pact.c */
 void show_glassworks(void);
 void dig_facet(u8 gate);
+void build_village(void);               /* ov_village.c, in PQ.OV12 too */
+void zone_cleared(void);
+void set_palette(void);                 /* world.c: the map's colours */
 void queue_tile(u8 x, u8 y);            /* world.c: redraw this map tile soon */
 extern u8 gate_t[MAXGATE];              /* world.c: each gate's tile */
 void ovl(u8 id);

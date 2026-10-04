@@ -133,6 +133,7 @@ void build_zone(u8 z)
             if (walkable(gx, gy) && cheb(gx, gy, ex, ey) >= 5 && cheb(gx, gy, lx, ly) >= 2
                 && !near_mob(3) && node_at(gx, gy) == 0xFF && gate_at(gx, gy) == 0xFF) {
                 add_mob(gx, gy, zd->pack_type[k], 50 + rnd(100), 0);
+                maybe_elite(zd->tier);
                 --i;
             }
         }
