@@ -27,7 +27,7 @@ u8 gate_t[MAXGATE];                     /* each gate's tile (see compose) */
 u8 mob_tile[MAXMON];                    /* each monster's */
 u8 mob_elite[MAXMON];
 static u8 gate_tile(u8 i);
-static void enter_dungeon(u8 type);
+static void enter_dungeon(u8 gi);
 static u8 gate_armed;
 static u16 heal_at;
 
@@ -580,7 +580,8 @@ static void redraw_all(void)
     POKE(0xD016, 0x18);                     /* multicolour tiles */
     set_palette();
     draw_hud();
-    arr_n = 0;
+    arr_n = 0;                              /* (a step still under way is dropped: */
+    gate_armed = gate_at(P.x, P.y) == 0xFF; /* a gate underfoot waits for you to step off) */
     sc_front = 0;                           /* (cls just blanked this one) */
     split_on();
     draw_map();
@@ -605,22 +606,25 @@ static void travel(u8 id, u8 x, u8 y)
 #endif
     calc_stats();
     P.x = x; P.y = y;
-    gate_armed = 0;
     redraw_all();
     if (in_zone()) {
         sb_reset();
         if (zone_sunny()) { sb_str(zones[id].name); sb_str(" basks in sunshine. Gloom-things cannot step into the light."); }
-        else { sb_str("You step into "); sb_str(zones[id].name); sb_str(". Somewhere ahead, its gloom champion waits."); }
+        else {
+            sb_str("You step into "); sb_str(zones[id].name);
+            sb_str(P.champ_below & (1 << id) ? ". Its champion has gone to ground - three floors down, in one of the dungeons here."
+                                             : ". Somewhere ahead, its gloom champion waits.");
+        }
         msg(sb);
     } else {
         msg("Drizzlewick: always sunny, always safe. Rest here to heal.");
     }
 #ifdef TEST_CLEAR                       /* (tests: the land freed at once) */
-    if (in_zone()) { ovl(OV_DIG); zone_cleared(); }
+    if (in_zone()) { ovl(OV_DIG); zone_cleared(id); }
 #endif
 #ifdef TEST_DUNGEON                     /* (tests: straight down the zone's first dungeon, as type n) */
     for (id = 0; id < ngates; ++id)
-        if (gates[id].kind == G_DUNGEON) { gates[id].zone = TEST_DUNGEON; enter_dungeon(TEST_DUNGEON); break; }
+        if (gates[id].kind == G_DUNGEON) { gates[id].zone = TEST_DUNGEON; enter_dungeon(id); break; }
 #endif
 }
 
@@ -652,13 +656,14 @@ static void dungeon_floor(void)
     build_dungeon();
     map_tables();
     P.x = dg.ex; P.y = dg.ey;
-    gate_armed = 0;                     /* (standing on the way out) */
     redraw_all();
 }
 
-static void enter_dungeon(u8 type)
+/* down dungeon gate gi; a land's first dungeon is where its champion lurks,
+ * if it's gone to ground */
+static void enter_dungeon(u8 gi)
 {
-    u8 i;
+    u8 i, type = gates[gi].zone;
     zone_x = P.x; zone_y = P.y;
     for (i = 0; i < nmobs; ++i) { zone_alive[i] = mobs[i].alive; zone_resp[i] = mobs[i].respawn; }
     for (i = 0; i < nnodes; ++i) zone_node[i] = nodes[i].respawn;
@@ -667,12 +672,14 @@ static void enter_dungeon(u8 type)
     dg.tier = zones[map_id].tier;
     dg.floor = 1;
     dg.floors = 2 + chance(50);
+    for (i = 0; gates[i].kind != G_DUNGEON; ++i) ;
+    if ((dg.champ = i == gi && (P.champ_below & (1 << map_id)) && !zone_sunny())) dg.floors = 3;
 #ifdef TEST_KEEPER
     dg.floors = 1;                      /* (tests: the keeper's floor first) */
 #endif
     dungeon_floor();
     sb_reset(); sb_str("You enter the "); sb_str(dungeon_name[type]); sb_str(" - ");
-    sb_num(dg.floors); sb_str(" floors deep. Deadly, but rich.");
+    sb_num(dg.floors); sb_str(dg.champ ? " floors deep. Something vast stirs at the bottom." : " floors deep. Deadly, but rich.");
     msg(sb);
 }
 
@@ -687,7 +694,6 @@ static void leave_dungeon(void)
     for (i = 0; i < nmobs; ++i) { mobs[i].alive = zone_alive[i]; mobs[i].respawn = zone_resp[i]; }
     for (i = 0; i < nnodes; ++i) nodes[i].respawn = zone_node[i];
     P.x = zone_x; P.y = zone_y;
-    gate_armed = 0;                     /* (standing on the entrance) */
     redraw_all();
     msg("You climb back out into the open.");
 }
@@ -720,7 +726,7 @@ static void on_gate(u8 gi)
         redraw_all();
         break;
     case G_DUNGEON:
-        enter_dungeon(g->zone);
+        enter_dungeon(gi);
         break;
     case G_EXIT:
         leave_dungeon();
@@ -777,8 +783,9 @@ static u8 fight(u8 mi, u8 ambush)
         if (map_id == MAP_DUNGEON) {
             if (mi == dg.warden) { dg.has_key = 1; msg("The Warden drops a heavy key - the stair is open!"); }
             else if (k & MF_KEEPER) msg("The keeper falls, and its hoard is yours. The way out is behind you.");
+            else if (k & MF_BOSS) { ovl(OV_DIG); zone_cleared(dg.zone); }   /* the champion below */
         }
-        else if (k & MF_BOSS) { ovl(OV_DIG); zone_cleared(); }
+        else if (k & MF_BOSS) { ovl(OV_DIG); zone_cleared(map_id); }
         else if (map_id == Z_SOUTH && P.pip_stage == 1 && P.pip_n < 5) {
             if (++P.pip_n == 5) msg("That should scare the swamp quiet - tell Pip!");
         }
@@ -944,7 +951,6 @@ void world_loop(void)
         if (in_zone()) { P.x = zones[map_id].entry[0]; P.y = zones[map_id].entry[1]; }
         else { P.x = 6; P.y = 6; }
     }
-    gate_armed = gate_at(P.x, P.y) == 0xFF;
     redraw_all();
     if (P.kills || P.main_quest) {
         sb_reset(); sb_str("Welcome back, "); sb_str(classes[P.cls].name); sb_str("!");

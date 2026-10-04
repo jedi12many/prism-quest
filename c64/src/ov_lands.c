@@ -137,6 +137,7 @@ void build_zone(u8 z)
                 --i;
             }
         }
-    add_mob(lx, ly, zd->champion, 0xFF, 0xFFFF);   /* champions hold their ground */
+    if (!(P.champ_below & (1 << z)))        /* (or it's gone to ground: a dungeon's bottom) */
+        add_mob(lx, ly, zd->champion, 0xFF, 0xFFFF);   /* champions hold their ground */
 }
 

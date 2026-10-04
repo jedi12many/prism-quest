@@ -461,6 +461,8 @@ u8 battle(u8 mi, u8 ambush)
     mob = &mobs[mi];
     md = &monsters[mob->type];
     tier = combat_tier();
+    if (map_id == MAP_DUNGEON && (md->flags & (MF_BOSS | MF_KEEPER)) == MF_BOSS)
+        tier = dg.tier - dg.floor + 1;      /* a champion below fights as it would above */
     mhpmax = mhp = (md->hp * (10 + 4 * (tier - 1)) + 5) / 10;
     atk_scale = 100 + 22 * (tier - 1);
     mdef = md->def;

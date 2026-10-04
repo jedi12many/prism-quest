@@ -31,7 +31,8 @@ void show_ledger(void)
     for (i = 0; i < NZONE; ++i) {
         sb_reset(); sb_str(zones[i].dir); sb_str(" - "); sb_str(zones[i].name);
         put_str(2, 8 + i, sb, WHITE);
-        put_str(30, 8 + i, (P.zones_cleared & (1 << i)) ? "sunny" : "gloom", (P.zones_cleared & (1 << i)) ? YELLOW : BLUE);
+        put_str(30, 8 + i, (P.zones_cleared & (1 << i)) ? "sunny" : (P.champ_below & (1 << i)) ? "below" : "gloom",
+                (P.zones_cleared & (1 << i)) ? YELLOW : (P.champ_below & (1 << i)) ? PURPLE : BLUE);
     }
     put_str(1, 13, "Favors:", PURPLE);
     put_str(2, 14, "Pip's lost frog", WHITE);

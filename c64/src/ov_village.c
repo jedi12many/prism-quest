@@ -32,17 +32,17 @@ void build_village(void)
     }
 }
 
-void zone_cleared(void)
+void zone_cleared(u8 z)                 /* (z: map_id is MAP_DUNGEON for a champion below) */
 {
     u8 i, n = 0;
     storm_clears();                         /* the rain thins out, then the sun */
-    P.zones_cleared |= 1 << map_id;
+    P.zones_cleared |= 1 << z;
     music(TUNE_VILLAGE);
     for (i = 0; i < nmobs; ++i) { mobs[i].alive = 0; mobs[i].respawn = 0xFFFF; }
     for (i = 0; i < NZONE; ++i) if (P.zones_cleared & (1 << i)) ++n;
     set_palette();
     draw_map();
-    sb_reset(); sb_str("Sunlight floods "); sb_str(zones[map_id].name); sb_str("! The gloom-things melt into dew.");
+    sb_reset(); sb_str("Sunlight floods "); sb_str(zones[z].name); sb_str("! The gloom-things melt into dew.");
     say(0, sb);
     if (n == NZONE) {
         P.main_quest = 2;

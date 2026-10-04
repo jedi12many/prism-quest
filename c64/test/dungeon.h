@@ -16,8 +16,8 @@ static const unsigned char autoplay[] = {
     60, R,                      /* east to the South gate column (8) */
     12, D, 250, 0,              /* through the gate (2), and down the dungeon */
     250, 0,
-    1, U, 40, 0, 1, L, 40, 0,   /* (the walk in carries him 3 east, 1 south of the */
-    1, L, 40, 0, 1, L, 250, 0,  /* way out, in the Haunted House:) back onto it, and up */
+    1, U, 40, 0, 1, L, 40, 0,   /* (the walk in leaves him off the */
+    1, L, 40, 0, 1, L, 40, 0, 1, U, 250, 0, /* way out, in the Haunted House:) back onto it, and up */
     0
 };
 #endif

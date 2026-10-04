@@ -138,8 +138,8 @@ void build_dungeon(void)
     dg.ex = ex; dg.ey = ey;
     add_gate(ex, ey, G_EXIT, 0);
 
-    if (dg.floor >= dg.floors)          /* the bottom: the keeper, holding its ground */
-        add_mob(bx, by, keeper[dg.type], 0xFF, 0xFFFF);
+    if (dg.floor >= dg.floors)          /* the bottom: the keeper (or the land's champion), holding its ground */
+        add_mob(bx, by, dg.champ ? zones[dg.zone].champion : keeper[dg.type], 0xFF, 0xFFFF);
     else {                              /* the stair down, and its Warden beside it */
         add_gate(bx, by, G_STAIRS, 0);
         for (y = by - 1; y <= by + 1; ++y)

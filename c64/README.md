@@ -64,6 +64,14 @@ A work-in-progress port of the browser game to a stock Commodore 64 (64 KB,
   already beaten still beaten and the nodes you'd mined still mined. As in
   the web game a dungeon isn't saved: a save made inside one restarts in its
   zone.
+- **Underground champions:** a new game decides, land by land, whether the
+  land's gloom champion waits on the surface or has gone to ground at the
+  bottom of the land's first dungeon (cave, ruins or house alike). A
+  champion that has gone to ground always makes that dungeon three floors deep
+  and takes the keeper's place. Arriving in the land tells you which it is,
+  and so does the Ledger, which lists such a land as "below" in purple. The
+  champion fights at the land's own tier. Beat it down there and the land
+  floods with sunlight as usual.
 - **Elites:** now and then a monster spawns with one of the web game's six
   mods: Vicious, Armored, Swift, Venomous, Cursed or Radiant. The odds are
   about 10% in Bogmire, rising 4% a tier, and higher in dungeons.
@@ -328,6 +336,7 @@ make shot SCRIPT=test/camp.h    CYCLES=90000000   # polish, craft, learn skills
 make shot SCRIPT=test/build.h   CYCLES=56000000   # build the Kitchen, the walls; the Ledger
 make shot SCRIPT=test/delve.h   CYCLES=80000000 DEFS="-DTEST_DUNGEON=1 -DTEST_EMPTY -DTEST_NEAR"   # Warden, key, floor 2
 make shot SCRIPT=test/keeper.h  CYCLES=80000000 DEFS="-DTEST_DUNGEON=0 -DTEST_EMPTY -DTEST_NEAR -DTEST_KEEPER"
+make shot SCRIPT=test/below.h   CYCLES=105000000 DEFS="-DTEST_DUNGEON=1 -DTEST_EMPTY -DTEST_NEAR -DTEST_KEEPER"   # Bogmaw below, then out into sun
 make shot SCRIPT=test/facet.h   CYCLES=56000000 DEFS="-DTEST_FACET"   # dig up the Crimson Facet
 make shot SCRIPT=test/forge.h   CYCLES=40000000   # fuse two facets at the Glassworks
 make shot SCRIPT=test/blade.h   CYCLES=36000000   # THE PRISMBLADE's Gear card
@@ -378,8 +387,10 @@ make shot SCRIPT=test/home.h   CYCLES=50000000                          # out a 
   `-DTEST_EMPTY` leaves out the wandering monsters, `-DTEST_NEAR` puts the
   Warden right east of the entry with the stair (or the keeper) beyond it,
   and `-DTEST_KEEPER` makes the first floor the last. See `test/dungeon.h`
-  (in and back out), `test/delve.h` (the Warden, the key, floor 2) and
-  `test/keeper.h` (the keeper's fight).
+  (in and back out), `test/delve.h` (the Warden, the key, floor 2),
+  `test/keeper.h` (the keeper's fight) and `test/below.h` (a champion gone
+  to ground). Test builds (`TEST_SEED`) keep every champion on the surface
+  unless the script's `TEST_SETUP` sets `P.champ_below`.
 - **`-DCHECK`:** after each swap, renders the whole view from scratch into the
   idle back screen and compares it with the screen on show. It prints checks
   (cyan) and mismatches (red), which should be 0.

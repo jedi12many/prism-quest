@@ -287,6 +287,7 @@ typedef struct {
     u8 base[NBLD];         /* camp building levels, 0 = not built */
     u8 facets;             /* Prism Facets dug up, bitmask by zone id */
     u8 pact;               /* the Gloom Pact sealed for this land: 1 + its number, 0 none */
+    u8 champ_below;        /* lands whose champion lurks at the bottom of a dungeon, by zone id */
     u8 x, y;
     u8 map;                /* MAP_VILLAGE or a zone id */
     Item equip[NSLOT];
@@ -357,6 +358,7 @@ typedef struct {
     u8 has_key;            /* the Warden's fallen: the stair is open */
     u8 warden;             /* its mob index, 0xFF none */
     u8 ex, ey;             /* the way out (the floor's entry) */
+    u8 champ;              /* the land's champion waits on the last floor (instead of a keeper) */
 } Dungeon;
 extern Dungeon dg;
 u8 combat_tier(void);              /* the difficulty where we stand */
@@ -425,7 +427,7 @@ void offer_pact(u8 zone);               /* ov_pact.c */
 void show_glassworks(void);
 void dig_facet(u8 gate);
 void build_village(void);               /* ov_village.c, in PQ.OV12 too */
-void zone_cleared(void);
+void zone_cleared(u8 z);
 void set_palette(void);                 /* world.c: the map's colours */
 void queue_tile(u8 x, u8 y);            /* world.c: redraw this map tile soon */
 extern u8 gate_t[MAXGATE];              /* world.c: each gate's tile */

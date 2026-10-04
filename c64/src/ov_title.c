@@ -22,6 +22,9 @@ void new_game(u8 cls)
     P.x = 6; P.y = 6;
     P.map = MAP_VILLAGE;
     P.base[B_HOUSE] = 1;                    /* a cozy cabin to start */
+#ifndef TEST_SEED                           /* (tests: all on the surface, and the old dice rolls) */
+    P.champ_below = rnd(16);                /* each land's champion: on the surface, or gone to ground */
+#endif
     for (c = 0; c < NSLOT; ++c) P.equip[c].kind = 0xFF;
     roll_item(&P.equip[SL_WEAPON], 1, R_COMMON, SL_WEAPON);   /* a humble starter weapon */
 #ifdef TEST_SETUP
