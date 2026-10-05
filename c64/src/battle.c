@@ -509,7 +509,7 @@ u8 battle(u8 mi, u8 ambush)
     cls();
     POKE(0xD021, BLACK);
     POKE(0xD020, BLACK);
-    foe_spr = foe_mask[mon_sprites(md->sprite)];    /* (first: it may load the big foes' overlay, with the castle's cries) */
+    foe_spr = foe_mask[mon_sprites(md->sprite)];    /* (first: it may load the big foes' overlay, with the cries) */
     sb_reset();
     if (el) { sb_str(elite_name[el - 1]); sb_str(" "); }
     sb_str(md->name);
@@ -530,7 +530,8 @@ u8 battle(u8 mi, u8 ambush)
         sb_str(md->name); sb_str(" appears!");
     }
     blog(sb, WHITE);
-    if (md->sprite >= CASTLE_SPRITE0) blog(castle_cry[md->sprite - CASTLE_SPRITE0], YELLOW);
+    if (md->sprite >= SPECIAL_SPRITE0) blog(boss_cry[md->sprite - SPECIAL_SPRITE0], YELLOW);   /* (a named villain's cry) */
+    if (md->sprite >= CASTLE_SPRITE0) { }   /* (the castle's and realm's: their cry is all they say) */
     else if (md->flags & MF_KEEPER) blog("The keeper of this place stirs - deadly, but its hoard is legendary!", YELLOW);
     else if (md->flags & MF_BOSS) blog("A champion of the gloom! Defeat it and the light returns to this land!", YELLOW);
     else if (map_id == MAP_DUNGEON && mi == dg.warden) blog("The Warden! It carries the key to the stair.", YELLOW);

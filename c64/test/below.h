@@ -21,7 +21,8 @@ static const unsigned char autoplay[] = {
     250, 0, 250, 0,             /* into Bogmire, and down */
     1, R, 40, 0, 1, R, 150, 0,  /* east, and bump the champion */
     BONK, BONK, BONK, BONK, BONK, PRESS(F), 250, 0,
-    250, 0, PRESS(F), 150, 0,   /* (the sun, from below) */
+    250, 0, PRESS(F), 60, 0, PRESS(F), 60, 0,   /* (its last words) */
+    PRESS(F), 150, 0,           /* (the sun, from below) */
     1, L, 250, 0, 250, 0,       /* onto the way out: up */
     0
 };

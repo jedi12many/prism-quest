@@ -1,17 +1,23 @@
-/* Overlay: the big foes -- the dungeon keepers' and the Rainycastle's
- * battle portraits (foe_art, assets.c), and the castle's foes' names, battle
- * cries and falls (js/data.js BOSS_INTROS, BOSS_EULOGY; js/battle.js).
- * mon_sprites() loads it for any of their fights, so all of this is in the
- * window for the battle and just after it. */
+/* Overlay: the big foes -- the dungeon keepers', the castle's and the realm's
+ * battle portraits (foe_art, assets.c), and every named villain's battle cry
+ * as it bars your way (js/data.js BOSS_INTROS). mon_sprites() loads it for
+ * any of their fights, the champions' too (their portraits are under I/O,
+ * but their cries are here), so the cry is in the window as the fight opens. */
 #include "game.h"
 
 #pragma code-name("OVFOESCODE")
 #pragma rodata-name("OVFOESDATA")
 #pragma bss-name("OVFOESDATA")
 
-static u8 i;
-
-const char *const castle_cry[6] = {
+/* by battle sprite, from SPECIAL_SPRITE0 (Bogmaw's) on */
+const char *const boss_cry[NSPECIAL] = {
+    "\"GLORP. This swamp has drowned ninety-nine heroes. You make it a nice round number.\"",
+    "\"Ssssso. A little spark crawls in... to challenge the storm itself.\"",
+    "\"Everything rots. Everything joins us. You will make LOVELY compost.\"",
+    "\"A hundred years I have kept the rain off my betters. You? You are merely damp.\"",
+    "\"HRRN. Shiny go in cave. Hero go in cave. Cave keeps ALL.\"",
+    "\"I have guarded these stones since before your sun. Kneel, or be rubble.\"",
+    "\"Ahaha - a VISITOR! Stay. Stay forever. Everyone here does.\"",
     "\"None climb past me. The storm keeps its crown, and I keep its stair.\"",
     "\"I have called this rain down for a hundred years. I will call your name down next.\"",
     "\"I AM THE STORM'S TOOTH, groundling. The sky was never yours.\"",
@@ -19,44 +25,3 @@ const char *const castle_cry[6] = {
     "\"I am the last dark before the dark. Everything bright ends in me.\"",
     "\"little light. i have drowned ten thousand dawns. yours will not even ripple.\"",
 };
-/* as each falls, who it was before the rain (js/data.js BOSS_EULOGY) */
-static const char *const eulogy[5] = {
-    "\"I kept the stair so no one would ever have to see what waits at the top of it. ...go on, then. Someone finally has to.\"",
-    "\"I called the rain down a hundred years - it swore it would stop if I served. It lied. It always, always lied.\"",
-    "\"I was the last cloud that still remembered being sky. It fed on me, and fed, and made a serpent of my longing. "
-    "The mouth below made ALL of us, groundling - and it is still hungry. Climb down. See.\"",
-    "\"I heard it first, and could never be silent again. You are almost close enough now. ...soon you will hear it too.\"",
-    "\"You are the first light to reach this deep in a hundred years. It felt you arrive. It is glad.\"",
-};
-
-void foe_won(u8 mi)
-{
-    u8 t = mobs[mi].type;
-    if (monsters[t].flags & MF_KEEPER) {
-        msg("The keeper falls, and its hoard is yours. The way out is behind you.");
-        if ((deeds.keepers |= 1 << (t - MO_TROLL)) == 7) deed(DE_KEEPERS);
-    }
-    else if (t == MO_WYRM) {
-        P.castle |= CA_WYRM;
-        deed(DE_STORMBREAKER);
-        if (P.main_quest < 5) P.main_quest = 5;
-        say(monsters[t].name, eulogy[2]);
-        add_gate(15, 7, G_CASTLE, CG_HOARD);    /* its hoard settles where it fell */
-        gate_t[ngates - 1] = T_NODE;
-        queue_tile(15, 7);
-        msg("The Rainwyrm bursts into mist - leaving a great hoard amid the clouds. Claim it!");
-    } else if (t == MO_SENTINEL || t == MO_RAINCALLER) {
-        i = t == MO_SENTINEL ? 0 : 1;
-        P.castle |= 1 << i;
-        dg.has_key = 1;
-        say(monsters[t].name, eulogy[i]);
-        msg("The storm-wards fade - the stair up is open!");
-    } else if (t == MO_HERALD || t == MO_VOIDMAW) {
-        dg.has_key = 1;
-        say(monsters[t].name, eulogy[t - MO_HERALD + 3]);
-        msg("The rift down stands open.");
-    } else if (t == MO_SOG) {               /* the end: world.c brings on ov_end.c */
-        P.castle |= CA_SUN;
-        P.main_quest = 7;
-    }
-}

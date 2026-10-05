@@ -387,8 +387,8 @@ void build_castle(void);           /* ov_castle.c: floor dg.floor */
 void castle_hello(void);           /* the floor's greeting, on arriving */
 u8 castle_gate(u8 gi);             /* a castle gate, or the Cloudgate: 1 down to the village, 2 to dg.floor at dg.ex, dg.ey */
 /* (ov_foes.c, loaded for any fight with a keeper or the castle's foes:) */
-void foe_won(u8 mi);               /* after beating mobs[mi], one of them */
-extern const char *const castle_cry[6];        /* the guardians', the Wyrm's and Sog'naroth's battle cries */
+void foe_won(u8 mi);               /* ov_fall.c: after beating mobs[mi], a named villain */
+extern const char *const boss_cry[];           /* ov_foes.c: every named villain's, as it bars your way */
 void the_end(void);                /* ov_end.c: Sog'naroth falls, the sun comes back */
 void build_realm(void);            /* ov_realm.c: depth dg.floor */
 void realm_hello(void);
@@ -456,7 +456,8 @@ enum { OV_TITLE = 1, OV_TALKA, OV_TALKB, OV_CAMP, OV_TREE };   /* OV_TREE + clas
 #define OV_BAG 20                       /* the Bag: polishing, the dwarves */
 #define OV_SANCT 21                     /* the Sanctuary */
 #define OV_BOSS 22                      /* the bosses' specials */
-#define OV_COUNT 22
+#define OV_FALL 23                      /* a named villain falls */
+#define OV_COUNT 23
 
 /* a boss's signature blow (ov_boss.c), by battle sprite from SPECIAL_SPRITE0 */
 #define SPECIAL_SPRITE0 7                /* (Bogmaw's: the champions, keepers, castle's and realm's after) */

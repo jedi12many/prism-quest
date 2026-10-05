@@ -384,7 +384,8 @@ u8 mon_sprites(u8 m)
     const u8 *src = mon_art + mon_off[m];
     u8 n = mon_nl[m], l, i, k, b0, b1;
     u8 *d;
-    if (m >= KEEPER_SPRITE0) { ovl(OV_FOES); src = foe_art + mon_off[m]; }   /* (the big foes': their overlay) */
+    if (m >= SPECIAL_SPRITE0) ovl(OV_FOES);   /* (a named villain: its cry; past the champions, its portrait too) */
+    if (m >= KEEPER_SPRITE0) src = foe_art + mon_off[m];
     for (l = 0; l < n; ++l) {
         POKE(0x01, 0x34);                   /* (the art is under I/O; the big foes' isn't: RAM either way) */
         for (i = 0, k = 6; i < 42; ++i) half[i] = (src[i >> 3] & bit[i & 7]) ? src[k++] : 0;

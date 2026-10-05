@@ -8,6 +8,7 @@
 ;   15 the Rainycastle's floors   16 the big foes: the keepers', the castle's and the realm's portraits, and more
 ;   17 the ending   18 Sog'naroth's realm   19 the deeds   20 the Bag
 ;   21 the Sanctuary   22 the bosses' specials
+;   23 a named villain falls
         .import __OVL_START__
         .segment "OV1LOAD"
         .word   __OVL_START__
@@ -97,3 +98,7 @@
         .word   __OVL_START__
         .segment "OV22SIG"
         .byte   $4F, 22
+        .segment "OV23LOAD"
+        .word   __OVL_START__
+        .segment "OV23SIG"
+        .byte   $4F, 23

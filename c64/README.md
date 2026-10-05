@@ -135,6 +135,11 @@ A work-in-progress port of the browser game to a stock Commodore 64 (64 KB,
   - The tallies (elites slain, keepers beaten, runs) are written with each
     new deed and when a run ends. Switching off mid-run can lose the latest
     ones, but never a deed that's already been announced.
+- **Named villains speak:** each of the thirteen opens its fight with its
+  cry from `js/data.js` BOSS_INTROS ("GLORP. This swamp has drowned
+  ninety-nine heroes..."). Each falls with its last words from BOSS_EULOGY,
+  who it was before the rain, before the land floods with sun or the way on
+  opens. Sog'naroth's words close the ending.
 - **Boss specials (from `js/data.js` BOSS_SPECIALS):** all thirteen named
   villains (the four champions, the three keepers, the castle's three and the
   realm's three) have a signature blow. Every third turn, and always the
@@ -302,13 +307,14 @@ reloaded.
 | `PQ.OV13` | the Glassworks kiln | 2.2 KB |
 | `PQ.OV14` | the Gloom Pact offer, and stepping into a land under the gloom | 1.4 KB |
 | `PQ.OV15` | the Rainycastle's floors, its gates, the Wyrm's hoard and the portal (and the Cloudgate) | 2.4 KB |
-| `PQ.OV16` | the big foes: the dungeon keepers', the castle's and the realm's battle portraits, and the castle's and realm's foes' names, cries and falls | 2.6 KB |
+| `PQ.OV16` | the big foes: the keepers', the castle's and the realm's battle portraits, and every named villain's battle cry | 1.8 KB |
 | `PQ.OV17` | the ending | 2.0 KB |
 | `PQ.OV18` | Sog'naroth's realm: its depths and rifts | 1.2 KB |
 | `PQ.OV19` | the deeds: telling of new ones, the Deeds page | 2.7 KB |
 | `PQ.OV20` | the Bag: polishing and Summon Dwarves | 2.2 KB |
 | `PQ.OV21` | the Sanctuary, and the game-over screen | 2.7 KB |
 | `PQ.OV22` | the bosses' specials, and the blow itself | 2.2 KB |
+| `PQ.OV23` | a named villain falls: its last words, and what its fall opens | 2.3 KB |
 
 On a stock 1541 each takes roughly 5–7 seconds (about 400 bytes a second);
 a "Loading" note shows in the corner meanwhile. Overlays are kept to about
@@ -329,10 +335,10 @@ at a moment when some overlay is already in the window rides in that
 overlay: arriving in a land under the gloom shows its line from the pact
 overlay, and coming home shows the village's line from the village's.
 
-A fight with a dungeon keeper or one of the castle's or realm's foes loads `PQ.OV16`
-first (`mon_sprites`), because their portraits are there. Battles load
-nothing else, so the castle's names and battle cries can live there too,
-and so can what happens when one of them falls (`foe_won`).
+A fight with any named villain loads `PQ.OV16` first (`mon_sprites`), for its
+portrait (champions' portraits are under I/O, but their cries are there).
+Its specials load the first time it gathers its power (`PQ.OV22`), and its
+fall loads `PQ.OV23`. So a boss fight costs up to three short loads.
 
 ## Smooth scrolling
 

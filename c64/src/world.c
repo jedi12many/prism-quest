@@ -798,11 +798,11 @@ static u8 fight(u8 mi, u8 ambush)
     if (r == 1) {
         md = &monsters[mobs[mi].type];
         if (map_id == MAP_DUNGEON && mi == dg.warden) { dg.has_key = 1; msg("The Warden drops a heavy key - the stair is open!"); }
-        else if (md->sprite >= KEEPER_SPRITE0) {
-            ovl(OV_FOES); foe_won(mi);      /* (in already, for the fight) */
-            if (mobs[mi].type == MO_SOG) { ovl(OV_END); the_end(); travel(MAP_VILLAGE, 18, 4); save_game(); }
+        else if (md->sprite >= SPECIAL_SPRITE0) {   /* a named villain: its last words, and what its fall opens */
+            ovl(OV_FALL); foe_won(mi);
+            if (md->sprite < KEEPER_SPRITE0) { ovl(OV_DIG); zone_cleared(map_id == MAP_DUNGEON ? dg.zone : map_id); }
+            else if (mobs[mi].type == MO_SOG) { ovl(OV_END); the_end(); travel(MAP_VILLAGE, 18, 4); save_game(); }
         }
-        else if (md->flags & MF_BOSS) { ovl(OV_DIG); zone_cleared(map_id == MAP_DUNGEON ? dg.zone : map_id); }
         else if (map_id == Z_SOUTH && P.pip_stage == 1 && P.pip_n < 5) {
             if (++P.pip_n == 5) msg("That should scare the swamp quiet - tell Pip!");
         }
