@@ -33,6 +33,9 @@ void new_game(u8 cls)
 #endif
     for (c = 0; c < NSLOT; ++c) P.equip[c].kind = 0xFF;
     roll_item(&P.equip[SL_WEAPON], 1, R_COMMON, SL_WEAPON);   /* a humble starter weapon */
+    P.skill_points += deeds.rank[SA_TRAINED];                   /* the Sanctuary's gifts */
+    P.polished[QUARTZ][Q_FINE] = 2 * deeds.rank[SA_PROSPECTOR];
+    if (deeds.rank[SA_ARSENAL]) roll_item(&P.equip[SL_WEAPON], 3, R_MAGIC, SL_WEAPON);
 #ifdef TEST_SETUP
     TEST_SETUP
 #endif
@@ -42,19 +45,27 @@ void new_game(u8 cls)
 
 /* ---------- title ---------- */
 
+#define SANCT (NCLASS + 1)                /* (the menu's last line) */
 static void show_class(u8 c)
 {
     u8 i;
     put_ch(3, 17, c == NCLASS ? CH_POINTER : 0, YELLOW);
     put_str(5, 17, "Continue from disk", c == NCLASS ? YELLOW : PURPLE);
-    if (c == NCLASS) {
+    put_ch(24, 17, c == SANCT ? CH_POINTER : 0, YELLOW);
+    put_str(26, 17, "The Sanctuary", c == SANCT ? YELLOW : PURPLE);
+    if (c >= NCLASS) {
         POKE(0xD015, 0);
         for (i = 0; i < NCLASS; ++i) {
             put_ch(3, 11 + i * 2, 0, YELLOW);
             put_str(5, 11 + i * 2, classes[i].name, WHITE);
         }
         clear_rows(18, 21);
-        wrap("Load your saved hero from the disk in the drive.", 18, 2, CYAN);
+        if (c == NCLASS) wrap("Load your saved hero from the disk in the drive.", 18, 2, CYAN);
+        else {
+            sb_reset(); sb_str("Spend the Motes fallen heroes left behind: "); sb_num(deeds.motes);
+            sb_str(" to spend. Every hero after you is the stronger.");
+            wrap(sb, 18, 3, CYAN);
+        }
         return;
     }
     hero_sprites(c);
@@ -67,7 +78,7 @@ static void show_class(u8 c)
     }
     clear_rows(18, 21);
     wrap(class_blurb[c], 18, 2, CYAN);
-    sb_reset(); sb_str("HP "); sb_num(classes[c].hp + 10); sb_str("  ATK "); sb_num(classes[c].atk);
+    sb_reset(); sb_str("HP "); sb_num(classes[c].hp + 10 + 8 * deeds.rank[SA_HEARTY]);   /* (the House, the Sanctuary) */ sb_str("  ATK "); sb_num(classes[c].atk);
     sb_str("  MAG "); sb_num(classes[c].mag); sb_str("  DEF "); sb_num(classes[c].def);
     put_center(21, sb, WHITE);
 }
@@ -96,8 +107,8 @@ u8 title_screen(void)
 #endif
     for (;;) {
         wait_frame(); input_poll();
-        if (in_new & IN_UP) { c = c ? c - 1 : NCLASS; show_class(c); }
-        if (in_new & IN_DOWN) { c = c == NCLASS ? 0 : c + 1; show_class(c); }
+        if (in_new & IN_UP) { c = c ? c - 1 : SANCT; show_class(c); }
+        if (in_new & IN_DOWN) { c = c == SANCT ? 0 : c + 1; show_class(c); }
         if (key_hit(K_1)) { c = 0; break; }
         if (key_hit(K_2)) { c = 1; break; }
         if (key_hit(K_3)) { c = 2; break; }
@@ -111,28 +122,6 @@ u8 title_screen(void)
     POKE(0xD015, 0);
     POKE(0xD017, 0); POKE(0xD01D, 0);
     return c;
-}
-
-/* ---------- rogue-like death ---------- */
-
-void game_over(void)
-{
-    POKE(0xD015, 0);
-    music(TUNE_NONE);
-    erase_save();                       /* one life: the save falls with the hero */
-    ++deeds.runs; ++deeds.losses;               /* (main() writes the deeds' file) */
-    cls();
-    POKE(0xD020, BLACK); POKE(0xD021, BLACK);
-    sb_reset(); sb_str(classes[P.cls].name); sb_str(" has fallen.");
-    put_center(6, sb, RED);
-    put_center(8, "The gloom claims another hero...", WHITE);
-    sb_reset(); sb_str("Level "); sb_num(P.level); sb_str("  -  "); sb_num(lands_freed());
-    sb_str("/4 lands freed  -  "); sb_num(P.kills); sb_str(" kills");
-    put_center(11, sb, CYAN);
-    put_center(14, "Drizzlewick will light a candle", PURPLE);
-    put_center(15, "for you - and send the next.", PURPLE);
-    put_center(20, "Press fire", BLUE);
-    wait_fire();
 }
 
 /* "Continue from disk" found nothing to continue: say why (reason in sb) */

@@ -10,11 +10,15 @@
  * the high byte of the result), which silently disabled the first 8 skills. */
 u8 skill_owned(u8 b, u8 t) { return (P.skills >> (b * 5 + t)) & 1; }
 
+/* the Sanctuary's always-on upgrades, per rank */
+static const Eff sanct_eff[NSANCT_EFF] = { { E_HPMAX, 8 }, { E_XPGAIN, 6 }, { E_DODGE, 3 }, { E_CRIT, 3 } };
+
 i16 eff(u8 key)
 {
     i16 v = 0;
     u8 b, t, k;
     const Eff *e;
+    for (k = 0, e = sanct_eff; k < NSANCT_EFF; ++k, ++e) if (e->key == key) v += e->val * deeds.rank[k];
     for (k = 0; k < 2; ++k)
         if (class_perk[P.cls][k].key == key) v += class_perk[P.cls][k].val;
     v += gear_eff(key);
@@ -112,7 +116,7 @@ extern u8 __fastcall__ disk_op(u8 op);
 extern u16 disk_start, disk_end;
 void disk_file(const char *s);
 enum { OP_SAVE, OP_LOAD, OP_CMD };
-#define DEEDS_VERSION 1
+#define DEEDS_VERSION 2                 /* 2: the Sanctuary */
 
 /* at startup: the disk's deeds, or a fresh slate */
 void deeds_read(void)
@@ -137,6 +141,40 @@ void deeds_write(void)
 }
 
 u8 deeds_news(void) { return (deeds.got[0] ^ deeds_told[0]) | (deeds.got[1] ^ deeds_told[1]) | (deeds.got[2] ^ deeds_told[2]); }
+
+/* ---------- rogue-like death (resident: the overlays were full) ---------- */
+
+void game_over(void)
+{
+    POKE(0xD015, 0);
+    music(TUNE_NONE);
+    erase_save();                       /* one life: the save falls with the hero */
+    ++deeds.runs; ++deeds.losses;               /* (main() writes the deeds' file) */
+    cls();
+    POKE(0xD020, BLACK); POKE(0xD021, BLACK);
+    sb_reset(); sb_str(classes[P.cls].name); sb_str(" has fallen.");
+    put_center(6, sb, RED);
+    put_center(8, "The gloom claims another hero...", WHITE);
+    sb_reset(); sb_str("Level "); sb_num(P.level); sb_str("  -  "); sb_num(lands_freed());
+    sb_str("/4 lands freed  -  "); sb_num(P.kills); sb_str(" kills");
+    put_center(11, sb, CYAN);
+    put_center(14, "Drizzlewick will light a candle", PURPLE);
+    put_center(15, "for you - and send the next.", PURPLE);
+    {   /* the Sanctuary: the Motes this hero leaves behind, and their name on the roll */
+        u16 m = P.kills * 2 + lands_freed() * 15 + P.level * 3 + (P.castle & CA_SUN ? 100 : 0);
+        Fallen *f = &deeds.fallen[NFALLEN - 1];
+        deeds.motes = deeds.motes + m < deeds.motes ? 0xFFFF : deeds.motes + m;
+        memmove(deeds.fallen, deeds.fallen + 1, sizeof(Fallen) * (NFALLEN - 1));
+        f->cls = P.cls + 1;                     /* (0: an empty line) */
+        f->level = P.level;
+        f->zones = lands_freed();
+        f->where = map_id < NZONE ? map_id : NZONE + (map_id == MAP_DUNGEON ? dg.type : (P.castle & CA_REALM) && !(P.castle & CA_SUN) ? DG_REALM : DG_CASTLE);
+        sb_reset(); sb_str("+"); sb_num(m); sb_str(" Motes for the Sanctuary");
+        put_center(17, sb, YELLOW);
+    }
+    put_center(20, "Press fire", BLUE);
+    wait_fire();
+}
 
 /* ---------- the camp menu (fire in the world) ---------- */
 

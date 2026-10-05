@@ -6,7 +6,7 @@
 #define R 0x08
 #define F 0x10
 #define B 0x20
-#define TEST_SEED 777                  /* (any seed whose wander meets a monster: timing shifts move it) */
+#define TEST_SEED 31337                 /* (any seed whose wander meets a monster: timing shifts move it) */
 #define WANDER(dir) 40, dir, 2, B, 6, 0, 2, B, 6, 0, 2, F, 2, L, 6, 0
 #define LOOP WANDER(D), WANDER(L), WANDER(D), WANDER(R), WANDER(D), WANDER(R), \
              WANDER(U), WANDER(L), WANDER(D), WANDER(R), WANDER(U), WANDER(R)

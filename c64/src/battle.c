@@ -127,6 +127,9 @@ static void player_damage(i16 dmg)
 {
     i16 r;
     if (over) return;
+#ifdef TEST_FRAIL
+    dmg = 9999;                         /* (tests: any hit fells the hero) */
+#endif
     P.hp -= dmg;
     if (P.hp * 10 < P.hpmax * 3) P.hurt = 1;    /* (no Untouchable this run) */
     if (P.hp > 0) return;

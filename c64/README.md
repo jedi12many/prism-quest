@@ -136,6 +136,18 @@ A work-in-progress port of the browser game to a stock Commodore 64 (64 KB,
   - The tallies (elites slain, keepers beaten, runs) are written with each
     new deed and when a run ends. Switching off mid-run can lose the latest
     ones, but never a deed that's already been announced.
+- **The Sanctuary:** every fallen hero leaves Motes behind (2 per kill, 15
+  per land freed, 3 per level, and 100 more if they'd brought the sun back),
+  shown on the game-over screen. "The Sanctuary" on the title screen spends
+  them on the web game's seven upgrades:
+  - for every hero: Hearty (+8 max HP), Veteran (+6% XP), Fleet-footed (+3%
+    dodge) and Keen Eye (+3% crit), each per rank;
+  - for each new hero: Well-Trained (+1 skill point), Prospector (2 Fine
+    Quartz) and Arsenal (a Magic weapon).
+
+  It also keeps the roll of the fallen (the last eight: class, level, where
+  they fell, lands freed) and the suns brought back. Like the deeds, all of it
+  lives in `PQ.DEEDS`, the disk's file.
 - **Spellbook:** craft all ten spells from polished gems, using the original
   recipes. Better cuts give more charges (base + average quality + Echo Casting).
   Crafting only works in Drizzlewick.
@@ -202,7 +214,7 @@ A work-in-progress port of the browser game to a stock Commodore 64 (64 KB,
   bass is a triangle or a sawtooth. See *Music* below.
 - **Sound:** short SID sound effects and the thunder, on the third voice.
 
-**Not ported:** the web game's difficulty setting and the Sanctuary.
+**Not ported:** the web game's difficulty setting.
 
 ## Controls
 
@@ -214,6 +226,7 @@ A work-in-progress port of the browser game to a stock Commodore 64 (64 KB,
 | Confirm, next page | Fire, Space or Return |
 | Camp menu (Bag, Gear, Spellbook, Power Tree, Build, Ledger, Deeds, Save) | Fire while standing still |
 | Load a saved hero | "Continue from disk" on the title screen |
+| Spend Motes | "The Sanctuary" on the title screen |
 | Bag / Gear / Spellbook / Power Tree | I / G / C / T |
 | Back out of a menu | Left, R or RUN/STOP |
 | Battle menu | Left/right then fire, or **B**onk, **S**pell, **R**un |
@@ -273,6 +286,7 @@ reloaded.
 | `PQ.OV18` | Sog'naroth's realm: its depths and rifts | 1.2 KB |
 | `PQ.OV19` | the deeds: telling of new ones, the Deeds page | 2.7 KB |
 | `PQ.OV20` | the Bag: polishing and Summon Dwarves | 2.2 KB |
+| `PQ.OV21` | the Sanctuary | 1.9 KB |
 
 On a stock 1541 each takes roughly 5–7 seconds (about 400 bytes a second);
 a "Loading" note shows in the corner meanwhile. Overlays are kept to about
@@ -285,7 +299,7 @@ the window. Saving loads its code with the Ledger
 first: it's a disk operation anyway. Generating a zone or a
 dungeon floor loads its generator behind the transition screen (unless it's
 still in the window from last time: going home and back out loads nothing).
-Resident memory is nearly full (about 2.4 KB free, after the Bag moved out), so new screens should be
+Resident memory is nearly full (about 1.5 KB free, after the Bag moved out and the game-over screen moved in), so new screens should be
 overlays; the resident part of a feature should be the little the world
 itself needs (camp building keeps only the buildings' effects, positions,
 names and costs resident; dungeons keep entering and leaving). Text shown
@@ -407,6 +421,7 @@ make shot SCRIPT=test/deeds.h   CYCLES=10 DEFS="-DTEST_CLEAR -DTEST_DEEDS"   # (
 tools/vicerun.py build/test.prg build/deeds.png 110000000 build/deeds.d64    # First Light, told and written
 make shot SCRIPT=test/deeds2.h  CYCLES=10         # (just to build it)
 tools/vicerun.py build/test.prg build/deeds2.png 50000000 build/deeds.d64   # a new hero: the deed's still there
+make shot SCRIPT=test/sanct.h   CYCLES=130000000 DEFS="-DTEST_DUNGEON=0 -DTEST_EMPTY -DTEST_NEAR -DTEST_KEEPER -DTEST_FRAIL -DTEST_MOTES=100"   # fall, bank Motes, buy, a hardier hero
 make shot SCRIPT=test/realm.h   CYCLES=185000000 DEFS="-DTEST_EMPTY -DTEST_WEAK -DTEST_NEAR"   # the portal, the realm, the ending
 make shot SCRIPT=test/elite.h   CYCLES=76000000 DEFS="-DTEST_ELITE=6 -DTEST_DUNGEON=0"   # a Radiant elite's spoils
 make shot SCRIPT=test/champion.h CYCLES=48000000 DEFS="-DTEST_CLEAR"   # a land freed
@@ -443,6 +458,8 @@ make shot SCRIPT=test/home.h   CYCLES=50000000                          # out a 
 - **`-DJUKEBOX=n`:** the title screen plays tune n (0 title, 1 village,
   2 gloom, 3 battle). Record it with VICE's `-sound -sounddev wav -soundarg
   out.wav -limitcycles 50000000`; the tune starts about 15 s in.
+- **`-DTEST_FRAIL`:** any hit fells the hero (see `test/sanct.h`).
+- **`-DTEST_MOTES=n`:** the disk's Sanctuary gets n more Motes at startup.
 - **`-DTEST_DEEDS`:** test builds don't stop to tell of new deeds (the
   older scripts predate them); this brings it back.
 - **`-DTEST_WEAK`:** every foe starts with 1 HP (see `test/castle.h`).

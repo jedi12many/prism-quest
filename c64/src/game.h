@@ -454,7 +454,8 @@ enum { OV_TITLE = 1, OV_TALKA, OV_TALKB, OV_CAMP, OV_TREE };   /* OV_TREE + clas
 #define OV_REALM 18                     /* Sog'naroth's realm's depths */
 #define OV_DEEDS 19                     /* the deeds: their page, their file */
 #define OV_BAG 20                       /* the Bag: polishing, the dwarves */
-#define OV_COUNT 20
+#define OV_SANCT 21                     /* the Sanctuary */
+#define OV_COUNT 21
 
 /* ---------- deeds (js/achievements.js) ----------
  * Kept on the disk in PQ.DEEDS, apart from the hero: a fallen hero's deeds
@@ -465,6 +466,13 @@ enum { OV_TITLE = 1, OV_TALKA, OV_TALKB, OV_CAMP, OV_TREE };   /* OV_TREE + clas
 enum { DE_FIRST_LIGHT, DE_FOUR_DAWNS, DE_STORMBREAKER, DE_SUNBRINGER, DE_GLASSSMITH, DE_PRISMBLADE,
        DE_GLINT_EYED, DE_KEEPERS, DE_AURA, DE_HIHO, DE_BEST_FRIENDS, DE_DEVILS_DUE, DE_NEIGHBOR,
        DE_SUPPER, DE_UNTOUCHABLE, DE_TRIPLE, DE_BOTTOM, DE_WALLS, NDEED };
+/* The Sanctuary (js/data.js META_UPGRADES, js/ui.js openMeta) rides in the
+ * same file: Motes banked by each fallen hero, the upgrades they bought
+ * (always on, or granted to each new hero), and the roll of the fallen. */
+enum { SA_HEARTY, SA_VETERAN, SA_FLEET, SA_KEEN, SA_TRAINED, SA_PROSPECTOR, SA_ARSENAL, NSANCT };
+#define NSANCT_EFF 4                    /* the first four: always on (sanct_eff, kit.c) */
+#define NFALLEN 8
+typedef struct { u8 cls, level, zones, where; } Fallen;   /* where: a zone id, or 4 + a dungeon_name[] */
 typedef struct {
     u8 magic[3];           /* "PD", version */
     u8 got[3];             /* deeds done, by bit */
@@ -473,7 +481,11 @@ typedef struct {
     u8 won_cls;            /* classes that have brought the sun back, by bit */
     u16 runs, wins, losses;
     u16 best;              /* the fastest sun, in seconds (0: none yet) */
+    u16 motes;             /* the Sanctuary's: to spend */
+    u8 rank[NSANCT];       /* upgrades bought */
+    Fallen fallen[NFALLEN];   /* the latest last */
 } Deeds;
+void show_sanctuary(void);              /* ov_sanct.c */
 extern Deeds deeds;
 extern u8 deeds_told[3];                /* the deeds the player's been told of */
 void deed(u8 id);                       /* kit.c */

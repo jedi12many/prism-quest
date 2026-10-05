@@ -7,7 +7,7 @@
 #define PRESS(k) 2, k, 12, 0
 #ifdef AUTOPLAY_INPUTS               /* only system.c needs the inputs */
 static const unsigned char autoplay[] = {
-    30, 0, PRESS(U), PRESS(F),                /* Continue from disk */
+    30, 0, PRESS(U), PRESS(U), PRESS(F),      /* Continue from disk (above the Sanctuary) */
     250, 0, PRESS(F),                         /* camp menu -> Gear */
     PRESS(D), PRESS(F),
     0

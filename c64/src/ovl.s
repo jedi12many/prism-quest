@@ -7,6 +7,7 @@
 ;   12 digging up a Prism Facet   13 the Glassworks   14 a Gloom Pact
 ;   15 the Rainycastle's floors   16 the big foes: the keepers', the castle's and the realm's portraits, and more
 ;   17 the ending   18 Sog'naroth's realm   19 the deeds   20 the Bag
+;   21 the Sanctuary
         .import __OVL_START__
         .segment "OV1LOAD"
         .word   __OVL_START__
@@ -88,3 +89,7 @@
         .word   __OVL_START__
         .segment "OV20SIG"
         .byte   $4F, 20
+        .segment "OV21LOAD"
+        .word   __OVL_START__
+        .segment "OV21SIG"
+        .byte   $4F, 21

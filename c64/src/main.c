@@ -41,15 +41,18 @@ int main(void)
         memset(_WBSS_RUN__, 0, (u16)_WBSS_SIZE__);
     }
     deeds_read();                               /* the deeds done on this disk */
+#ifdef TEST_MOTES
+    deeds.motes += TEST_MOTES;                  /* (tests: Motes to spend) */
+#endif
     for (;;) {
         u8 c;
         ovl(OV_TITLE);
         c = title_screen();
+        if (c > NCLASS) { ovl(OV_SANCT); show_sanctuary(); continue; }   /* (the menu's last line) */
         if (c == NCLASS) {
             if (!load_game()) { continue_failed(); continue; }
         } else new_game(c);
         world_loop();                           /* returns when the hero falls */
-        ovl(OV_TITLE);
         game_over();
         deeds_write();
     }
