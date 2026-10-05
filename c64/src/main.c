@@ -53,6 +53,7 @@ int main(void)
             if (!load_game()) { continue_failed(); continue; }
         } else new_game(c);
         world_loop();                           /* returns when the hero falls */
+        ovl(OV_SANCT);                          /* (the game-over screen rides with the Sanctuary) */
         game_over();
         deeds_write();
     }

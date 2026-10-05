@@ -7,11 +7,11 @@
 #define LOG_ROWS 10
 #define MENU_Y 13
 
-static const MonsterDef *md;
+const MonsterDef *md;                   /* (these, and the helpers below without `static`: ov_boss.c's too) */
 static Mob *mob;
-static i16 mhp, mhpmax;
+i16 mhp, mhpmax;
 static u8 mdef, tier;
-static u16 atk_scale;                   /* x100 */
+u16 atk_scale;                   /* x100 */
 static u8 el;                           /* elite: 0, or 1 + its mod */
 
 /* elites (js/data.js ELITE_MODS): name, colour, HP and attack (%), defense,
@@ -22,26 +22,29 @@ static const u8 elite_col[NELITE] = { LTRED, LTBLUE, LTGREEN, PURPLE, PURPLE, YE
 static const u8 elite_hp[NELITE] = { 6, 20, 6, 7, 8, 12 };   /* +twentieths: x1.3, x2, x1.3, x1.35, x1.4, x1.6 */
 static const u8 elite_def[NELITE] = { 0, 3, 0, 0, 0, 0 };
 static const u8 elite_xp[NELITE] = { 16, 16, 16, 16, 18, 30 };   /* +twentieths: x1.8 .. x2.5 */
-static u8 m_burn_t, m_burn_d, m_pois_t, m_pois_d, m_weak_t;
-static u8 p_shield_t, p_shield_red, p_pois_t, p_pois_d, p_dread_t;
+static u8 m_burn_t, m_burn_d, m_pois_t, m_pois_d;
+u8 m_weak_t;
+u8 p_shield_t, p_shield_red, p_pois_t, p_pois_d, p_dread_t;
 static u8 uni_t;
 static u16 uni_pow;
-static u8 over, result;
+static u8 result;
+u8 over;
+static u8 turns, enraged;               /* the boss specials' clock */
 static u8 last_stand_used;
 
 static void pause(u8 n) { while (n--) wait_frame(); }
 
-static void blog(const char *s, u8 col)
+void blog(const char *s, u8 col)
 {
     log_add(s, col);
     pause(14);
 }
 
-static u8 variance(void) { return 90 + rnd(21); }
+u8 variance(void) { return 90 + rnd(21); }
 static u8 is_crit(void) { return chance(5 + eff(E_CRIT)); }
 static u8 dread_pct(void) { return p_dread_t ? 75 : 100; }
 
-static i16 finish(long d100)
+i16 finish(long d100)
 {
     i16 d = (i16)((d100 + 50) / 100);
     return d < 1 ? 1 : d;
@@ -60,7 +63,7 @@ static char sb_keep[sizeof(sb)];
 #pragma bss-name(pop)
 
 /* redraw both health lines; preserves the shared string builder */
-static void draw_status(void)
+void draw_status(void)
 {
     memcpy(sb_keep, sb, sizeof(sb));
     clear_rows(1, 1);
@@ -89,7 +92,7 @@ static u8 foe_spr;
 static const u8 foe_mask[5] = { 0x00, 0x08, 0x18, 0x38, 0x78 };
 
 /* shake the hero (first = 0: sprites 0-2) or the foe (3: sprites 3-6) */
-static void shake(u8 first)
+void shake(u8 first)
 {
     u8 i, k, last = first ? 7 : 3;
     u8 x0 = PEEK(0xD000 + first * 2);
@@ -100,7 +103,7 @@ static void shake(u8 first)
     for (i = first; i < last; ++i) POKE(0xD000 + i * 2, x0);
 }
 
-static void flash(u8 col)
+void flash(u8 col)
 {
     POKE(0xD020, col);
     pause(4);
@@ -123,7 +126,7 @@ static u8 hit_monster(i16 dmg, const char *label)
     return 0;
 }
 
-static void player_damage(i16 dmg)
+void player_damage(i16 dmg)
 {
     i16 r;
     if (over) return;
@@ -215,6 +218,12 @@ static void monster_hit(void)
 static void enemy_turn(void)
 {
     if (over) return;
+    ++turns;                            /* every third turn, and the first time it's wounded past half */
+    if (md->sprite >= SPECIAL_SPRITE0 && ((!enraged && mhp * 2 <= mhpmax && (enraged = 1)) || turns % 3 == 0)) {
+        ovl(OV_BOSS);                   /* (the first time: a moment's load, like a gathering of power) */
+        boss_special();
+        return;
+    }
     monster_hit();
     if (!over && chance(md->double_hit + (el == EL_SWIFT ? 50 : 0))) {
         blog(el == EL_SWIFT ? "It blurs and strikes again!" : "It attacks again!", YELLOW);
@@ -491,6 +500,7 @@ u8 battle(u8 mi, u8 ambush)
 #endif
     m_burn_t = m_pois_t = m_weak_t = 0;
     p_shield_t = p_pois_t = p_dread_t = 0;
+    turns = enraged = 0;
     uni_t = 0;
     last_stand_used = 0;
     over = 0; result = 0;
@@ -499,7 +509,7 @@ u8 battle(u8 mi, u8 ambush)
     cls();
     POKE(0xD021, BLACK);
     POKE(0xD020, BLACK);
-    foe_spr = foe_mask[mon_sprites(md->sprite)];    /* (first: it may load the big foes' overlay, with the castle's names) */
+    foe_spr = foe_mask[mon_sprites(md->sprite)];    /* (first: it may load the big foes' overlay, with the castle's cries) */
     sb_reset();
     if (el) { sb_str(elite_name[el - 1]); sb_str(" "); }
     sb_str(md->name);

@@ -135,6 +135,19 @@ A work-in-progress port of the browser game to a stock Commodore 64 (64 KB,
   - The tallies (elites slain, keepers beaten, runs) are written with each
     new deed and when a run ends. Switching off mid-run can lose the latest
     ones, but never a deed that's already been announced.
+- **Boss specials (from `js/data.js` BOSS_SPECIALS):** all thirteen named
+  villains (the four champions, the three keepers, the castle's three and the
+  realm's three) have a signature blow. Every third turn, and always the
+  first time one is wounded past half, it "gathers its power", shouts its
+  battle cry, and lands that instead of a swing. Some examples:
+  - Bogmaw's Tidal Gulp: 2.6x, and it heals itself;
+  - Voltra's Chain Lightning: three strikes;
+  - the Voidmaw's Devour the Light: lifesteal;
+  - Sog'naroth's Drowned Dawn: two strikes, and dread.
+
+  A shield takes its share of each strike and buckles. The specials live in
+  `PQ.OV22`, loaded the first time a boss gathers its power (a fight that
+  ends sooner never touches the disk), so that moment can carry a short load.
 - **Difficulty:** Left/Right on the title screen picks the next hero's
   difficulty: Easy, Normal, Hard or Monsoon (as in `js/data.js` DIFFICULTIES).
   It scales monsters' HP (88%, 100%, 108%, 116%) and damage (78%, 100%,
@@ -294,7 +307,8 @@ reloaded.
 | `PQ.OV18` | Sog'naroth's realm: its depths and rifts | 1.2 KB |
 | `PQ.OV19` | the deeds: telling of new ones, the Deeds page | 2.7 KB |
 | `PQ.OV20` | the Bag: polishing and Summon Dwarves | 2.2 KB |
-| `PQ.OV21` | the Sanctuary | 1.9 KB |
+| `PQ.OV21` | the Sanctuary, and the game-over screen | 2.7 KB |
+| `PQ.OV22` | the bosses' specials, and the blow itself | 2.2 KB |
 
 On a stock 1541 each takes roughly 5–7 seconds (about 400 bytes a second);
 a "Loading" note shows in the corner meanwhile. Overlays are kept to about
@@ -307,7 +321,7 @@ the window. Saving loads its code with the Ledger
 first: it's a disk operation anyway. Generating a zone or a
 dungeon floor loads its generator behind the transition screen (unless it's
 still in the window from last time: going home and back out loads nothing).
-Resident memory is nearly full (about 0.9 KB free: the Bag moved out to make room), so new screens should be
+Resident memory is nearly full (about 1.5 KB free: the Bag moved out to make room), so new screens should be
 overlays; the resident part of a feature should be the little the world
 itself needs (camp building keeps only the buildings' effects, positions,
 names and costs resident; dungeons keep entering and leaving). Text shown
@@ -415,7 +429,7 @@ make shot SCRIPT=test/village.h CYCLES=60000000   # walk to the Mayor and talk
 make shot SCRIPT=test/camp.h    CYCLES=90000000   # polish, craft, learn skills
 make shot SCRIPT=test/build.h   CYCLES=56000000   # build the Kitchen, the walls; the Ledger
 make shot SCRIPT=test/delve.h   CYCLES=80000000 DEFS="-DTEST_DUNGEON=1 -DTEST_EMPTY -DTEST_NEAR"   # Warden, key, floor 2
-make shot SCRIPT=test/keeper.h  CYCLES=80000000 DEFS="-DTEST_DUNGEON=0 -DTEST_EMPTY -DTEST_NEAR -DTEST_KEEPER"
+make shot SCRIPT=test/keeper.h  CYCLES=80000000 DEFS="-DTEST_DUNGEON=0 -DTEST_EMPTY -DTEST_NEAR -DTEST_KEEPER"   # past half HP, its special: Cave-In
 make shot SCRIPT=test/below.h   CYCLES=105000000 DEFS="-DTEST_DUNGEON=1 -DTEST_EMPTY -DTEST_NEAR -DTEST_KEEPER"   # Bogmaw below, then out into sun
 make shot SCRIPT=test/facet.h   CYCLES=56000000 DEFS="-DTEST_FACET"   # dig up the Crimson Facet
 make shot SCRIPT=test/forge.h   CYCLES=40000000   # fuse two facets at the Glassworks

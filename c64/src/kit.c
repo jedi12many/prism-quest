@@ -158,40 +158,6 @@ void deeds_write(void)
 
 u8 deeds_news(void) { return (deeds.got[0] ^ deeds_told[0]) | (deeds.got[1] ^ deeds_told[1]) | (deeds.got[2] ^ deeds_told[2]); }
 
-/* ---------- rogue-like death (resident: the overlays were full) ---------- */
-
-void game_over(void)
-{
-    POKE(0xD015, 0);
-    music(TUNE_NONE);
-    erase_save();                       /* one life: the save falls with the hero */
-    ++deeds.runs; ++deeds.losses;               /* (main() writes the deeds' file) */
-    cls();
-    POKE(0xD020, BLACK); POKE(0xD021, BLACK);
-    sb_reset(); sb_str(classes[P.cls].name); sb_str(" has fallen.");
-    put_center(6, sb, RED);
-    put_center(8, "The gloom claims another hero...", WHITE);
-    sb_reset(); sb_str("Level "); sb_num(P.level); sb_str("  -  "); sb_num(lands_freed());
-    sb_str("/4 lands freed  -  "); sb_num(P.kills); sb_str(" kills");
-    put_center(11, sb, CYAN);
-    put_center(14, "Drizzlewick will light a candle", PURPLE);
-    put_center(15, "for you - and send the next.", PURPLE);
-    {   /* the Sanctuary: the Motes this hero leaves behind, and their name on the roll */
-        u16 m = P.kills * 2 + lands_freed() * 15 + P.level * 3 + (P.castle & CA_SUN ? 100 : 0);
-        Fallen *f = &deeds.fallen[NFALLEN - 1];
-        deeds.motes = deeds.motes + m < deeds.motes ? 0xFFFF : deeds.motes + m;
-        memmove(deeds.fallen, deeds.fallen + 1, sizeof(Fallen) * (NFALLEN - 1));
-        f->cls = P.cls + 1;                     /* (0: an empty line) */
-        f->level = P.level;
-        f->zones = lands_freed();
-        f->where = map_id < NZONE ? map_id : NZONE + (map_id == MAP_DUNGEON ? dg.type : (P.castle & CA_REALM) && !(P.castle & CA_SUN) ? DG_REALM : DG_CASTLE);
-        sb_reset(); sb_str("+"); sb_num(m); sb_str(" Motes for the Sanctuary");
-        put_center(17, sb, YELLOW);
-    }
-    put_center(20, "Press fire", BLUE);
-    wait_fire();
-}
-
 /* ---------- the camp menu (fire in the world) ---------- */
 
 static const char *const camp_items[9] = { "Bag & polishing", "Gear", "Spellbook", "Power Tree", "Build the camp", "Village Ledger", "Deeds", "Save game", "Back" };

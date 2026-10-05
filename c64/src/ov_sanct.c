@@ -1,9 +1,10 @@
 /* Overlay: the Sanctuary (js/data.js META_UPGRADES, js/ui.js openMeta and
  * renderMemorial) -- spend the Motes fallen heroes left behind on upgrades
  * for every hero after; and the roll of the fallen. It all lives in PQ.DEEDS
- * (see game.h): the effects in eff() and new_game(), the Motes banked and the
- * fallen named by game_over() (kit.c).
+ * (see game.h): the effects in eff() and new_game(). With it, the game-over
+ * screen, which banks a fallen hero's Motes and names them on the roll.
  * Loaded from disk on demand into the overlay window (see ovl() in save.c). */
+#include <string.h>
 #include "game.h"
 
 #pragma code-name("OVSANCTCODE")
@@ -100,4 +101,38 @@ void show_sanctuary(void)
         draw(sel);
     }
     if (bought) deeds_write();              /* (kept on the disk) */
+}
+
+/* ---------- rogue-like death: banks the hero's Motes, names them on the roll ---------- */
+
+void game_over(void)
+{
+    POKE(0xD015, 0);
+    music(TUNE_NONE);
+    erase_save();                       /* one life: the save falls with the hero */
+    ++deeds.runs; ++deeds.losses;               /* (main() writes the deeds' file) */
+    cls();
+    POKE(0xD020, BLACK); POKE(0xD021, BLACK);
+    sb_reset(); sb_str(classes[P.cls].name); sb_str(" has fallen.");
+    put_center(6, sb, RED);
+    put_center(8, "The gloom claims another hero...", WHITE);
+    sb_reset(); sb_str("Level "); sb_num(P.level); sb_str("  -  "); sb_num(lands_freed());
+    sb_str("/4 lands freed  -  "); sb_num(P.kills); sb_str(" kills");
+    put_center(11, sb, CYAN);
+    put_center(14, "Drizzlewick will light a candle", PURPLE);
+    put_center(15, "for you - and send the next.", PURPLE);
+    {   /* the Sanctuary: the Motes this hero leaves behind, and their name on the roll */
+        u16 m = P.kills * 2 + lands_freed() * 15 + P.level * 3 + (P.castle & CA_SUN ? 100 : 0);
+        Fallen *f = &deeds.fallen[NFALLEN - 1];
+        deeds.motes = deeds.motes + m < deeds.motes ? 0xFFFF : deeds.motes + m;
+        memmove(deeds.fallen, deeds.fallen + 1, sizeof(Fallen) * (NFALLEN - 1));
+        f->cls = P.cls + 1;                     /* (0: an empty line) */
+        f->level = P.level;
+        f->zones = lands_freed();
+        f->where = map_id < NZONE ? map_id : NZONE + (map_id == MAP_DUNGEON ? dg.type : (P.castle & CA_REALM) && !(P.castle & CA_SUN) ? DG_REALM : DG_CASTLE);
+        sb_reset(); sb_str("+"); sb_num(m); sb_str(" Motes for the Sanctuary");
+        put_center(17, sb, YELLOW);
+    }
+    put_center(20, "Press fire", BLUE);
+    wait_fire();
 }

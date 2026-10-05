@@ -11,12 +11,6 @@
 
 static u8 i;
 
-const char nm_sentinel[] = "Galeheart, the Storm Sentinel";
-const char nm_raincaller[] = "The Raincaller";
-const char nm_wyrm[] = "The Rainwyrm";
-const char nm_herald[] = "The Herald Below";
-const char nm_voidmaw[] = "The Voidmaw";
-const char nm_sog[] = "Sog'naroth, the Endless Drizzle";
 const char *const castle_cry[6] = {
     "\"None climb past me. The storm keeps its crown, and I keep its stair.\"",
     "\"I have called this rain down for a hundred years. I will call your name down next.\"",
@@ -46,7 +40,7 @@ void foe_won(u8 mi)
         P.castle |= CA_WYRM;
         deed(DE_STORMBREAKER);
         if (P.main_quest < 5) P.main_quest = 5;
-        say(nm_wyrm, eulogy[2]);
+        say(monsters[t].name, eulogy[2]);
         add_gate(15, 7, G_CASTLE, CG_HOARD);    /* its hoard settles where it fell */
         gate_t[ngates - 1] = T_NODE;
         queue_tile(15, 7);
@@ -55,11 +49,11 @@ void foe_won(u8 mi)
         i = t == MO_SENTINEL ? 0 : 1;
         P.castle |= 1 << i;
         dg.has_key = 1;
-        say(i ? nm_raincaller : nm_sentinel, eulogy[i]);
+        say(monsters[t].name, eulogy[i]);
         msg("The storm-wards fade - the stair up is open!");
     } else if (t == MO_HERALD || t == MO_VOIDMAW) {
         dg.has_key = 1;
-        say(t == MO_HERALD ? nm_herald : nm_voidmaw, eulogy[t - MO_HERALD + 3]);
+        say(monsters[t].name, eulogy[t - MO_HERALD + 3]);
         msg("The rift down stands open.");
     } else if (t == MO_SOG) {               /* the end: world.c brings on ov_end.c */
         P.castle |= CA_SUN;

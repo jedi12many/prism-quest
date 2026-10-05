@@ -389,7 +389,6 @@ u8 castle_gate(u8 gi);             /* a castle gate, or the Cloudgate: 1 down to
 /* (ov_foes.c, loaded for any fight with a keeper or the castle's foes:) */
 void foe_won(u8 mi);               /* after beating mobs[mi], one of them */
 extern const char *const castle_cry[6];        /* the guardians', the Wyrm's and Sog'naroth's battle cries */
-extern const char nm_sentinel[], nm_raincaller[], nm_wyrm[], nm_herald[], nm_voidmaw[], nm_sog[];
 void the_end(void);                /* ov_end.c: Sog'naroth falls, the sun comes back */
 void build_realm(void);            /* ov_realm.c: depth dg.floor */
 void realm_hello(void);
@@ -456,7 +455,19 @@ enum { OV_TITLE = 1, OV_TALKA, OV_TALKB, OV_CAMP, OV_TREE };   /* OV_TREE + clas
 #define OV_DEEDS 19                     /* the deeds: their page, their file */
 #define OV_BAG 20                       /* the Bag: polishing, the dwarves */
 #define OV_SANCT 21                     /* the Sanctuary */
-#define OV_COUNT 21
+#define OV_BOSS 22                      /* the bosses' specials */
+#define OV_COUNT 22
+
+/* a boss's signature blow (ov_boss.c), by battle sprite from SPECIAL_SPRITE0 */
+#define SPECIAL_SPRITE0 7                /* (Bogmaw's: the champions, keepers, castle's and realm's after) */
+#define NSPECIAL 13
+typedef struct {
+    const char *name, *cry;
+    u8 mult20;             /* damage: x20 a swing's base */
+    u8 hits, poison, dread;
+    u8 heal, steal;        /* self-heal, % of max HP; lifesteal, % of the damage */
+} Special;
+void boss_special(void);           /* (and the blow: in place of mobs' turn) */
 
 /* ---------- deeds (js/achievements.js) ----------
  * Kept on the disk in PQ.DEEDS, apart from the hero: a fallen hero's deeds

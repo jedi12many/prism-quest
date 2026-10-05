@@ -44,14 +44,14 @@ const MonsterDef monsters[NMON] = {
     { "Gloomtroll",             85, 13, 3, 110, MF_BOSS | MF_KEEPER,  0, 3, T_M_BOGMAW,   11, { 0, 0, 0, 0, 2, 0, 1 } },
     { "Stone Revenant",        100, 12, 5, 120, MF_BOSS | MF_KEEPER, 30, 0, T_M_GOLEM,    12, { 0, 0, 0, 2, 0, 0, 1 } },
     { "Poltergeist",            78, 14, 2, 118, MF_BOSS | MF_KEEPER | MF_DREAD, 40, 0, T_M_GAZER, 13, { 0, 0, 0, 0, 0, 2, 1 } },
-    /* the Rainycastle's (their names ride in its overlay, loaded for their fights) */
-    { nm_sentinel,              80, 12, 5, 110, MF_BOSS,             30, 0, T_M_GOLEM,    14, { 0, 0, 0, 2, 0, 0, 1 } },
-    { nm_raincaller,            90, 13, 3, 125, MF_BOSS | MF_DREAD,   0, 3, T_M_SPAWNLING, 15, { 0, 0, 2, 0, 0, 0, 1 } },
-    { nm_wyrm,                 110, 12, 3, 150, MF_BOSS,             40, 0, T_M_VOLTRA,   16, { 0, 0, 0, 0, 0, 0, 1 } },
-    /* the realm's (theirs too) */
-    { nm_herald,                85, 13, 3, 140, MF_BOSS | MF_DREAD,  30, 0, T_M_GAZER,    17, { 0, 0, 0, 0, 0, 2, 1 } },
-    { nm_voidmaw,               95, 13, 4, 160, MF_BOSS,             30, 3, T_M_SLIME,    18, { 0, 0, 0, 0, 0, 0, 2 } },
-    { nm_sog,                  170, 14, 4, 255, MF_BOSS | MF_DREAD,  45, 4, T_M_SPAWNLING, 19, { 0, 0, 0, 0, 0, 0, 1 } },
+    /* the Rainycastle's */
+    { "Galeheart, the Storm Sentinel", 80, 12, 5, 110, MF_BOSS,             30, 0, T_M_GOLEM,    14, { 0, 0, 0, 2, 0, 0, 1 } },
+    { "The Raincaller", 90, 13, 3, 125, MF_BOSS | MF_DREAD,   0, 3, T_M_SPAWNLING, 15, { 0, 0, 2, 0, 0, 0, 1 } },
+    { "The Rainwyrm", 110, 12, 3, 150, MF_BOSS,             40, 0, T_M_VOLTRA,   16, { 0, 0, 0, 0, 0, 0, 1 } },
+    /* the realm's */
+    { "The Herald Below", 85, 13, 3, 140, MF_BOSS | MF_DREAD,  30, 0, T_M_GAZER,    17, { 0, 0, 0, 0, 0, 2, 1 } },
+    { "The Voidmaw", 95, 13, 4, 160, MF_BOSS,             30, 3, T_M_SLIME,    18, { 0, 0, 0, 0, 0, 0, 2 } },
+    { "Sog'naroth, the Endless Drizzle", 170, 14, 4, 255, MF_BOSS | MF_DREAD,  45, 4, T_M_SPAWNLING, 19, { 0, 0, 0, 0, 0, 0, 1 } },
 };
 
 const ZoneDef zones[NZONE] = {
