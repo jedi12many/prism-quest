@@ -59,7 +59,7 @@
 extern const unsigned char charset[CHARSET_BYTES];
 extern const unsigned char tile_color[T_COUNT][4];
 #define PLAYER_SPRITES 3
-#define BATTLE_SPRITES 17
+#define BATTLE_SPRITES 20
 /* heroes: outline, detail (hi-res), fill (multicolour; $D025/$D026 = hero_mc) */
 extern const unsigned char hero_spr[PLAYER_SPRITES][3][63];
 extern const unsigned char hero_col[PLAYER_SPRITES][3];

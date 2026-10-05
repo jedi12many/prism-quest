@@ -48,6 +48,10 @@ const MonsterDef monsters[NMON] = {
     { nm_sentinel,              80, 12, 5, 110, MF_BOSS,             30, 0, T_M_GOLEM,    14, { 0, 0, 0, 2, 0, 0, 1 } },
     { nm_raincaller,            90, 13, 3, 125, MF_BOSS | MF_DREAD,   0, 3, T_M_SPAWNLING, 15, { 0, 0, 2, 0, 0, 0, 1 } },
     { nm_wyrm,                 110, 12, 3, 150, MF_BOSS,             40, 0, T_M_VOLTRA,   16, { 0, 0, 0, 0, 0, 0, 1 } },
+    /* the realm's (theirs too) */
+    { nm_herald,                85, 13, 3, 140, MF_BOSS | MF_DREAD,  30, 0, T_M_GAZER,    17, { 0, 0, 0, 0, 0, 2, 1 } },
+    { nm_voidmaw,               95, 13, 4, 160, MF_BOSS,             30, 3, T_M_SLIME,    18, { 0, 0, 0, 0, 0, 0, 2 } },
+    { nm_sog,                  170, 14, 4, 255, MF_BOSS | MF_DREAD,  45, 4, T_M_SPAWNLING, 19, { 0, 0, 0, 0, 0, 0, 1 } },
 };
 
 const ZoneDef zones[NZONE] = {

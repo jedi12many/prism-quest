@@ -37,10 +37,14 @@ static const u8 *p;
 
 void build_castle(void)
 {
-    if (!dg.floor) dg.floor = P.castle & CA_FLOOR1 ? (P.castle & CA_FLOOR2 ? 3 : 2) : 1;
+    if (!dg.floor) {                            /* the lowest floor still guarded */
+        dg.floor = P.castle & CA_FLOOR1 ? (P.castle & CA_FLOOR2 ? 3 : 2) : 1;
+        P.x = 4; P.y = 8;
+    }
     if (P.main_quest == 3) P.main_quest = 4;    /* up at last */
     dg.type = DG_CASTLE;
     f = dg.floor - 1;
+    dg.tier = f ? 6 : 5;
     mw = W; mh = H;
     for (y = 0; y < H; ++y)
         for (x = 0; x < W; ++x)
@@ -66,7 +70,7 @@ void build_castle(void)
     map[6][17] = map[6][18] = map[7][17] = map[7][18] = T_WALL;
     if (!(P.castle & CA_WYRM)) add_mob(15, 7, MO_WYRM, 0xFF, 0xFFFF);
     else if (!(P.castle & CA_CLAIMED)) add_gate(15, 7, G_CASTLE, CG_HOARD);
-    else add_gate(15, 8, G_CASTLE, CG_PORTAL);
+    else if (!(P.castle & CA_SUN)) add_gate(15, 8, G_CASTLE, CG_PORTAL);   /* (sealed for good, after) */
 }
 
 void castle_hello(void)
@@ -76,8 +80,20 @@ void castle_hello(void)
         "You climb into the rain halls. The storm sings louder here.",
         "The throne floor. The air itself is holding its breath...",
     };
-    if (dg.floor == 3 && (P.castle & CA_CLAIMED)) msg("Your castle now: rest, train and craft here before you brave the dark.");
+    if (P.castle & CA_SUN) msg("The castle stands quiet in the sunshine now. Rest, train and craft here.");
+    else if (dg.floor == 3 && (P.castle & CA_CLAIMED)) msg("Your castle now: rest, train and craft here before you brave the dark.");
     else msg(hello[dg.floor - 1]);
+}
+
+/* the portal down: one way. Fire steps through, anything else turns back */
+static u8 dare(void)
+{
+    say("The portal", "Beyond it lies the realm the rain comes from. Nobody has seen it and returned. THERE IS NO WAY BACK: "
+                      "no village, no gems, no resupply - only the skills and spell charges you carry right now.");
+    msg("Step through? Fire: yes   Any direction: turn back");
+    do { wait_frame(); input_poll(); } while (!in_new);
+    msg_clear();
+    return in_new & IN_FIRE;
 }
 
 /* the Wyrm's hoard: brilliant gems, and two legendaries (or a set piece) */
@@ -102,10 +118,12 @@ static void claim(u8 gi)
     msg("A portal swirls open where the hoard lay.");
 }
 
+static u8 go(u8 floor, u8 x, u8 y) { dg.floor = floor; dg.ex = x; dg.ey = y; return 2; }
+
 u8 castle_gate(u8 gi)
 {
     if (gates[gi].kind == G_CLOUD) {            /* the village's Cloudgate */
-        if (P.main_quest >= 3) return 3;
+        if (P.main_quest >= 3) return go(0, 4, 8);
         say("The Cloudgate", "An old rainbow arch, cold and dormant. The Mayor says it only wakes once all four lands shine.");
         return 0;
     }
@@ -113,16 +131,17 @@ u8 castle_gate(u8 gi)
     case CG_DOWN:
         return 1;
     case CG_UP:
-        if (dg.has_key) return 2;
+        if (dg.has_key) return go(dg.floor + 1, 4, 7);
         msg("The stair is sealed by storm-wards. Defeat this floor's guardian!");
         break;
     case CG_HOARD:
         claim(gi);
         break;
     default:                                    /* CG_PORTAL */
-        say("The portal", "Beyond it lies the realm the rain comes from, and nobody has come back from it. "
-                          "(Sog'naroth's realm comes in a later version of the C64 port.)");
-        break;
+        if (!dare()) break;
+        P.castle |= CA_REALM;
+        P.main_quest = 6;
+        return go(1, 3, 12);
     }
     return 0;
 }

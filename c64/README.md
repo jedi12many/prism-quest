@@ -86,7 +86,22 @@ A work-in-progress port of the browser game to a stock Commodore 64 (64 KB,
   - The Wyrm leaves its hoard on the throne: brilliant gems and two
     legendary pieces (or one and a set piece). Claiming it makes the throne
     yours, a forward base where you can rest, craft and train (not build).
-  - A portal then opens to Sog'naroth's realm, which isn't ported yet.
+  - A portal then opens to Sog'naroth's realm. Once the sun is back, the
+    castle stands quiet in the sunshine and the portal is gone.
+- **Sog'naroth's realm:** the portal warns you first, and then there's no way
+  back: no village, no resupply, only what you carry. The realm (as in
+  `js/game.js` buildRealm) is three depths of dark gloomstone pocked with
+  void, with a winding way through, spawn and gazers (often elites) and no
+  resting.
+  - The Herald Below holds the first rift down shut, and the Voidmaw the
+    second. Each rift heals half your HP on the way down.
+  - Sog'naroth, the Endless Drizzle waits at the bottom. Like the castle's
+    foes, all three have their own battle portraits, cries and last words.
+  - A save made in the realm resumes at its first depth.
+- **The ending:** when Sog'naroth falls, the sun comes back. Its last words,
+  the truth about the rain, your new name (Gloombreaker), the time and foes
+  beaten, and Drizzlewick's three cheers, between rainbow bars. Then you're
+  home, and the Mayor and the Ledger know what you did.
 - **Elites:** now and then a monster spawns with one of the web game's six
   mods: Vicious, Armored, Swift, Venomous, Cursed or Radiant. The odds are
   about 10% in Bogmire, rising 4% a tier, and higher in dungeons.
@@ -174,8 +189,8 @@ A work-in-progress port of the browser game to a stock Commodore 64 (64 KB,
   bass is a triangle or a sawtooth. See *Music* below.
 - **Sound:** short SID sound effects and the thunder, on the third voice.
 
-**Not ported yet:** Sog'naroth's realm (the portal past the Rainycastle) and
-the ending.
+**Not ported:** the web game's between-runs extras: achievements, the
+difficulty setting and the Sanctuary.
 
 ## Controls
 
@@ -207,7 +222,7 @@ The game is several files on one disk:
 |---|---|---|
 | `PRISMQUEST` | `prismquest.prg` | the resident game, which you load and run |
 | `PQ.HI` | `.prg.hi` | the loot engine, charset and sprite art; loaded at startup |
-| `PQ.OV1`–`PQ.OV16` | `.prg.1`–`.prg.16` | overlays, loaded on demand (below) |
+| `PQ.OV1`–`PQ.OV18` | `.prg.1`–`.prg.18` | overlays, loaded on demand (below) |
 
 `make d64` puts them all on a 1541 image. On a real C64 or in VICE, mount
 or insert it, then `LOAD"PRISMQUEST",8,1` and `RUN`. Saves go to the same
@@ -240,8 +255,10 @@ reloaded.
 | `PQ.OV12` | digging up a Prism Facet, a land freed, the village's layout | 2.4 KB |
 | `PQ.OV13` | the Glassworks kiln | 2.2 KB |
 | `PQ.OV14` | the Gloom Pact offer, and stepping into a land under the gloom | 1.4 KB |
-| `PQ.OV15` | the Rainycastle's floors, its gates and the Wyrm's hoard (and the Cloudgate) | 2.1 KB |
-| `PQ.OV16` | the big foes: the dungeon keepers' and the castle's battle portraits, the castle's foes' names, cries and falls | 1.8 KB |
+| `PQ.OV15` | the Rainycastle's floors, its gates, the Wyrm's hoard and the portal (and the Cloudgate) | 2.4 KB |
+| `PQ.OV16` | the big foes: the dungeon keepers', the castle's and the realm's battle portraits, and the castle's and realm's foes' names, cries and falls | 2.6 KB |
+| `PQ.OV17` | the ending | 2.0 KB |
+| `PQ.OV18` | Sog'naroth's realm: its depths and rifts | 1.2 KB |
 
 On a stock 1541 each takes roughly 5–7 seconds (about 400 bytes a second);
 a "Loading" note shows in the corner meanwhile. Overlays are kept to about
@@ -252,7 +269,7 @@ and fighting never wait on the disk. Saving loads its code with the Ledger
 first: it's a disk operation anyway. Generating a zone or a
 dungeon floor loads its generator behind the transition screen (unless it's
 still in the window from last time: going home and back out loads nothing).
-Resident memory is nearly full (about 0.7 KB free), so new screens should be
+Resident memory is nearly full (about 0.45 KB free), so new screens should be
 overlays; the resident part of a feature should be the little the world
 itself needs (camp building keeps only the buildings' effects, positions,
 names and costs resident; dungeons keep entering and leaving). Text shown
@@ -260,7 +277,7 @@ at a moment when some overlay is already in the window rides in that
 overlay: arriving in a land under the gloom shows its line from the pact
 overlay, and coming home shows the village's line from the village's.
 
-A fight with a dungeon keeper or one of the castle's foes loads `PQ.OV16`
+A fight with a dungeon keeper or one of the castle's or realm's foes loads `PQ.OV16`
 first (`mon_sprites`), because their portraits are there. Battles load
 nothing else, so the castle's names and battle cries can live there too,
 and so can what happens when one of them falls (`foe_won`).
@@ -370,6 +387,7 @@ make shot SCRIPT=test/pactledger.h CYCLES=42000000   # a pact in the Ledger
 make shot SCRIPT=test/castle.h  CYCLES=135000000 DEFS="-DTEST_EMPTY -DTEST_WEAK"   # climb it; the Wyrm's hoard
 make shot SCRIPT=test/rainbow.h CYCLES=110000000  # up the Cloudgate, the throne as a base, and home
 make shot SCRIPT=test/cloudgate.h CYCLES=66000000  # the Mayor unseals the Cloudgate
+make shot SCRIPT=test/realm.h   CYCLES=185000000 DEFS="-DTEST_EMPTY -DTEST_WEAK -DTEST_NEAR"   # the portal, the realm, the ending
 make shot SCRIPT=test/elite.h   CYCLES=76000000 DEFS="-DTEST_ELITE=6 -DTEST_DUNGEON=0"   # a Radiant elite's spoils
 make shot SCRIPT=test/champion.h CYCLES=48000000 DEFS="-DTEST_CLEAR"   # a land freed
 make shot SCRIPT=test/gear.h    CYCLES=50000000   # inspect and equip gear
@@ -418,7 +436,9 @@ make shot SCRIPT=test/home.h   CYCLES=50000000                          # out a 
   and `-DTEST_KEEPER` makes the first floor the last. See `test/dungeon.h`
   (in and back out), `test/delve.h` (the Warden, the key, floor 2),
   `test/keeper.h` (the keeper's fight) and `test/below.h` (a champion gone
-  to ground). Test builds (`TEST_SEED`) keep every champion on the surface
+  to ground). `-DTEST_EMPTY` and `-DTEST_NEAR` work in Sog'naroth's realm
+  too (no spawn; each depth's rift or Sog'naroth three steps east of the way
+  in): see `test/realm.h`. Test builds (`TEST_SEED`) keep every champion on the surface
   unless the script's `TEST_SETUP` sets `P.champ_below`.
 - **`-DCHECK`:** after each swap, renders the whole view from scratch into the
   idle back screen and compares it with the screen on show. It prints checks
@@ -464,7 +484,7 @@ The C64 has 64 KB, and the game uses nearly all of it. See `prismquest.cfg`.
 | `$0801–$BFDF` | the resident program: code, read-only data, initialised data (about 46 KB), then `world.c`'s variables (WBSS, zeroed by `main()`) |
 | `$C000–$C3FF` | the map's second screen (the scroller double-buffers); at startup, the startup code |
 | `$C400–$C53F` | the music player's once-a-frame code |
-| `$C540–$CFFF` | the overlay window: PQ.OV1–16 load here on demand |
+| `$C540–$CFFF` | the overlay window: PQ.OV1–18 load here on demand |
 | `$D000–$D7FF` | character set, in the RAM under the I/O chips (only the VIC reads it) |
 | `$D800–$DDFF` | the battle portraits (packed) and the tunes, also under the I/O chips |
 | `$DE00–$DFBF` | the rain's sprite frames |

@@ -33,13 +33,15 @@ void talk_a(u8 id)
             P.main_quest = 3;
             msg("Quest: step onto the Cloudgate in the plaza and ride to the Rainycastle.");
         } else if (q == 3) {
-            say(who, "The Cloudgate glows in the plaza, north-east of the camp. Step onto it, and ride!");
+            say(who, "The Cloudgate glows in the plaza. Step onto it, and ride!");
         } else if (q == 4) {
             say(who, "Climb the castle floor by floor - its guardians seal every stair. Sun spells burn brightest "
                      "up there, they say.");
+        } else if (q == 7) {
+            say(who, "The HERO OF RAINYDAY! Statues shall be raised. Pies shall be baked. Welcome home.");
         } else {
             say(who, "So the serpent was only the doorman... something older than weather waits beyond that portal, and it "
-                     "only opens ONE way. Craft every spell you can carry first, hero.");
+                     "only opens ONE way.");
         }
         break;
     case NPC_GRANDMA:

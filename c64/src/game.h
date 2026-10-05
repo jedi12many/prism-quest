@@ -185,7 +185,7 @@ typedef struct {
 } MonsterDef;
 enum { MO_SLIME, MO_BAT, MO_SHROOM, MO_FOX, MO_GOLEM, MO_GAZER, MO_SPAWNLING,
        MO_BOGMAW, MO_VOLTRA, MO_MILDEW, MO_UMBRELLA, MO_TROLL, MO_REVENANT, MO_POLTERGEIST,
-       MO_SENTINEL, MO_RAINCALLER, MO_WYRM, NMON };
+       MO_SENTINEL, MO_RAINCALLER, MO_WYRM, MO_HERALD, MO_VOIDMAW, MO_SOG, NMON };
 extern const MonsterDef monsters[NMON];
 
 #define NZONE 4
@@ -366,24 +366,33 @@ typedef struct {
 extern Dungeon dg;
 u8 combat_tier(void);              /* the difficulty where we stand */
 void build_dungeon(void);          /* ov_dungeon.c: the floor dg.floor of dg.type */
-extern const char *const dungeon_name[NDUNGEON + 1];   /* (resident: the HUD; the last, the castle's) */
+extern const char *const dungeon_name[NDUNGEON + 2];   /* (resident: the HUD; then the castle's, the realm's) */
 
-/* ---------- the Rainycastle (world.c; its floors and doings: ov_castle.c) ----------
+/* ---------- the Rainycastle and the realm below (world.c; their floors and
+ * doings: ov_castle.c) ----------
  * Three floors up, reached by the Cloudgate once all four lands shine: a
- * guardian seals each stair, and the Rainwyrm holds the throne. It borrows
- * dg: dg.floor is the floor (0: the lowest whose guardian stands), dg.has_key
- * the stair's open. */
-enum { CA_FLOOR1 = 1, CA_FLOOR2 = 2, CA_WYRM = 4, CA_CLAIMED = 8 };   /* P.castle */
-enum { CG_DOWN, CG_UP, CG_HOARD, CG_PORTAL };   /* its gates */
+ * guardian seals each stair, and the Rainwyrm holds the throne. Past it, a
+ * one-way portal down to Sog'naroth's realm: three depths, a guardian at
+ * each rift down, and Sog'naroth at the bottom. Both are MAP_CASTLE (the
+ * realm once P.castle has CA_REALM), and borrow dg: dg.floor is the floor or
+ * depth (0: where to resume), dg.tier the fights', dg.has_key the way on's
+ * open, dg.ex/ey where castle_gate sends you. */
+enum { CA_FLOOR1 = 1, CA_FLOOR2 = 2, CA_WYRM = 4, CA_CLAIMED = 8, CA_REALM = 16, CA_SUN = 32 };   /* P.castle */
+enum { CG_DOWN, CG_UP, CG_HOARD, CG_PORTAL };   /* its gates (CG_UP: the realm's rift down too) */
 #define DG_CASTLE NDUNGEON                      /* (dg.type: its name) */
+#define DG_REALM (NDUNGEON + 1)
 void travel(u8 id, u8 x, u8 y);
 void build_castle(void);           /* ov_castle.c: floor dg.floor */
 void castle_hello(void);           /* the floor's greeting, on arriving */
-u8 castle_gate(u8 gi);             /* a castle gate, or the Cloudgate: 1 down to the village, 2 up a floor, 3 up the rainbow */
+u8 castle_gate(u8 gi);             /* a castle gate, or the Cloudgate: 1 down to the village, 2 to dg.floor at dg.ex, dg.ey */
 /* (ov_foes.c, loaded for any fight with a keeper or the castle's foes:) */
 void foe_won(u8 mi);               /* after beating mobs[mi], one of them */
-extern const char *const castle_cry[3];        /* the guardians' and the Wyrm's battle cries */
-extern const char nm_sentinel[], nm_raincaller[], nm_wyrm[];
+extern const char *const castle_cry[6];        /* the guardians', the Wyrm's and Sog'naroth's battle cries */
+extern const char nm_sentinel[], nm_raincaller[], nm_wyrm[], nm_herald[], nm_voidmaw[], nm_sog[];
+void the_end(void);                /* ov_end.c: Sog'naroth falls, the sun comes back */
+void build_realm(void);            /* ov_realm.c: depth dg.floor */
+void realm_hello(void);
+u8 realm_gate(void);               /* its rift down: 2 if it takes you (to dg.floor at dg.ex, dg.ey) */
 u8 home_base(void);                /* the village, or the castle's throne once claimed */
 void add_mob(u8 x, u8 y, u8 type, u8 move_t, u16 respawn);
 void add_node(u8 x, u8 y, u8 m);
@@ -441,7 +450,9 @@ enum { OV_TITLE = 1, OV_TALKA, OV_TALKB, OV_CAMP, OV_TREE };   /* OV_TREE + clas
 #define OV_PACT 14                      /* the gloom's bargain */
 #define OV_CASTLE 15                    /* the Rainycastle's floors */
 #define OV_FOES 16                      /* the big foes: keepers' and castle's portraits, and the castle's battles */
-#define OV_COUNT 16
+#define OV_END 17                       /* the ending */
+#define OV_REALM 18                     /* Sog'naroth's realm's depths */
+#define OV_COUNT 18
 /* Gloom Pacts (js/data.js PACTS): a blessing and a curse, sealed on entering
  * a land still under the gloom, for as long as you stay (dungeons too) */
 #define NPACT 8

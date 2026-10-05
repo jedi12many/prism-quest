@@ -41,15 +41,16 @@ u8 cheb(u8 x1, u8 y1, u8 x2, u8 y2)
 }
 
 Dungeon dg;
-const char *const dungeon_name[NDUNGEON + 1] = { "Gloom Cave", "Sunken Ruins", "Haunted House", "Rainycastle" };
-static const u8 dungeon_bg[NDUNGEON + 1] = { DKGREY, GREY, BROWN, LTGREY };   /* (the floors' ground) */
+const char *const dungeon_name[NDUNGEON + 2] = { "Gloom Cave", "Sunken Ruins", "Haunted House", "Rainycastle", "The Dark Below" };
+static const u8 dungeon_bg[NDUNGEON + 2] = { DKGREY, GREY, BROWN, LTGREY, DKGREY };   /* (the floors' ground) */
 
 static u8 in_zone(void) { return map_id < NZONE; }
 static u8 in_wilds(void) { return map_id != MAP_VILLAGE; }     /* a zone, a dungeon or the castle */
 static u8 in_dg(void) { return map_id == MAP_DUNGEON || map_id == MAP_CASTLE; }   /* (dg says where) */
 static u8 zone_sunny(void) { return in_zone() && (P.zones_cleared & (1 << map_id)); }
-static u8 stormy(void) { return (in_zone() && !zone_sunny()) || map_id == MAP_CASTLE; }
+static u8 stormy(void) { return (in_zone() && !zone_sunny()) || (map_id == MAP_CASTLE && !(P.castle & CA_SUN)); }
 static u8 storm_tier(void) { return in_zone() ? zones[map_id].tier : 4; }
+static u8 realm(void) { return (P.castle & (CA_REALM | CA_SUN)) == CA_REALM; }   /* (MAP_CASTLE is the realm) */
 u8 home_base(void) { return map_id == MAP_VILLAGE || (map_id == MAP_CASTLE && dg.floor == 3 && (P.castle & CA_CLAIMED)); }
 
 /* ---------- building ---------- */
@@ -174,8 +175,10 @@ void set_palette(void)
     else if (in_dg()) bg = dungeon_bg[dg.type];
     map_bg = land_bg = bg;                  /* the frame interrupt sets it under the panel */
     POKE(0xD020, stormy() ? DKGREY : BLACK);
-    /* the castle's clouds are the grass, flecked white, ringed with sky (the water) */
-    memset((u8 *)tile_color[T_GRASS], map_id == MAP_CASTLE ? WHITE : GREEN, 4);
+    /* the castle's clouds are the grass, flecked white, ringed with sky (the water);
+     * the realm's gloomstone is the grass flecked purple, its void the water, black */
+    memset((u8 *)tile_color[T_GRASS], map_id != MAP_CASTLE ? GREEN : dg.type == DG_CASTLE ? WHITE : PURPLE, 4);
+    memset((u8 *)tile_color[T_WATER], map_id == MAP_CASTLE && dg.type == DG_REALM ? BLACK : BLUE, 4);
     edge_tile = map_id == MAP_CASTLE ? T_WATER : T_TREE;
 }
 
@@ -216,7 +219,10 @@ static void make_map(u8 id)
     map_id = id;
     nmobs = nnodes = ngates = 0;
     if (id == MAP_VILLAGE) { ovl(OV_DIG); build_village(); }   /* (its layout rides with the dig overlay) */
-    else if (id == MAP_CASTLE) { ovl(OV_CASTLE); build_castle(); }
+    else if (id == MAP_CASTLE) {
+        if (realm()) { ovl(OV_REALM); build_realm(); }
+        else { ovl(OV_CASTLE); build_castle(); }
+    }
     else {
         ovl(OV_LANDS);                  /* (the zone generator) */
         keep = rnd16();
@@ -621,7 +627,7 @@ void travel(u8 id, u8 x, u8 y)
     redraw_all();
     if (zone_sunny()) { sb_reset(); sb_str(zones[id].name); sb_str(" basks in sunshine. Gloom-things cannot step into the light."); msg(sb); }
     else if (in_zone()) { ovl(OV_PACT); zone_hello(id); }
-    else if (id == MAP_CASTLE) castle_hello();   /* (its overlay's still in, */
+    else if (id == MAP_CASTLE) { if (realm()) realm_hello(); else castle_hello(); }   /* (its overlay's still in, */
     else village_hello(0);                       /* and the village's) */
 #ifdef TEST_CLEAR                       /* (tests: the land freed at once) */
     if (in_zone()) { ovl(OV_DIG); zone_cleared(id); }
@@ -641,7 +647,7 @@ static u16 zone_resp[MAXMON], zone_node[MAXNODE];
 u8 combat_tier(void)
 {
     if (map_id == MAP_DUNGEON) return dg.tier + 1;     /* deadlier than its zone */
-    if (map_id == MAP_CASTLE) return dg.floor < 2 ? 5 : 6;
+    if (map_id == MAP_CASTLE) return dg.tier;
     return in_zone() ? zones[map_id].tier : 1;
 }
 
@@ -735,11 +741,10 @@ static void on_gate(u8 gi)
         break;
     case G_CLOUD:                       /* (the castle's overlay says if it's awake) */
     case G_CASTLE:
-        ovl(OV_CASTLE);
-        gi = castle_gate(gi);
+        if (realm()) { ovl(OV_REALM); gi = realm_gate(); }   /* (its rift down) */
+        else { ovl(OV_CASTLE); gi = castle_gate(gi); }
         if (gi == 1) { travel(MAP_VILLAGE, 18, 4); save_game(); }   /* down the rainbow, onto the Cloudgate */
-        else if (gi == 2) { ++dg.floor; travel(MAP_CASTLE, 4, 7); }
-        else if (gi == 3) { dg.floor = 0; travel(MAP_CASTLE, 4, 8); }   /* up it */
+        else if (gi) travel(MAP_CASTLE, dg.ex, dg.ey);              /* up, down, or in */
         break;
     default:                            /* G_STAIRS */
         if (!dg.has_key) { msg("The way down is locked. Defeat the Warden to claim its key."); break; }
@@ -792,7 +797,10 @@ static u8 fight(u8 mi, u8 ambush)
     if (r == 1) {
         md = &monsters[mobs[mi].type];
         if (map_id == MAP_DUNGEON && mi == dg.warden) { dg.has_key = 1; msg("The Warden drops a heavy key - the stair is open!"); }
-        else if (md->sprite >= KEEPER_SPRITE0) { ovl(OV_FOES); foe_won(mi); }   /* (in already, for the fight) */
+        else if (md->sprite >= KEEPER_SPRITE0) {
+            ovl(OV_FOES); foe_won(mi);      /* (in already, for the fight) */
+            if (mobs[mi].type == MO_SOG) { ovl(OV_END); the_end(); travel(MAP_VILLAGE, 18, 4); save_game(); }
+        }
         else if (md->flags & MF_BOSS) { ovl(OV_DIG); zone_cleared(map_id == MAP_DUNGEON ? dg.zone : map_id); }
         else if (map_id == Z_SOUTH && P.pip_stage == 1 && P.pip_n < 5) {
             if (++P.pip_n == 5) msg("That should scare the swamp quiet - tell Pip!");
@@ -953,7 +961,7 @@ void world_loop(void)
         for (;;) wait_frame();
     }
 #endif
-    if (P.map == MAP_CASTLE) { dg.floor = 0; P.x = 4; P.y = 8; }   /* (back at the lowest guarded floor's start) */
+    dg.floor = 0;                       /* (the castle: build_castle says where to resume) */
     build_map(P.map);
     if (!walkable(P.x, P.y) && gate_at(P.x, P.y) == 0xFF) {
         /* a freshly generated zone may have a tree where you stood: go to its gate */

@@ -11,13 +11,15 @@ static const char *const pact_name[NPACT] = {
     "Unicorn's Fervor", "Nimble Gambit", "Scholar's Focus", "Ascetic's Boon",
 };
 
-static const char *const quest_text[6] = {
+static const char *const quest_text[8] = {
     "Talk to Mayor Puddle in Drizzlewick.",
     "Take a gate out of the village and defeat the gloom champion in each direction.",
     "The land shines! Report to Mayor Puddle.",
     "Step onto the Cloudgate in the plaza and ride to the Rainycastle.",
     "Climb the Rainycastle and face whatever brews the storm!",
     "Claim the Wyrm's Hoard, then step through the portal - but there is no way back.",
+    "Descend to the heart of the gloom and destroy it. No retreat, no resupply.",
+    "Rainyday is saved! Bask in the sunshine, Gloombreaker.",
 };
 
 void show_ledger(void)
@@ -29,7 +31,7 @@ void show_ledger(void)
     put_str(1, 0, "The Village Ledger", YELLOW);
     put_str(1, 2, "Current quest:", PURPLE);
     log_reset(3, 3);
-    log_add(quest_text[P.main_quest > 5 ? 5 : P.main_quest], WHITE);
+    log_add(quest_text[P.main_quest], WHITE);
     put_str(1, 7, "The four lands:", PURPLE);
     for (i = 0; i < NZONE; ++i) {
         sb_reset(); sb_str(zones[i].dir); sb_str(" - "); sb_str(zones[i].name);

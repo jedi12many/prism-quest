@@ -164,4 +164,32 @@ module.exports = [
       '.......oaaaa', '........oaaa', '.........oaa', '..........oa',
       '...........o',
     ] },
+  // the realm's guardians and Sog'naroth itself (castle: true -- the big foes' overlay)
+  { name: 'herald', castle: true, colors: { o: 0, a: 4, b: 6, c: 3 },       // purple, deep blue tentacles, cyan eyes
+    rows: [
+      '........oooo', '......ooaaaa', '.....oaaaaaa', '....oaaaaaaa',
+      '....oaaaaaaa', '...oaaaccaaa', '...oaaaccoaa', '...oaaaaaaaa',
+      '...oaaaaaaaa', '....oaaaaaaa', '....obaaaaab', '...obbobaaob',
+      '..oboobooboo', '..ob.ob.ob.o', '.ob..ob..ob.', '.ob..ob..ob.',
+      '..ob.ob.ob..', '..ob..ob.ob.', '...o..ob..o.', '......o.....',
+      '............',
+    ] },
+  { name: 'voidmaw', castle: true, colors: { o: 0, a: 4, b: 1, c: 10 },     // purple, white teeth, pink eye
+    rows: [
+      '............', '.......ooooo', '.....ooaaaaa', '....oaaaaaaa',
+      '...oaaaaocco', '..oaaaaaocco', '..oaaobobobo', '.oaaobbbbbbb',
+      '.oaaoooooooo', '.oaaoooooooo', '.oaaoooooooo', '.oaaoooooooo',
+      '.oaaobbbbbbb', '..oaaobobobo', '..oaaaaaaaaa', '...oaaaaaaaa',
+      '....oaaaaaaa', '.....ooaaaaa', '.......ooooo', '............',
+      '............',
+    ] },
+  { name: 'sognaroth', castle: true, colors: { o: 0, a: 4, b: 1, c: 13 },   // purple, white eyes, sickly green maw
+    rows: [
+      '......oooooo', '....ooaaaaaa', '...oaaaaaaaa', '..oaaaaaaaaa',
+      '..oaaaaaaaaa', '.oaaaobbbaaa', '.oaaaobobaaa', '.oaaaobbbaaa',
+      '.oaaaaaaaaaa', '.oaaaaaaoooo', '..oaaaaoccco', '..oaaaaaoooo',
+      '...oaaaaaaaa', '..oaoaoaaoaa', '.oa.oa.oa.oa', 'oa..oa.oa..o',
+      'oa.oa..oa.oa', '.o.oa.oa..oa', '...o..oa.oa.', '......o..o..',
+      '............',
+    ] },
 ];
