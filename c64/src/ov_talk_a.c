@@ -1,4 +1,4 @@
-/* Overlay: the villagers' dialogue (js/ui.js npcDialog) -- Mayor Puddle, Grandma Nimbus, Foreman Flint
+/* Overlay: the villagers' dialogue (js/ui.js npcDialog) -- Mayor Puddle, Willow
  * Loaded from disk on demand into the overlay window (see ovl() in save.c). */
 #include <string.h>
 #include "game.h"
@@ -7,6 +7,16 @@
 #pragma rodata-name("OVTALKADATA")
 
 /* ---------- villagers (js/ui.js npcDialog) ---------- */
+
+static const char *const willow_later[4] = {   /* once her favor's done (as talk_b's later()) */
+    "Look at the beds now - every colour at once, drinking real sun. A century of drizzle, and they never forgot how "
+    "to bloom. Neither did we.",
+    "*presses a dried tulip into your hand* Take this down with you, love. So you remember there's colour up here worth "
+    "climbing back for.",
+    "The puddles are drying and the beds are waking. You're not just felling monsters, love - you're giving the valley "
+    "back its spring.",
+    "The tulips turn to follow you when you walk past. They remember.",
+};
 
 void talk_a(u8 id)
 {
@@ -44,32 +54,23 @@ void talk_a(u8 id)
                      "only opens ONE way.");
         }
         break;
-    case NPC_GRANDMA:
-        if (!(P.npc_flags & 1)) {
-            P.npc_flags |= 1;
-            P.raw[QUARTZ] += 4;
-            say(who, "Oh, sweetheart, you'll catch your death out there. Here - some quartz from my rock garden, for practice. "
-                     "Mind the rain: the gloom-things cannot step into sunshine. If they gang up on you, run for the light.");
-            msg("Grandma Nimbus gave you 4 raw Quartz!");
-        } else if (q >= 2) {
-            say(who, "The rain's climbing back into the sky - see it? That is not the weather breaking, child. That is something "
-                     "inhaling. It fears pure light - Sunflare, Rainbow Beam, Stardust.");
-        } else {
-            say(who, "The champions? Nasty things - the toad spits poison, the serpent strikes twice, the mold regrows, "
-                     "and the umbrella... whispers. Bring healing blooms.");
-        }
-        break;
-    case NPC_FOREMAN:
-        if (!(P.npc_flags & 2)) {
-            P.npc_flags |= 2;
-            ++P.spells[SP_DWARVES];
-            say(who, "Flint's the name - stone, gems, and honest work. The crew owes me a favor, so here: one dwarf crew "
-                     "summons, on the house. They'll polish your whole bag, and they don't do sloppy work.");
-            msg("Foreman Flint taught you Summon Dwarves! (+1 charge, cast it from your Bag)");
-        } else {
-            say(who, "Walk over a sparkling node out in the wilds to scoop up raw minerals, then polish them in your Bag. "
-                     "Better cuts make more spell charges.");
-        }
+    default: /* Willow */
+        if (P.willow_stage == 0) {
+            say(who, "Careful of the flowerbeds, love. My rainbow tulips refuse to bloom. They just need a dusting of Rose Opal. Two would do it. The far lands grow them... so I'm told.");
+            P.willow_stage = 1;
+            msg("Favor accepted: bring Willow 2 Rose Opal.");
+        } else if (P.willow_stage == 1 && gem_stock(ROSEOPAL) < 2) {
+            sb_reset(); sb_str("The tulips are holding their breath. "); sb_num(gem_stock(ROSEOPAL)); sb_str("/2 Rose Opal so far.");
+            say(who, sb);
+        } else if (P.willow_stage == 1) {
+            say(who, "Oh, they're PERFECT. *dusts the beds* ...Look at that. First bloom in a century.");
+            consume_gems(ROSEOPAL, 2);
+            P.willow_stage = 2;
+            ++P.skill_points;
+            msg("The tulips bloom! Willow's wisdom: +1 skill point.");
+        } else say(who, willow_later[P.castle & CA_SUN ? 0 : q >= 5 ? 1 : P.zones_cleared ? 2 : 3]);
+        if (P.pip_stage == 2 && P.baker_stage == 2 && P.willow_stage == 2) deed(DE_NEIGHBOR);
+
         break;
     }
     world_hud_dirty();

@@ -206,6 +206,7 @@ void open_tree(void)
 }
 void talk(u8 npc)
 {
-    if (npc < NPC_PIP) { ovl(OV_TALKA); talk_a(npc); }
+    if (npc == NPC_GRANDMA || npc == NPC_FOREMAN) { ovl(OV_TALKC); talk_c(npc); }
+    else if (npc == NPC_MAYOR || npc == NPC_WILLOW) { ovl(OV_TALKA); talk_a(npc); }
     else { ovl(OV_TALKB); talk_b(npc); }
 }

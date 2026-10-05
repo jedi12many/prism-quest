@@ -44,6 +44,9 @@ int main(void)
 #ifdef TEST_MOTES
     deeds.motes += TEST_MOTES;                  /* (tests: Motes to spend) */
 #endif
+#ifdef TEST_SUNS
+    deeds.wins += TEST_SUNS;                    /* (tests: heroes before this one who brought the sun back) */
+#endif
     for (;;) {
         u8 c;
         ovl(OV_TITLE);

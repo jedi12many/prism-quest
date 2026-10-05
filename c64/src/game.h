@@ -433,6 +433,7 @@ void talk(u8 npc);
 void continue_failed(void);
 void talk_a(u8 id);
 void talk_b(u8 id);
+void talk_c(u8 id);
 void show_tree_mage(void);
 void show_tree_knight(void);
 void show_tree_whisperer(void);
@@ -457,7 +458,8 @@ enum { OV_TITLE = 1, OV_TALKA, OV_TALKB, OV_CAMP, OV_TREE };   /* OV_TREE + clas
 #define OV_SANCT 21                     /* the Sanctuary */
 #define OV_BOSS 22                      /* the bosses' specials */
 #define OV_FALL 23                      /* a named villain falls */
-#define OV_COUNT 23
+#define OV_TALKC 24                     /* dialogue: Grandma Nimbus, Foreman Flint */
+#define OV_COUNT 24
 
 /* a boss's signature blow (ov_boss.c), by battle sprite from SPECIAL_SPRITE0 */
 #define SPECIAL_SPRITE0 7                /* (Bogmaw's: the champions, keepers, castle's and realm's after) */

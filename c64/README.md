@@ -11,6 +11,14 @@ A work-in-progress port of the browser game to a stock Commodore 64 (64 KB,
   Glassworks kiln, Village Ledger and the four zone signposts. All six villagers
   wander around their posts and talk, using the original dialogue. Pip's,
   Barnaby's and Willow's favors work. Resting in the village heals you.
+  - Once their favor is done, Pip, Barnaby and Willow say something new as
+    the story moves on: after a land is freed, once the Cloudgate wakes, and
+    after the sun comes back (as in `js/ui.js` npcDialog).
+  - Grandma Nimbus remembers the heroes before you (her lineage lines). On
+    a disk where someone has brought the sun back, she knows that look and
+    says how many have. Where heroes have only fallen, she counts them and
+    asks you to come home this time. Her later lines follow the quest, down
+    to the sunshine on her rocking chair.
 - **Camp building:** six buildings on the camp plot, built and upgraded to
   level 3 with gems, raw or polished (the web game's costs):
   - the House (+10 max HP a level; it comes built);
@@ -295,8 +303,8 @@ reloaded.
 | Overlay | Contents | Size |
 |---|---|---|
 | `PQ.OV1` | title, hero creation, game over | 2.1 KB |
-| `PQ.OV2` | dialogue: Mayor Puddle, Grandma Nimbus, Foreman Flint | 2.0 KB |
-| `PQ.OV3` | dialogue: Pip, Barnaby, Willow | 2.1 KB |
+| `PQ.OV2` | dialogue: Mayor Puddle, Willow | 2.7 KB |
+| `PQ.OV3` | dialogue: Pip, Barnaby | 2.3 KB |
 | `PQ.OV4` | the Spellbook | 2.7 KB |
 | `PQ.OV5`–`PQ.OV7` | the Power Tree, one per class (each carries only its own class's text) | 2.6–2.7 KB |
 | `PQ.OV8` | building the camp | 2.6 KB |
@@ -315,6 +323,7 @@ reloaded.
 | `PQ.OV21` | the Sanctuary, and the game-over screen | 2.7 KB |
 | `PQ.OV22` | the bosses' specials, and the blow itself | 2.2 KB |
 | `PQ.OV23` | a named villain falls: its last words, and what its fall opens | 2.3 KB |
+| `PQ.OV24` | dialogue: Grandma Nimbus (and her lineage), Foreman Flint | 2.6 KB |
 
 On a stock 1541 each takes roughly 5–7 seconds (about 400 bytes a second);
 a "Loading" note shows in the corner meanwhile. Overlays are kept to about
@@ -452,6 +461,7 @@ tools/vicerun.py build/test.prg build/deeds2.png 50000000 build/deeds.d64   # a 
 make shot SCRIPT=test/hard.h    CYCLES=67000000 DEFS="-DTEST_DUNGEON=0 -DTEST_EMPTY -DTEST_NEAR -DTEST_KEEPER"   # on Hard: the Gloomtroll's 128 HP, not 119
 make shot SCRIPT=test/title_hard.h CYCLES=30000000   # the title, turned up to Hard
 make shot SCRIPT=test/sanct.h   CYCLES=130000000 DEFS="-DTEST_DUNGEON=0 -DTEST_EMPTY -DTEST_NEAR -DTEST_KEEPER -DTEST_FRAIL -DTEST_MOTES=100"   # fall, bank Motes, buy, a hardier hero
+make shot SCRIPT=test/grandma.h CYCLES=70000000 DEFS="-DTEST_SUNS=2"   # Grandma's lineage: two suns before you; her last line
 make shot SCRIPT=test/realm.h   CYCLES=185000000 DEFS="-DTEST_EMPTY -DTEST_WEAK -DTEST_NEAR"   # the portal, the realm, the ending
 make shot SCRIPT=test/elite.h   CYCLES=76000000 DEFS="-DTEST_ELITE=6 -DTEST_DUNGEON=0"   # a Radiant elite's spoils
 make shot SCRIPT=test/champion.h CYCLES=48000000 DEFS="-DTEST_CLEAR"   # a land freed
@@ -490,6 +500,8 @@ make shot SCRIPT=test/home.h   CYCLES=50000000                          # out a 
   out.wav -limitcycles 50000000`; the tune starts about 15 s in.
 - **`-DTEST_FRAIL`:** any hit fells the hero (see `test/sanct.h`).
 - **`-DTEST_MOTES=n`:** the disk's Sanctuary gets n more Motes at startup.
+- **`-DTEST_SUNS=n`:** the disk's chronicle gets n more suns brought back at
+  startup (see `test/grandma.h`).
 - **`-DTEST_DEEDS`:** test builds don't stop to tell of new deeds (the
   older scripts predate them); this brings it back.
 - **`-DTEST_WEAK`:** every foe starts with 1 HP (see `test/castle.h`).
@@ -524,7 +536,7 @@ make shot SCRIPT=test/home.h   CYCLES=50000000                          # out a 
 | `src/kit.c` | skill and building effects, gem helpers, the menu kit, camp menu, doors into the overlays |
 | `src/bag.c` | the Bag: polishing and Summon Dwarves (PQ.OV20) |
 | `src/gear.c` | the Gear screen, item cards, faceting gems, equip/salvage |
-| `src/ov_*.c` | the overlays: title, the two dialogue halves, Spellbook, Power Tree (`ov_tree.inc`, built once per class), building the camp, the Village Ledger (with saving and loading), the dungeon floors, growing a zone, digging up a facet, the Glassworks, the Gloom Pact offer, the village's layout and a land freed (`ov_village.c`) |
+| `src/ov_*.c` | the overlays: title, the three dialogue parts, Spellbook, Power Tree (`ov_tree.inc`, built once per class), building the camp, the Village Ledger (with saving and loading), the dungeon floors, growing a zone, digging up a facet, the Glassworks, the Gloom Pact offer, the village's layout and a land freed (`ov_village.c`) |
 | `src/ovl.s` | overlay file headers: load address and signature |
 | `src/loot.c` | the item engine (rarities, affixes, legendaries, set, rolling); lives in PQ.HI |
 | `src/items.c` | item stats and names (in PQ.HI too), and the Prism relics' table (resident) |
@@ -553,7 +565,7 @@ The C64 has 64 KB, and the game uses nearly all of it. See `prismquest.cfg`.
 | `$0801–$BFDF` | the resident program: code, read-only data, initialised data (about 46 KB), then `world.c`'s variables (WBSS, zeroed by `main()`) |
 | `$C000–$C3FF` | the map's second screen (the scroller double-buffers); at startup, the startup code |
 | `$C400–$C53F` | the music player's once-a-frame code |
-| `$C540–$CFFF` | the overlay window: PQ.OV1–18 load here on demand |
+| `$C540–$CFFF` | the overlay window: PQ.OV1–24 load here on demand |
 | `$D000–$D7FF` | character set, in the RAM under the I/O chips (only the VIC reads it) |
 | `$D800–$DDFF` | the battle portraits (packed) and the tunes, also under the I/O chips |
 | `$DE00–$DFBF` | the rain's sprite frames |
