@@ -290,6 +290,7 @@ typedef struct {
     u8 champ_below;        /* lands whose champion lurks at the bottom of a dungeon, by zone id */
     u8 castle;             /* the Rainycastle: CA_* bits */
     u8 hurt;               /* fell below 30% HP this run (no Untouchable) */
+    u8 diff;               /* the difficulty, locked in for the run (DIFF_*) */
     u8 x, y;
     u8 map;                /* MAP_VILLAGE or a zone id */
     Item equip[NSLOT];
@@ -461,11 +462,13 @@ enum { OV_TITLE = 1, OV_TALKA, OV_TALKB, OV_CAMP, OV_TREE };   /* OV_TREE + clas
  * Kept on the disk in PQ.DEEDS, apart from the hero: a fallen hero's deeds
  * stay. deed() marks one done (resident, from anywhere); the world tells of
  * it, and writes the file, the next time the hero stands still. The run
- * tallies are written then, and when a run ends. (The web game's three
- * difficulty deeds aren't here: the C64 has no difficulty setting.) */
+ * tallies are written then, and when a run ends. */
 enum { DE_FIRST_LIGHT, DE_FOUR_DAWNS, DE_STORMBREAKER, DE_SUNBRINGER, DE_GLASSSMITH, DE_PRISMBLADE,
        DE_GLINT_EYED, DE_KEEPERS, DE_AURA, DE_HIHO, DE_BEST_FRIENDS, DE_DEVILS_DUE, DE_NEIGHBOR,
-       DE_SUPPER, DE_UNTOUCHABLE, DE_TRIPLE, DE_BOTTOM, DE_WALLS, NDEED };
+       DE_SUPPER, DE_UNTOUCHABLE, DE_TRIPLE, DE_BOTTOM, DE_WALLS, DE_STORM_TESTED, DE_DELUGE, DE_WEATHER, NDEED };
+/* the difficulty (js/data.js DIFFICULTIES): monsters' HP and damage, in percent
+ * (battle.c); chosen on the title screen for the next hero */
+enum { DIFF_EASY, DIFF_NORMAL, DIFF_HARD, DIFF_MONSOON, NDIFF };
 /* The Sanctuary (js/data.js META_UPGRADES, js/ui.js openMeta) rides in the
  * same file: Motes banked by each fallen hero, the upgrades they bought
  * (always on, or granted to each new hero), and the roll of the fallen. */
@@ -481,6 +484,8 @@ typedef struct {
     u8 won_cls;            /* classes that have brought the sun back, by bit */
     u16 runs, wins, losses;
     u16 best;              /* the fastest sun, in seconds (0: none yet) */
+    u8 diff_next;          /* the difficulty the next hero starts on */
+    u8 won_diff;           /* difficulties the sun's been brought back on, by bit */
     u16 motes;             /* the Sanctuary's: to spend */
     u8 rank[NSANCT];       /* upgrades bought */
     Fallen fallen[NFALLEN];   /* the latest last */
@@ -489,6 +494,8 @@ void show_sanctuary(void);              /* ov_sanct.c */
 extern Deeds deeds;
 extern u8 deeds_told[3];                /* the deeds the player's been told of */
 void deed(u8 id);                       /* kit.c */
+extern const char *const deed_name[NDEED];
+extern const char *const diff_name[NDIFF];
 u8 deeds_news(void);                    /* any done but not yet told */
 void deeds_read(void);                  /* (kit.c too) */
 void deeds_write(void);
@@ -498,6 +505,7 @@ void show_deeds(void);
  * a land still under the gloom, for as long as you stay (dungeons too) */
 #define NPACT 8
 extern const Eff pact_eff[NPACT][4];    /* data.c (resident: eff() adds it in) */
+extern const char *const pact_name[NPACT];   /* kit.c (the offer and the Ledger name them) */
 void offer_pact(u8 zone);               /* ov_pact.c */
 void zone_hello(u8 zone);               /* (with it: stepping into a land under the gloom) */
 void village_hello(u8 first);           /* ov_village.c: coming home (first: a new hero) */

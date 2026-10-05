@@ -10,6 +10,19 @@
 #pragma code-name("OVTITLECODE")
 #pragma rodata-name("OVTITLEDATA")
 
+static const char *const diff_blurb[NDIFF] = {
+    "a gentle drizzle", "fair, but deadly", "the storm bites back", "most heroes drown",
+};
+
+/* the next hero's difficulty (Left/Right), under the heroes */
+static void show_diff(void)
+{
+    u8 d = deeds.diff_next;
+    clear_rows(22, 22);
+    sb_reset(); sb_str("< "); sb_str(diff_name[d]); sb_str(" >  "); sb_str(diff_blurb[d]);
+    put_center(22, sb, d == DIFF_NORMAL ? GREY : d < DIFF_NORMAL ? LTGREEN : d == DIFF_HARD ? ORANGE : LTRED);
+}
+
 static const char *const class_blurb[NCLASS] = {
     "A scholar of light. Spells hit harder, but robes are thin.",
     "A walking geode. Bonks first, asks questions never.",
@@ -33,6 +46,7 @@ void new_game(u8 cls)
 #endif
     for (c = 0; c < NSLOT; ++c) P.equip[c].kind = 0xFF;
     roll_item(&P.equip[SL_WEAPON], 1, R_COMMON, SL_WEAPON);   /* a humble starter weapon */
+    P.diff = deeds.diff_next;                                   /* (locked in for the run) */
     P.skill_points += deeds.rank[SA_TRAINED];                   /* the Sanctuary's gifts */
     P.polished[QUARTZ][Q_FINE] = 2 * deeds.rank[SA_PROSPECTOR];
     if (deeds.rank[SA_ARSENAL]) roll_item(&P.equip[SL_WEAPON], 3, R_MAGIC, SL_WEAPON);
@@ -85,7 +99,7 @@ static void show_class(u8 c)
 
 u8 title_screen(void)
 {
-    u8 c = 0, i;
+    u8 c = 0, i, d, d0 = deeds.diff_next;
     cls();
     POKE(0xD020, BLACK); POKE(0xD021, BLACK);
     for (i = 0; i < 40; ++i) {
@@ -97,8 +111,9 @@ u8 title_screen(void)
     put_center(6, "The world of Rainyday has spent a", WHITE);
     put_center(7, "hundred years beneath one endless storm.", WHITE);
     put_str(3, 9, "Choose your hero:", PURPLE);
+    show_diff();
     show_class(c);
-    put_center(24, "Joystick 2 or W/S + fire/space", BLUE);
+    put_center(24, "Up/Down + fire   Left/Right: difficulty", BLUE);
     rain_on(0xF8);                          /* "...beneath one endless storm" */
 #ifdef JUKEBOX
     music(JUKEBOX);                         /* (tests: hear any tune) */
@@ -109,11 +124,17 @@ u8 title_screen(void)
         wait_frame(); input_poll();
         if (in_new & IN_UP) { c = c ? c - 1 : SANCT; show_class(c); }
         if (in_new & IN_DOWN) { c = c == SANCT ? 0 : c + 1; show_class(c); }
+        if (in_new & (IN_LEFT | IN_RIGHT)) {
+            d = deeds.diff_next;
+            deeds.diff_next = in_new & IN_LEFT ? (d ? d - 1 : NDIFF - 1) : (d == NDIFF - 1 ? 0 : d + 1);
+            show_diff();
+        }
         if (key_hit(K_1)) { c = 0; break; }
         if (key_hit(K_2)) { c = 1; break; }
         if (key_hit(K_3)) { c = 2; break; }
         if (in_new & IN_FIRE) break;
     }
+    if (deeds.diff_next != d0) deeds_write();   /* (the disk remembers it) */
 #ifdef TEST_SEED
     rng_seed(TEST_SEED);                    /* (tests: the same lands every run) */
 #else

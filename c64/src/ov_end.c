@@ -62,6 +62,10 @@ void the_end(void)
     if (seconds < 2400) deed(DE_SUPPER);        /* (under 40 minutes) */
     if (!P.hurt) deed(DE_UNTOUCHABLE);
     if (deeds.won_cls == (1 << NCLASS) - 1) deed(DE_TRIPLE);
+    deeds.won_diff |= 1 << P.diff;
+    if (P.diff >= DIFF_HARD) deed(DE_STORM_TESTED);
+    if (P.diff == DIFF_MONSOON) deed(DE_DELUGE);
+    if (deeds.won_diff == (1 << NDIFF) - 1) deed(DE_WEATHER);
     POKE(0xD015, 0);
     irq_stop();
     music(TUNE_TITLE);

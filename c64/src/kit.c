@@ -111,12 +111,27 @@ Deeds deeds;
 u8 deeds_told[3];
 #pragma bss-name(pop)
 
+/* (resident: the deeds' overlay was full) */
+const char *const deed_name[NDEED] = {
+    "First Light", "Four Dawns", "Stormbreaker", "Sunbringer", "Glasssmith", "All Colors, One Light",
+    "Glint-Eyed", "Keeper of Keepers", "Aura Breaker", "Hi-Ho", "Best Friends", "Devil's Due",
+    "Heart of Drizzlewick", "Before Supper", "Untouchable", "Triple Crown", "Bottom Floor", "Castle Doctrine",
+    "Storm-Tested", "Deluge Defier", "Every Weather",
+};
+
+/* (resident: the pact offer and the Ledger both name them) */
+const char *const pact_name[NPACT] = {
+    "Glass Rainbow", "Berserker's Vow", "Hoarder's Bargain", "Turtle's Patience",
+    "Unicorn's Fervor", "Nimble Gambit", "Scholar's Focus", "Ascetic's Boon",
+};
+const char *const diff_name[NDIFF] = { "Easy", "Normal", "Hard", "Monsoon" };
+
 void deed(u8 id) { deeds.got[id >> 3] |= 1 << (id & 7); }
 extern u8 __fastcall__ disk_op(u8 op);
 extern u16 disk_start, disk_end;
 void disk_file(const char *s);
 enum { OP_SAVE, OP_LOAD, OP_CMD };
-#define DEEDS_VERSION 2                 /* 2: the Sanctuary */
+#define DEEDS_VERSION 3                 /* 2: the Sanctuary; 3: the difficulty */
 
 /* at startup: the disk's deeds, or a fresh slate */
 void deeds_read(void)
@@ -126,6 +141,7 @@ void deeds_read(void)
     if (disk_op(OP_LOAD) || deeds.magic[0] != 'P' || deeds.magic[1] != 'D' || deeds.magic[2] != DEEDS_VERSION) {
         memset(&deeds, 0, sizeof(deeds));
         deeds.magic[0] = 'P'; deeds.magic[1] = 'D'; deeds.magic[2] = DEEDS_VERSION;
+        deeds.diff_next = DIFF_NORMAL;
     }
     memcpy(deeds_told, deeds.got, sizeof(deeds_told));
 }

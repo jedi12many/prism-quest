@@ -8,10 +8,6 @@
 #pragma rodata-name("OVPACTDATA")
 #pragma bss-name("OVPACTDATA")
 
-static const char *const pact_name[NPACT] = {
-    "Glass Rainbow", "Berserker's Vow", "Hoarder's Bargain", "Turtle's Patience",
-    "Unicorn's Fervor", "Nimble Gambit", "Scholar's Focus", "Ascetic's Boon",
-};
 static const char *const pact_bless[NPACT] = {
     "+35% spell damage", "+40% Bonk damage, +8% crit", "+25% rare-gem luck, +1 mining", "+4 defense, +20 max HP",
     "+60% unicorn power, +30% healing", "+12% dodge, +8% crit", "+50% XP, 15% free casts", "+20% all damage, +2 regen",

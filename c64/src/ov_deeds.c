@@ -10,11 +10,6 @@
 #pragma bss-name("OVDEEDSDATA")
 
 
-static const char *const name[NDEED] = {
-    "First Light", "Four Dawns", "Stormbreaker", "Sunbringer", "Glasssmith", "All Colors, One Light",
-    "Glint-Eyed", "Keeper of Keepers", "Aura Breaker", "Hi-Ho", "Best Friends", "Devil's Due",
-    "Heart of Drizzlewick", "Before Supper", "Untouchable", "Triple Crown", "Bottom Floor", "Castle Doctrine",
-};
 static const char *const desc[NDEED] = {
     "Bring the sun back to one land.",
     "Restore all four lands in one run.",
@@ -34,6 +29,9 @@ static const char *const desc[NDEED] = {
     "Restore the sun with every class.",
     "Reach the third floor of a dungeon.",
     "Raise the camp walls.",
+    "Restore the sun on Hard.",
+    "Restore the sun on Monsoon.",
+    "Restore the sun on every difficulty.",
 };
 /* Grandma's wisdom, for the ones not yet done */
 static const char *const hint[NDEED] = {
@@ -55,6 +53,9 @@ static const char *const hint[NDEED] = {
     "The sun loves all three classes.",
     "Some holes go down, and down again.",
     "Good walls make the gloom sulk.",
+    "When the storm bites back, bite harder.",
+    "A deluge, and one who would not drown.",
+    "Rain or shine or worse - win in all.",
 };
 
 static u8 i, n;
@@ -76,23 +77,27 @@ void deeds_tell(void)
     for (i = 0; i < NDEED; ++i)
         if (done(i) && !has(deeds_told, i)) {
             sfx(SFX_LEVEL);
-            sb_reset(); sb_str("Deed done: "); sb_str(name[i]); sb_str("!");
+            sb_reset(); sb_str("Deed done: "); sb_str(deed_name[i]); sb_str("!");
             say(sb, desc[i]);
         }
     memcpy(deeds_told, deeds.got, sizeof(deeds_told));
     deeds_write();
 }
 
+/* two columns of 11; the one in hand's description, or Grandma's hint */
+#define ROWS 11
 static void draw(u8 sel)
 {
+    u8 x, y;
     for (i = 0; i < NDEED; ++i) {
-        put_ch(1, 3 + i, i == sel ? CH_POINTER : 0, YELLOW);
-        if (done(i)) { put_ch(3, 3 + i, CH_STAR, YELLOW); put_str(5, 3 + i, name[i], i == sel ? YELLOW : WHITE); }
-        else put_str(5, 3 + i, "...", i == sel ? YELLOW : DKGREY);
+        x = i < ROWS ? 0 : 20; y = 2 + (i < ROWS ? i : i - ROWS);
+        put_ch(x, y, i == sel ? CH_POINTER : 0, YELLOW);
+        if (done(i)) { put_ch(x + 1, y, CH_STAR, YELLOW); put_strn(x + 2, y, deed_name[i], 18, i == sel ? YELLOW : WHITE); }
+        else put_str(x + 2, y, "...", i == sel ? YELLOW : DKGREY);
     }
-    clear_rows(21, 22);
-    if (done(sel)) wrap(desc[sel], 21, 2, CYAN);
-    else { sb_reset(); sb_str("Grandma: \""); sb_str(hint[sel]); sb_str("\""); wrap(sb, 21, 2, PURPLE); }
+    clear_rows(15, 17);
+    if (done(sel)) { put_str(1, 15, deed_name[sel], YELLOW); wrap(desc[sel], 16, 2, CYAN); }
+    else { sb_reset(); sb_str("Grandma: \""); sb_str(hint[sel]); sb_str("\""); wrap(sb, 15, 2, PURPLE); }
 }
 
 /* the Ledger of Deeds: up/down to read them; and the chronicle of runs */
@@ -105,7 +110,7 @@ void show_deeds(void)
     put_str(23, 0, sb, CYAN);
     sb_reset(); sb_str("Runs "); sb_num(deeds.runs); sb_str("  Suns "); sb_num(deeds.wins); sb_str("  Lost "); sb_num(deeds.losses);
     if (deeds.best) { sb_str("  Best "); sb_num(deeds.best / 60); sb_str(" min"); }
-    put_str(1, 23, sb, GREY);
+    put_str(1, 20, sb, GREY);
     put_str(1, 24, "Up/Down  R: back", BLUE);
     draw(sel);
     for (;;) {

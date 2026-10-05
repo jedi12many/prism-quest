@@ -6,10 +6,6 @@
 #pragma rodata-name("OVLEDGERDATA")
 #pragma bss-name("OVLEDGERDATA")
 
-static const char *const pact_name[NPACT] = {
-    "Glass Rainbow", "Berserker's Vow", "Hoarder's Bargain", "Turtle's Patience",
-    "Unicorn's Fervor", "Nimble Gambit", "Scholar's Focus", "Ascetic's Boon",
-};
 
 static const char *const quest_text[8] = {
     "Talk to Mayor Puddle in Drizzlewick.",
@@ -50,7 +46,7 @@ void show_ledger(void)
     for (i = 0, k = 0; i < NZONE; ++i) if (P.facets & (1 << i)) ++k;
     put_str(2, 17, "Prism Facets found", WHITE);
     put_ch(30, 17, glyph('0' + k), CYAN); put_str(31, 17, "/4", CYAN);
-    sb_reset(); sb_str("Kills: "); sb_num(P.kills); sb_str("   Time: "); sb_num(seconds / 60); sb_str(" min");
+    sb_reset(); sb_str("Kills: "); sb_num(P.kills); sb_str("   Time: "); sb_num(seconds / 60); sb_str(" min   "); sb_str(diff_name[P.diff]);
     put_str(1, 19, sb, WHITE);
     put_str(1, 24, "Fire: back", BLUE);
     wait_fire();

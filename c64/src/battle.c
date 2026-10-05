@@ -481,6 +481,11 @@ u8 battle(u8 mi, u8 ambush)
         mhpmax = mhp += (u16)mhp * 3 / 5;
         atk_scale += atk_scale * 3 / 20;
     }
+    {   /* the difficulty (js/data.js DIFFICULTIES): HP and damage, in percent */
+        static const u8 diff_hp[NDIFF] = { 88, 100, 108, 116 }, diff_dmg[NDIFF] = { 78, 100, 115, 132 };
+        mhpmax = mhp = (u16)mhp * diff_hp[P.diff] / 100;
+        atk_scale = atk_scale * diff_dmg[P.diff] / 100;
+    }
 #ifdef TEST_WEAK
     mhpmax = mhp = 1;                   /* (tests: one bonk does it) */
 #endif

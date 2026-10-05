@@ -14,7 +14,7 @@ void disk_file(const char *s);       /* save.c: the file name for the next disk_
 
 enum { OP_SAVE, OP_LOAD, OP_CMD, OP_LOADHI };
 
-#define SAVE_VERSION 8                  /* 3: camp buildings; 4: Prism Facets; 5: pacts; 6: champions below; 7: the Rainycastle; 8: deeds */
+#define SAVE_VERSION 9                  /* 3: camp buildings; 4: Prism Facets; 5: pacts; 6: champions below; 7: the Rainycastle; 8: deeds; 9: the difficulty */
 /* "PQ", version, the Player struct, the play clock, a checksum. The buffer
  * is LOWSCRATCH ($0400), below the KERNAL where its SAVE/LOAD can reach it;
  * the map view shares it (it's rebuilt after every save or load). */
