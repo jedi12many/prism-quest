@@ -41,6 +41,9 @@ int main(void)
         memset(_WBSS_RUN__, 0, (u16)_WBSS_SIZE__);
     }
     deeds_read();                               /* the deeds done on this disk */
+#if defined(AUTOPLAY) && !defined(TEST_GUIDE)
+    deeds.seen_guide = 1;                       /* (tests: How to Play opens only where asked for) */
+#endif
 #ifdef TEST_MOTES
     deeds.motes += TEST_MOTES;                  /* (tests: Motes to spend) */
 #endif
@@ -54,7 +57,10 @@ int main(void)
         if (c > NCLASS) { ovl(OV_SANCT); show_sanctuary(); continue; }   /* (the menu's last line) */
         if (c == NCLASS) {
             if (!load_game()) { continue_failed(); continue; }
-        } else new_game(c);
+        } else {
+            new_game(c);
+            if (!deeds.seen_guide) open_guide();    /* the first hero on this disk: how it all works */
+        }
         world_loop();                           /* returns when the hero falls */
         ovl(OV_SANCT);                          /* (the game-over screen rides with the Sanctuary) */
         game_over();

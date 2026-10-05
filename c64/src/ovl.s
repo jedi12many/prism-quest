@@ -1,14 +1,14 @@
 ; Overlay file headers: each PQ.OVn starts with its load address (the
 ; overlay window) and a two-byte signature, "O" and its number, which ovl()
 ; in save.c checks after loading.
-;   1 title + game over   2 talk: Mayor, Grandma, Flint   3 talk: Pip, Barnaby, Willow
+;   1 title + game over   2 talk: Mayor, Willow   3 talk: Pip, Barnaby
 ;   4 Spellbook           5-7 Power Tree for the mage, knight, whisperer
 ;   8 building the camp   9 the Village Ledger   10 the dungeons' floors   11 growing a zone
 ;   12 digging up a Prism Facet   13 the Glassworks   14 a Gloom Pact
 ;   15 the Rainycastle's floors   16 the big foes: the keepers', the castle's and the realm's portraits, and more
 ;   17 the ending   18 Sog'naroth's realm   19 the deeds   20 the Bag
 ;   21 the Sanctuary   22 the bosses' specials
-;   23 a named villain falls   24 talk: Grandma, Flint
+;   23 a named villain falls   24 talk: Grandma, Flint   25 How to Play
         .import __OVL_START__
         .segment "OV1LOAD"
         .word   __OVL_START__
@@ -106,3 +106,7 @@
         .word   __OVL_START__
         .segment "OV24SIG"
         .byte   $4F, 24
+        .segment "OV25LOAD"
+        .word   __OVL_START__
+        .segment "OV25SIG"
+        .byte   $4F, 25

@@ -434,6 +434,8 @@ void continue_failed(void);
 void talk_a(u8 id);
 void talk_b(u8 id);
 void talk_c(u8 id);
+void show_guide(void);                  /* ov_guide.c: How to Play */
+void open_guide(void);                  /* (kit.c) */
 void show_tree_mage(void);
 void show_tree_knight(void);
 void show_tree_whisperer(void);
@@ -459,7 +461,8 @@ enum { OV_TITLE = 1, OV_TALKA, OV_TALKB, OV_CAMP, OV_TREE };   /* OV_TREE + clas
 #define OV_BOSS 22                      /* the bosses' specials */
 #define OV_FALL 23                      /* a named villain falls */
 #define OV_TALKC 24                     /* dialogue: Grandma Nimbus, Foreman Flint */
-#define OV_COUNT 24
+#define OV_GUIDE 25                     /* How to Play */
+#define OV_COUNT 25
 
 /* a boss's signature blow (ov_boss.c), by battle sprite from SPECIAL_SPRITE0 */
 #define SPECIAL_SPRITE0 7                /* (Bogmaw's: the champions, keepers, castle's and realm's after) */
@@ -503,6 +506,7 @@ typedef struct {
     u16 motes;             /* the Sanctuary's: to spend */
     u8 rank[NSANCT];       /* upgrades bought */
     Fallen fallen[NFALLEN];   /* the latest last */
+    u8 seen_guide;         /* How to Play has opened by itself once (last: an older file reads as 0) */
 } Deeds;
 void show_sanctuary(void);              /* ov_sanct.c */
 extern Deeds deeds;

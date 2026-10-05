@@ -131,6 +131,12 @@ A work-in-progress port of the browser game to a stock Commodore 64 (64 KB,
 - **Polishing:** "Polish all" in the Bag cuts every raw gem as Rough, Fine or
   Brilliant, at the web game's odds. Foreman Flint's free **Summon Dwarves**
   crew polishes with a big Brilliant bonus.
+- **How to Play (from `js/ui.js` GUIDE_PAGES):** the web game's ten-page
+  walkthrough, from "A hundred years of rain" to "One life", retold for the
+  joystick and the camp menu. It opens by itself for the first hero on a
+  disk (`PQ.DEEDS` remembers that it has), and "How to play" in the camp
+  menu opens it again. Fire or Right turns the page, Up goes back, and R or
+  RUN/STOP closes it. It lives in `PQ.OV25`.
 - **Deeds (the web game's achievements):** all 21, from First Light (a land
   freed) to Every Weather (the sun brought back on every difficulty).
   - When you next stand still in the world, a new deed is announced ("Deed
@@ -257,7 +263,7 @@ toasts become messages, colour flashes and SID sounds.
 | Talk | Walk into a villager |
 | Fight | Walk into a monster |
 | Confirm, next page | Fire, Space or Return |
-| Camp menu (Bag, Gear, Spellbook, Power Tree, Build, Ledger, Deeds, Save) | Fire while standing still |
+| Camp menu (Bag, Gear, Spellbook, Power Tree, Build, Ledger, Deeds, Save, How to play) | Fire while standing still |
 | Load a saved hero | "Continue from disk" on the title screen |
 | Spend Motes | "The Sanctuary" on the title screen |
 | The next hero's difficulty | Left/Right on the title screen |
@@ -324,6 +330,7 @@ reloaded.
 | `PQ.OV22` | the bosses' specials, and the blow itself | 2.2 KB |
 | `PQ.OV23` | a named villain falls: its last words, and what its fall opens | 2.3 KB |
 | `PQ.OV24` | dialogue: Grandma Nimbus (and her lineage), Foreman Flint | 2.6 KB |
+| `PQ.OV25` | How to Play | 2.6 KB |
 
 On a stock 1541 each takes roughly 5–7 seconds (about 400 bytes a second);
 a "Loading" note shows in the corner meanwhile. Overlays are kept to about
@@ -450,7 +457,7 @@ make shot SCRIPT=test/facet.h   CYCLES=56000000 DEFS="-DTEST_FACET"   # dig up t
 make shot SCRIPT=test/forge.h   CYCLES=40000000   # fuse two facets at the Glassworks
 make shot SCRIPT=test/blade.h   CYCLES=36000000   # THE PRISMBLADE's Gear card
 make shot SCRIPT=test/pact.h    CYCLES=54000000 DEFS="-DTEST_PACT"   # seal Turtle's Patience in Bogmire
-make shot SCRIPT=test/pactledger.h CYCLES=42000000   # a pact in the Ledger
+make shot SCRIPT=test/pactledger.h CYCLES=45000000   # a pact in the Ledger
 make shot SCRIPT=test/castle.h  CYCLES=135000000 DEFS="-DTEST_EMPTY -DTEST_WEAK"   # climb it; the Wyrm's hoard
 make shot SCRIPT=test/rainbow.h CYCLES=110000000  # up the Cloudgate, the throne as a base, and home
 make shot SCRIPT=test/cloudgate.h CYCLES=66000000  # the Mayor unseals the Cloudgate
@@ -461,6 +468,7 @@ tools/vicerun.py build/test.prg build/deeds2.png 50000000 build/deeds.d64   # a 
 make shot SCRIPT=test/hard.h    CYCLES=67000000 DEFS="-DTEST_DUNGEON=0 -DTEST_EMPTY -DTEST_NEAR -DTEST_KEEPER"   # on Hard: the Gloomtroll's 128 HP, not 119
 make shot SCRIPT=test/title_hard.h CYCLES=30000000   # the title, turned up to Hard
 make shot SCRIPT=test/sanct.h   CYCLES=130000000 DEFS="-DTEST_DUNGEON=0 -DTEST_EMPTY -DTEST_NEAR -DTEST_KEEPER -DTEST_FRAIL -DTEST_MOTES=100"   # fall, bank Motes, buy, a hardier hero
+make shot SCRIPT=test/guide.h   CYCLES=70000000 DEFS="-DTEST_GUIDE"   # How to Play opens for the first hero; on to the camp menu
 make shot SCRIPT=test/grandma.h CYCLES=70000000 DEFS="-DTEST_SUNS=2"   # Grandma's lineage: two suns before you; her last line
 make shot SCRIPT=test/realm.h   CYCLES=185000000 DEFS="-DTEST_EMPTY -DTEST_WEAK -DTEST_NEAR"   # the portal, the realm, the ending
 make shot SCRIPT=test/elite.h   CYCLES=76000000 DEFS="-DTEST_ELITE=6 -DTEST_DUNGEON=0"   # a Radiant elite's spoils
@@ -502,6 +510,8 @@ make shot SCRIPT=test/home.h   CYCLES=50000000                          # out a 
 - **`-DTEST_MOTES=n`:** the disk's Sanctuary gets n more Motes at startup.
 - **`-DTEST_SUNS=n`:** the disk's chronicle gets n more suns brought back at
   startup (see `test/grandma.h`).
+- **`-DTEST_GUIDE`:** a scripted test's first hero gets How to Play, as a
+  real disk's would. Other test builds skip it, so their scripts stay put.
 - **`-DTEST_DEEDS`:** test builds don't stop to tell of new deeds (the
   older scripts predate them); this brings it back.
 - **`-DTEST_WEAK`:** every foe starts with 1 HP (see `test/castle.h`).
@@ -536,7 +546,7 @@ make shot SCRIPT=test/home.h   CYCLES=50000000                          # out a 
 | `src/kit.c` | skill and building effects, gem helpers, the menu kit, camp menu, doors into the overlays |
 | `src/bag.c` | the Bag: polishing and Summon Dwarves (PQ.OV20) |
 | `src/gear.c` | the Gear screen, item cards, faceting gems, equip/salvage |
-| `src/ov_*.c` | the overlays: title, the three dialogue parts, Spellbook, Power Tree (`ov_tree.inc`, built once per class), building the camp, the Village Ledger (with saving and loading), the dungeon floors, growing a zone, digging up a facet, the Glassworks, the Gloom Pact offer, the village's layout and a land freed (`ov_village.c`) |
+| `src/ov_*.c` | the overlays: title, the three dialogue parts, Spellbook, Power Tree (`ov_tree.inc`, built once per class), building the camp, the Village Ledger (with saving and loading), the dungeon floors, growing a zone, digging up a facet, the Glassworks, the Gloom Pact offer, How to Play, the village's layout and a land freed (`ov_village.c`) |
 | `src/ovl.s` | overlay file headers: load address and signature |
 | `src/loot.c` | the item engine (rarities, affixes, legendaries, set, rolling); lives in PQ.HI |
 | `src/items.c` | item stats and names (in PQ.HI too), and the Prism relics' table (resident) |
@@ -565,7 +575,7 @@ The C64 has 64 KB, and the game uses nearly all of it. See `prismquest.cfg`.
 | `$0801–$BFDF` | the resident program: code, read-only data, initialised data (about 46 KB), then `world.c`'s variables (WBSS, zeroed by `main()`) |
 | `$C000–$C3FF` | the map's second screen (the scroller double-buffers); at startup, the startup code |
 | `$C400–$C53F` | the music player's once-a-frame code |
-| `$C540–$CFFF` | the overlay window: PQ.OV1–24 load here on demand |
+| `$C540–$CFFF` | the overlay window: PQ.OV1–25 load here on demand |
 | `$D000–$D7FF` | character set, in the RAM under the I/O chips (only the VIC reads it) |
 | `$D800–$DDFF` | the battle portraits (packed) and the tunes, also under the I/O chips |
 | `$DE00–$DFBF` | the rain's sprite frames |
