@@ -41,7 +41,7 @@ static const char *const text[NPAGE] = {
     "which the camp Factory and dwarf crews improve. Gems fuel spells, camp upgrades and item sockets.",
 
     "Monsters drop loot: Common, Magic, Rare, Legendary, Set. Fill five slots: Weapon, Helm, Armor, Boots, Charm. "
-    "Facet gems into sockets for good, and collect the Rainbow Raiment set. Salvage the rest.",
+    "Facet gems into sockets for good, and collect the Rainbow Raiment set. Salvage the rest, or turn on Auto-salvage in the camp menu.",
 
     "Each land hides a dungeon two or three floors deep, deadlier as you descend. Beat each floor's Warden "
     "for the key down; the keeper at the bottom guards legendary loot. Climb out any time.",

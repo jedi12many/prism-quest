@@ -462,8 +462,11 @@ void monster_loot(u8 type)
     else if (el) roll_item(&it, tier * 2, 0xFF, 0xFF);   /* elites always drop */
     else if (chance(25)) roll_item(&it, ilvl, 0xFF, 0xFF);
     else return;
-    if (!give_item(&it)) { sb_str("Bag full! The item crumbled into 2 raw Quartz."); return; }
-    sb_str("Loot: "); sb_item_name(&it); sb_str(" (");
+    r = give_item(&it);
+    if (!r) { sb_str("Bag full! The item crumbled into 2 raw Quartz."); return; }
+    sb_str(r == 2 ? "Auto-salvaged: " : "Loot: "); sb_item_name(&it);
+    if (r == 2) { sb_str(" - 1 Quartz"); return; }
+    sb_str(" (");
     sb_str(rarity_name[ITEM_RARITY(&it)]); sb_str(" "); sb_str(slot_name[ITEM_SLOT(&it)]); sb_str(")");
 }
 

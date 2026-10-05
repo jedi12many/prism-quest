@@ -155,15 +155,5 @@ void sb_stat(u8 key, i16 v)
     sb_str(stat_label[key]);
 }
 
-/* ---------- drops ---------- */
-
-/* put an item in the bag; a full bag crumbles it into 2 raw Quartz */
-u8 give_item(const Item *it)
-{
-    if (P.ninv >= INV_CAP) { P.raw[QUARTZ] += 2; return 0; }
-    P.inv[P.ninv++] = *it;
-    return 1;
-}
-
 /* (no pops: cc65 emits string literals at the end of the file, and they
  * belong in PQ.HI too) */

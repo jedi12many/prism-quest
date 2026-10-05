@@ -212,6 +212,14 @@ A work-in-progress port of the browser game to a stock Commodore 64 (64 KB,
   dodge (capped at 60%), feed the same effect system as the Power Tree. Every
   hero starts with a common weapon, and a full bag crumbles new drops into 2
   Quartz.
+  - **Auto-salvage** (from `js/loot.js` shouldAutoSalvage): a line in the camp
+    menu, which fire turns through off, Common, Common and Magic, and up to
+    Rare. A drop of a rarity it covers goes straight to 1 raw Quartz, with a
+    line in the battle log ("Auto-salvaged: Hood - 1 Quartz"). It never takes
+    a legendary, a set piece or a Prism relic, nor anything for an empty
+    slot or with a higher power rating than what you wear there. The setting
+    is the disk's, kept in `PQ.DEEDS` like the difficulty (the web game's
+    is the device's).
 - **Saving to disk:** "Save game" in the camp menu, plus an automatic save
   each time you come home to Drizzlewick, writes `PQ.SAVE` (one block, with a
   magic header, version byte and checksum) to the drive the game was loaded
@@ -263,7 +271,7 @@ toasts become messages, colour flashes and SID sounds.
 | Talk | Walk into a villager |
 | Fight | Walk into a monster |
 | Confirm, next page | Fire, Space or Return |
-| Camp menu (Bag, Gear, Spellbook, Power Tree, Build, Ledger, Deeds, Save, How to play) | Fire while standing still |
+| Camp menu (Bag, Gear, Spellbook, Power Tree, Build, Ledger, Deeds, Save, How to play, Auto-salvage) | Fire while standing still |
 | Load a saved hero | "Continue from disk" on the title screen |
 | Spend Motes | "The Sanctuary" on the title screen |
 | The next hero's difficulty | Left/Right on the title screen |
@@ -472,6 +480,7 @@ make shot SCRIPT=test/guide.h   CYCLES=70000000 DEFS="-DTEST_GUIDE"   # How to P
 make shot SCRIPT=test/grandma.h CYCLES=70000000 DEFS="-DTEST_SUNS=2"   # Grandma's lineage: two suns before you; her last line
 make shot SCRIPT=test/realm.h   CYCLES=185000000 DEFS="-DTEST_EMPTY -DTEST_WEAK -DTEST_NEAR"   # the portal, the realm, the ending
 make shot SCRIPT=test/elite.h   CYCLES=76000000 DEFS="-DTEST_ELITE=6 -DTEST_DUNGEON=0"   # a Radiant elite's spoils
+make shot SCRIPT=test/salvage.h CYCLES=80000000 DEFS="-DTEST_ELITE=3 -DTEST_DUNGEON=0"   # an elite's drop auto-salvaged (100000000: the camp menu's setting)
 make shot SCRIPT=test/champion.h CYCLES=48000000 DEFS="-DTEST_CLEAR"   # a land freed
 make shot SCRIPT=test/gear.h    CYCLES=50000000   # inspect and equip gear
 make shot SCRIPT=test/battle.h  CYCLES=160000000  # Knight fights through Bogmire

@@ -159,18 +159,52 @@ void deeds_write(void)
 
 u8 deeds_news(void) { return (deeds.got[0] ^ deeds_told[0]) | (deeds.got[1] ^ deeds_told[1]) | (deeds.got[2] ^ deeds_told[2]); }
 
+/* ---------- drops ---------- */
+
+/* auto-salvage (js/loot.js shouldAutoSalvage): only a rarity below the
+ * setting, so never a legendary, set piece or Prism relic; and never one
+ * that fills an empty slot or beats what's worn there */
+static u8 salvage_it(const Item *it)
+{
+    const Item *on = &P.equip[ITEM_SLOT(it)];
+    if (ITEM_RARITY(it) >= deeds.auto_salvage || on->kind == 0xFF) return 0;
+    return item_power(it) <= item_power(on);
+}
+
+/* put an item in the bag: 1. Or auto-salvage it into 1 raw Quartz: 2. A
+ * full bag crumbles it into 2: 0 */
+u8 give_item(const Item *it)
+{
+    if (salvage_it(it)) { ++P.raw[QUARTZ]; return 2; }
+    if (P.ninv >= INV_CAP) { P.raw[QUARTZ] += 2; return 0; }
+    P.inv[P.ninv++] = *it;
+    return 1;
+}
+
 /* ---------- the camp menu (fire in the world) ---------- */
 
-static const char *const camp_items[10] = { "Bag & polishing", "Gear", "Spellbook", "Power Tree", "Build the camp", "Village Ledger", "Deeds", "Save game", "How to play", "Back" };
+static const char *camp_items[11] = { "Bag & polishing", "Gear", "Spellbook", "Power Tree", "Build the camp", "Village Ledger", "Deeds", "Save game", "How to play", 0, "Back" };
+/* (js/loot.js AUTO_SALVAGE_LABELS) */
+static const char *const salvage_label[4] = { "Auto-salvage: off", "Auto-salvage: Common", "Auto-salvage: Common, Magic", "Auto-salvage: up to Rare" };
 
 void camp_menu(void)
 {
-    u8 sel;
+    u8 sel = 0, as = deeds.auto_salvage;
     POKE(0xD015, 0);
     cls();
     POKE(0xD021, BLACK);
     put_str(1, 7, "Make camp:", PURPLE);
-    sel = menu_pick(1, 9, camp_items, 10, 0);
+    put_str(1, 21, "Auto-salvage never takes a legendary,", GREY);
+    put_str(1, 22, "set piece or relic, or an upgrade.", GREY);
+    for (;;) {                                  /* fire on Auto-salvage turns it up a notch */
+        camp_items[9] = salvage_label[deeds.auto_salvage];
+        sel = menu_pick(1, 9, camp_items, 11, sel);
+        if (sel != 9) break;
+        deeds.auto_salvage = (deeds.auto_salvage + 1) & 3;
+        clear_rows(18, 18);
+        sfx(SFX_TALK);
+    }
+    if (deeds.auto_salvage != as) deeds_write();    /* (the disk remembers it) */
     if (sel == 0) open_bag();
     else if (sel == 1) open_gear();
     else if (sel == 2) open_spellbook();

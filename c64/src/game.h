@@ -245,7 +245,7 @@ u16 item_power(const Item *it);
 void sb_item_name(const Item *it);
 void sb_stat(u8 key, i16 v);
 u8 item_lines(const Item *it, u8 *keys, i16 *vals);
-u8 give_item(const Item *it);
+u8 give_item(const Item *it);           /* 1 in the bag, 2 auto-salvaged, 0 the bag was full */
 void monster_loot(u8 type);
 void show_gear(void);                  /* gear.c */
 
@@ -506,7 +506,8 @@ typedef struct {
     u16 motes;             /* the Sanctuary's: to spend */
     u8 rank[NSANCT];       /* upgrades bought */
     Fallen fallen[NFALLEN];   /* the latest last */
-    u8 seen_guide;         /* How to Play has opened by itself once (last: an older file reads as 0) */
+    u8 seen_guide;         /* How to Play has opened by itself once (these last: an older file reads them as 0) */
+    u8 auto_salvage;       /* drops salvaged unless they beat what's worn: 0 off, else rarities below it */
 } Deeds;
 void show_sanctuary(void);              /* ov_sanct.c */
 extern Deeds deeds;
