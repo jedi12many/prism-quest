@@ -57,6 +57,8 @@ static void fuse(void)
         it->kind = 0xFF;
     }
     make(PRISM_TWIN + power - 2);
+    deed(DE_GLASSSMITH);
+    if (power >= 4) deed(DE_PRISMBLADE);
     if (it->kind == 0xFF) *it = made;           /* the slot's free: wield it */
     else give_item(&made);
     calc_stats();

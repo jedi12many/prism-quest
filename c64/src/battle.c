@@ -128,6 +128,7 @@ static void player_damage(i16 dmg)
     i16 r;
     if (over) return;
     P.hp -= dmg;
+    if (P.hp * 10 < P.hpmax * 3) P.hurt = 1;    /* (no Untouchable this run) */
     if (P.hp > 0) return;
     /* Last Stand: survive at 1 HP, once per battle */
     if (eff(E_LASTSTAND) && !last_stand_used) {
@@ -258,6 +259,7 @@ static void cast(u8 sp)
         blog(sb, GREEN);
         break;
     case SP_UNICORN:
+        deed(DE_BEST_FRIENDS);
         uni_t = 4 + eff(E_SUMMONTURNS);
         uni_pow = 100 + eff(E_UNICORN);
         sb_reset(); sb_str(pet_free ? "Your bonded" : "A radiant"); sb_str(" unicorn gallops to your side! (");
@@ -353,6 +355,7 @@ static void victory(void)
         sb_reset(); sb_str("Second Wind restores "); sb_num(roll); sb_str(" HP.");
         blog(sb, GREEN);
     }
+    if (el) { if (deeds.elites < 25) ++deeds.elites; else deed(DE_AURA); }
     monster_loot(mob->type);
     if (sb[0]) blog(sb, ORANGE);
     mob->alive = 0;

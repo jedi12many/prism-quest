@@ -40,6 +40,7 @@ int main(void)
         extern u8 _WBSS_RUN__[], _WBSS_SIZE__[];
         memset(_WBSS_RUN__, 0, (u16)_WBSS_SIZE__);
     }
+    deeds_read();                               /* the deeds done on this disk */
     for (;;) {
         u8 c;
         ovl(OV_TITLE);
@@ -50,6 +51,7 @@ int main(void)
         world_loop();                           /* returns when the hero falls */
         ovl(OV_TITLE);
         game_over();
+        deeds_write();
     }
     return 0;
 }

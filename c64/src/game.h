@@ -163,7 +163,6 @@ extern const SpellDef spells[NSPELL];
 enum { CL_MAGE, CL_KNIGHT, CL_WHISPERER };
 typedef struct {
     const char *name;
-    const char *blurb;
     u8 hp, atk, mag, def;
     u8 def_grow2;          /* defence growth per level, in halves */
 } ClassDef;
@@ -290,6 +289,7 @@ typedef struct {
     u8 pact;               /* the Gloom Pact sealed for this land: 1 + its number, 0 none */
     u8 champ_below;        /* lands whose champion lurks at the bottom of a dungeon, by zone id */
     u8 castle;             /* the Rainycastle: CA_* bits */
+    u8 hurt;               /* fell below 30% HP this run (no Untouchable) */
     u8 x, y;
     u8 map;                /* MAP_VILLAGE or a zone id */
     Item equip[NSLOT];
@@ -452,7 +452,36 @@ enum { OV_TITLE = 1, OV_TALKA, OV_TALKB, OV_CAMP, OV_TREE };   /* OV_TREE + clas
 #define OV_FOES 16                      /* the big foes: keepers' and castle's portraits, and the castle's battles */
 #define OV_END 17                       /* the ending */
 #define OV_REALM 18                     /* Sog'naroth's realm's depths */
-#define OV_COUNT 18
+#define OV_DEEDS 19                     /* the deeds: their page, their file */
+#define OV_BAG 20                       /* the Bag: polishing, the dwarves */
+#define OV_COUNT 20
+
+/* ---------- deeds (js/achievements.js) ----------
+ * Kept on the disk in PQ.DEEDS, apart from the hero: a fallen hero's deeds
+ * stay. deed() marks one done (resident, from anywhere); the world tells of
+ * it, and writes the file, the next time the hero stands still. The run
+ * tallies are written then, and when a run ends. (The web game's three
+ * difficulty deeds aren't here: the C64 has no difficulty setting.) */
+enum { DE_FIRST_LIGHT, DE_FOUR_DAWNS, DE_STORMBREAKER, DE_SUNBRINGER, DE_GLASSSMITH, DE_PRISMBLADE,
+       DE_GLINT_EYED, DE_KEEPERS, DE_AURA, DE_HIHO, DE_BEST_FRIENDS, DE_DEVILS_DUE, DE_NEIGHBOR,
+       DE_SUPPER, DE_UNTOUCHABLE, DE_TRIPLE, DE_BOTTOM, DE_WALLS, NDEED };
+typedef struct {
+    u8 magic[3];           /* "PD", version */
+    u8 got[3];             /* deeds done, by bit */
+    u8 elites;             /* elites slain, every run (counting to 25) */
+    u8 keepers;            /* dungeon keepers beaten, by kind */
+    u8 won_cls;            /* classes that have brought the sun back, by bit */
+    u16 runs, wins, losses;
+    u16 best;              /* the fastest sun, in seconds (0: none yet) */
+} Deeds;
+extern Deeds deeds;
+extern u8 deeds_told[3];                /* the deeds the player's been told of */
+void deed(u8 id);                       /* kit.c */
+u8 deeds_news(void);                    /* any done but not yet told */
+void deeds_read(void);                  /* (kit.c too) */
+void deeds_write(void);
+void deeds_tell(void);                  /* ov_deeds.c */                  /* tell of the new ones, then write */
+void show_deeds(void);
 /* Gloom Pacts (js/data.js PACTS): a blessing and a curse, sealed on entering
  * a land still under the gloom, for as long as you stay (dungeons too) */
 #define NPACT 8

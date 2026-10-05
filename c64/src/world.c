@@ -749,6 +749,7 @@ static void on_gate(u8 gi)
     default:                            /* G_STAIRS */
         if (!dg.has_key) { msg("The way down is locked. Defeat the Warden to claim its key."); break; }
         ++dg.floor; ++dg.tier;
+        if (dg.floor >= 3) deed(DE_BOTTOM);
         dungeon_floor();
         sb_reset(); sb_str("You descend to floor "); sb_num(dg.floor); sb_str(". The gloom thickens...");
         msg(sb);
@@ -996,6 +997,9 @@ void world_loop(void)
             if (key_hit(K_T)) { open_tree(); redraw_all(); }
             if (key_hit(K_G)) { open_gear(); redraw_all(); }
             if ((in_new & IN_FIRE) && !(in_now & 0x0F)) { camp_menu(); redraw_all(); }
+#if !defined(AUTOPLAY) || defined(TEST_DEEDS)   /* (tests: not told of deeds, unless asked) */
+            if (deeds_news()) { ovl(OV_DEEDS); deeds_tell(); }   /* (a deed done: tell of it) */
+#endif
         }
         /* the next step, once this one's queued (and not onto a gate: that
          * waits for the arrival) */

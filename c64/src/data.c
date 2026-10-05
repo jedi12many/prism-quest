@@ -22,9 +22,9 @@ const SpellDef spells[NSPELL] = {
 };
 
 const ClassDef classes[NCLASS] = {
-    { "Prism Mage", "A scholar of light. Spells hit harder, but robes are thin.", 40, 4, 9, 3, 1 },
-    { "Crystal Knight", "A walking geode. Bonks first, asks questions never.", 46, 8, 4, 4, 2 },
-    { "Unicorn Whisperer", "Speaks fluent sparkle. Unicorns answer the call.", 38, 5, 6, 3, 1 },
+    { "Prism Mage", 40, 4, 9, 3, 1 },          /* (their blurbs: the title screen's, ov_title.c) */
+    { "Crystal Knight", 46, 8, 4, 4, 2 },
+    { "Unicorn Whisperer", 38, 5, 6, 3, 1 },
 };
 
 /*            name                  hp  atk def  xp flags                 dbl rgn tile           spr  Qz Am Su Aq Em Ro Pr */

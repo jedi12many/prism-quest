@@ -38,9 +38,13 @@ static const char *const eulogy[5] = {
 void foe_won(u8 mi)
 {
     u8 t = mobs[mi].type;
-    if (monsters[t].flags & MF_KEEPER) msg("The keeper falls, and its hoard is yours. The way out is behind you.");
+    if (monsters[t].flags & MF_KEEPER) {
+        msg("The keeper falls, and its hoard is yours. The way out is behind you.");
+        if ((deeds.keepers |= 1 << (t - MO_TROLL)) == 7) deed(DE_KEEPERS);
+    }
     else if (t == MO_WYRM) {
         P.castle |= CA_WYRM;
+        deed(DE_STORMBREAKER);
         if (P.main_quest < 5) P.main_quest = 5;
         say(nm_wyrm, eulogy[2]);
         add_gate(15, 7, G_CASTLE, CG_HOARD);    /* its hoard settles where it fell */

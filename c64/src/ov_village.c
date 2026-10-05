@@ -46,6 +46,9 @@ void zone_cleared(u8 z)                 /* (z: map_id is MAP_DUNGEON for a champ
     music(TUNE_VILLAGE);
     for (i = 0; i < nmobs; ++i) { mobs[i].alive = 0; mobs[i].respawn = 0xFFFF; }
     for (i = 0; i < NZONE; ++i) if (P.zones_cleared & (1 << i)) ++n;
+    deed(DE_FIRST_LIGHT);
+    if (P.pact) deed(DE_DEVILS_DUE);
+    if (n == NZONE) deed(DE_FOUR_DAWNS);
     set_palette();
     draw_map();
     sb_reset(); sb_str("Sunlight floods "); sb_str(zones[z].name); sb_str("! The gloom-things melt into dew.");

@@ -73,5 +73,6 @@ void talk_b(u8 id)
         }
         break;
     }
+    if (P.pip_stage == 2 && P.baker_stage == 2 && P.willow_stage == 2) deed(DE_NEIGHBOR);
     world_hud_dirty();
 }

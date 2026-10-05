@@ -55,6 +55,13 @@ static void wait_page(void)
 
 void the_end(void)
 {
+    ++deeds.runs; ++deeds.wins;                         /* (told of and written once home) */
+    deeds.won_cls |= 1 << P.cls;
+    if (!deeds.best || seconds < deeds.best) deeds.best = seconds;
+    deed(DE_SUNBRINGER);
+    if (seconds < 2400) deed(DE_SUPPER);        /* (under 40 minutes) */
+    if (!P.hurt) deed(DE_UNTOUCHABLE);
+    if (deeds.won_cls == (1 << NCLASS) - 1) deed(DE_TRIPLE);
     POKE(0xD015, 0);
     irq_stop();
     music(TUNE_TITLE);

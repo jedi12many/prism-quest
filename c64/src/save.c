@@ -88,8 +88,9 @@ void ovl(u8 id)
     cur_ovl = 0;
     y = split_mode == 1 ? MSG_ROW + MSG_ROWS - 2 : 23;  /* in the world: the message panel */
     for (;;) {
-        if (id < 10) { disk_file("pq.ov0"); err = id; }   /* PQ.OV1 .. PQ.OV11 */
-        else { disk_file("pq.ov10"); err = id - 10; }
+        if (id < 10) { disk_file("pq.ov0"); err = id; }   /* PQ.OV1 .. PQ.OV20: the last digit */
+        else if (id < 20) { disk_file("pq.ov10"); err = id - 10; }
+        else { disk_file("pq.ov20"); err = id - 20; }
         disk_name[disk_namelen - 1] += err;
         put_str(32, y + 1, "Loading", GREY);
         err = disk_op(OP_LOADHI);

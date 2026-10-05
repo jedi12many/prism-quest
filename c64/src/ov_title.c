@@ -10,6 +10,12 @@
 #pragma code-name("OVTITLECODE")
 #pragma rodata-name("OVTITLEDATA")
 
+static const char *const class_blurb[NCLASS] = {
+    "A scholar of light. Spells hit harder, but robes are thin.",
+    "A walking geode. Bonks first, asks questions never.",
+    "Speaks fluent sparkle. Unicorns answer the call.",
+};
+
 void new_game(u8 cls)
 {
     u8 c;
@@ -60,7 +66,7 @@ static void show_class(u8 c)
         put_str(5, 11 + i * 2, classes[i].name, i == c ? YELLOW : WHITE);
     }
     clear_rows(18, 21);
-    wrap(classes[c].blurb, 18, 2, CYAN);
+    wrap(class_blurb[c], 18, 2, CYAN);
     sb_reset(); sb_str("HP "); sb_num(classes[c].hp + 10); sb_str("  ATK "); sb_num(classes[c].atk);
     sb_str("  MAG "); sb_num(classes[c].mag); sb_str("  DEF "); sb_num(classes[c].def);
     put_center(21, sb, WHITE);
@@ -114,6 +120,7 @@ void game_over(void)
     POKE(0xD015, 0);
     music(TUNE_NONE);
     erase_save();                       /* one life: the save falls with the hero */
+    ++deeds.runs; ++deeds.losses;               /* (main() writes the deeds' file) */
     cls();
     POKE(0xD020, BLACK); POKE(0xD021, BLACK);
     sb_reset(); sb_str(classes[P.cls].name); sb_str(" has fallen.");

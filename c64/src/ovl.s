@@ -6,7 +6,7 @@
 ;   8 building the camp   9 the Village Ledger   10 the dungeons' floors   11 growing a zone
 ;   12 digging up a Prism Facet   13 the Glassworks   14 a Gloom Pact
 ;   15 the Rainycastle's floors   16 the big foes: the keepers', the castle's and the realm's portraits, and more
-;   17 the ending   18 Sog'naroth's realm
+;   17 the ending   18 Sog'naroth's realm   19 the deeds   20 the Bag
         .import __OVL_START__
         .segment "OV1LOAD"
         .word   __OVL_START__
@@ -80,3 +80,11 @@
         .word   __OVL_START__
         .segment "OV18SIG"
         .byte   $4F, 18
+        .segment "OV19LOAD"
+        .word   __OVL_START__
+        .segment "OV19SIG"
+        .byte   $4F, 19
+        .segment "OV20LOAD"
+        .word   __OVL_START__
+        .segment "OV20SIG"
+        .byte   $4F, 20

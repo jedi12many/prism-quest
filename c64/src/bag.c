@@ -1,7 +1,13 @@
-/* The Bag: raw and polished gems, "Polish all" and Summon Dwarves.
- * Resident: polishing after every trip shouldn't cost a disk load. */
+/* Overlay: the Bag -- raw and polished gems, "Polish all" and Summon
+ * Dwarves. (Once resident, so polishing cost no disk load; it moved out to
+ * make room. If it's still in the window from last time, it costs none.)
+ * Loaded from disk on demand into the overlay window (see ovl() in save.c). */
 #include <string.h>
 #include "game.h"
+
+#pragma code-name("OVBAGCODE")
+#pragma rodata-name("OVBAGDATA")
+#pragma bss-name("OVBAGDATA")
 
 /* quality is luck: Steady Hands and dwarf crews raise the odds (per mille) */
 static u8 roll_quality(u16 bonus)
@@ -94,6 +100,7 @@ void show_bag(void)
             if (!P.spells[SP_DWARVES]) { log_add("You have no dwarf crews. Foreman Flint might help - or craft one.", BLUE); continue; }
             if (!raw) { log_add("The dwarves peer into your empty bag and shrug.", BLUE); continue; }
             --P.spells[SP_DWARVES];
+            deed(DE_HIHO);
             polish_all(150);                    /* master craftsdwarves */
             sfx(SFX_LEVEL);
             tally_msg("Hi-ho! The dwarf crew polished");

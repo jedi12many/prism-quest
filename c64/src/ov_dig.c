@@ -56,6 +56,7 @@ void dig_facet(u8 gate)
     make(map_id);
     give_item(&made);
     P.facets |= 1 << map_id;
+    if (P.facets == (1 << NZONE) - 1) deed(DE_GLINT_EYED);
     queue_tile(gates[gate].x, gates[gate].y);
     --ngates;                                   /* (dug: the last gate takes its place) */
     gates[gate] = gates[ngates];

@@ -123,6 +123,7 @@ static void build(void)
     if (why) { sfx(SFX_BONK); wrap(why, 22, 2, ORANGE); return; }
     for (i = 0; i < 6 && cost[i + 1]; i += 2) consume_gems(cost[i], cost[i + 1]);
     P.base[sel] = lvl + 1;
+    if (sel == B_WALLS) deed(DE_WALLS);
     calc_stats();
     sfx(SFX_LEVEL);
     redraw();

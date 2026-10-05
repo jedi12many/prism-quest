@@ -100,9 +100,47 @@ u8 at_camp(const char *what)
     return 0;
 }
 
+/* ---------- deeds (the rest: ov_deeds.c) ---------- */
+
+#pragma bss-name(push, "LOWBSS")        /* (below the ROMs: the KERNAL writes it to disk from here) */
+Deeds deeds;
+u8 deeds_told[3];
+#pragma bss-name(pop)
+
+void deed(u8 id) { deeds.got[id >> 3] |= 1 << (id & 7); }
+extern u8 __fastcall__ disk_op(u8 op);
+extern u16 disk_start, disk_end;
+void disk_file(const char *s);
+enum { OP_SAVE, OP_LOAD, OP_CMD };
+#define DEEDS_VERSION 1
+
+/* at startup: the disk's deeds, or a fresh slate */
+void deeds_read(void)
+{
+    disk_file("pq.deeds");
+    disk_start = (u16)&deeds;
+    if (disk_op(OP_LOAD) || deeds.magic[0] != 'P' || deeds.magic[1] != 'D' || deeds.magic[2] != DEEDS_VERSION) {
+        memset(&deeds, 0, sizeof(deeds));
+        deeds.magic[0] = 'P'; deeds.magic[1] = 'D'; deeds.magic[2] = DEEDS_VERSION;
+    }
+    memcpy(deeds_told, deeds.got, sizeof(deeds_told));
+}
+
+void deeds_write(void)
+{
+    disk_file("s0:pq.deeds");                   /* replace the old one */
+    if (disk_op(OP_CMD)) return;                /* (no drive: they live on in memory) */
+    disk_file("pq.deeds");
+    disk_start = (u16)&deeds;
+    disk_end = (u16)&deeds + sizeof(deeds);
+    disk_op(OP_SAVE);
+}
+
+u8 deeds_news(void) { return (deeds.got[0] ^ deeds_told[0]) | (deeds.got[1] ^ deeds_told[1]) | (deeds.got[2] ^ deeds_told[2]); }
+
 /* ---------- the camp menu (fire in the world) ---------- */
 
-static const char *const camp_items[8] = { "Bag & polishing", "Gear", "Spellbook", "Power Tree", "Build the camp", "Village Ledger", "Save game", "Back" };
+static const char *const camp_items[9] = { "Bag & polishing", "Gear", "Spellbook", "Power Tree", "Build the camp", "Village Ledger", "Deeds", "Save game", "Back" };
 
 void camp_menu(void)
 {
@@ -111,19 +149,20 @@ void camp_menu(void)
     cls();
     POKE(0xD021, BLACK);
     put_str(1, 7, "Make camp:", PURPLE);
-    sel = menu_pick(1, 9, camp_items, 8, 0);
+    sel = menu_pick(1, 9, camp_items, 9, 0);
     if (sel == 0) open_bag();
     else if (sel == 1) open_gear();
     else if (sel == 2) open_spellbook();
     else if (sel == 3) open_tree();
     else if (sel == 4) open_build(0xFF);
     else if (sel == 5) open_ledger();
-    else if (sel == 6) { clear_rows(7, 24); save_game(); wait_fire(); }
+    else if (sel == 6) { ovl(OV_DEEDS); show_deeds(); }
+    else if (sel == 7) { clear_rows(7, 24); save_game(); wait_fire(); }
 }
 
 /* ---------- doors into the overlays ---------- */
 
-void open_bag(void)  { show_bag(); }      /* resident */
+void open_bag(void)  { ovl(OV_BAG); show_bag(); }
 void open_gear(void) { show_gear(); }     /* resident */
 void open_ledger(void) { ovl(OV_LEDGER); show_ledger(); }
 /* check "only in camp" first, so a refusal doesn't cost a disk load */

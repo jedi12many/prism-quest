@@ -123,6 +123,19 @@ A work-in-progress port of the browser game to a stock Commodore 64 (64 KB,
 - **Polishing:** "Polish all" in the Bag cuts every raw gem as Rough, Fine or
   Brilliant, at the web game's odds. Foreman Flint's free **Summon Dwarves**
   crew polishes with a big Brilliant bonus.
+- **Deeds (the web game's achievements):** 18 of them, from First Light (a
+  land freed) to Triple Crown (the sun brought back by every class). The web
+  game's three difficulty deeds are left out, since there's no difficulty
+  setting.
+  - When you next stand still in the world, a new deed is announced ("Deed
+    done: ...") and written to `PQ.DEEDS`. That file is the disk's, not the
+    hero's: a fallen hero's deeds stay, and a new hero adds to them.
+  - "Deeds" in the camp menu lists them. Up and Down read each one, or for
+    one not yet done, Grandma's hint. Below the list is the disk's chronicle:
+    runs, suns brought back, heroes lost and the fastest sun.
+  - The tallies (elites slain, keepers beaten, runs) are written with each
+    new deed and when a run ends. Switching off mid-run can lose the latest
+    ones, but never a deed that's already been announced.
 - **Spellbook:** craft all ten spells from polished gems, using the original
   recipes. Better cuts give more charges (base + average quality + Echo Casting).
   Crafting only works in Drizzlewick.
@@ -155,7 +168,7 @@ A work-in-progress port of the browser game to a stock Commodore 64 (64 KB,
   from. "Continue from disk" on the title screen brings the hero back. Zones are
   procedural, so a hero saved out in the wilds wakes up in a freshly generated
   zone; one saved in the Rainycastle wakes up at the start of its lowest
-  floor still guarded. (Save version 7: older saves won't load.)
+  floor still guarded. (Save version 8: older saves won't load.)
 - **Rogue-like death:** when your hero falls, the run ends, the save on disk is
   scratched with them, and you start a new hero.
 - **Art:** map tiles are converted automatically from `js/sprites.js` into
@@ -189,8 +202,7 @@ A work-in-progress port of the browser game to a stock Commodore 64 (64 KB,
   bass is a triangle or a sawtooth. See *Music* below.
 - **Sound:** short SID sound effects and the thunder, on the third voice.
 
-**Not ported:** the web game's between-runs extras: achievements, the
-difficulty setting and the Sanctuary.
+**Not ported:** the web game's difficulty setting and the Sanctuary.
 
 ## Controls
 
@@ -200,7 +212,7 @@ difficulty setting and the Sanctuary.
 | Talk | Walk into a villager |
 | Fight | Walk into a monster |
 | Confirm, next page | Fire, Space or Return |
-| Camp menu (Bag, Gear, Spellbook, Power Tree, Build, Ledger, Save) | Fire while standing still |
+| Camp menu (Bag, Gear, Spellbook, Power Tree, Build, Ledger, Deeds, Save) | Fire while standing still |
 | Load a saved hero | "Continue from disk" on the title screen |
 | Bag / Gear / Spellbook / Power Tree | I / G / C / T |
 | Back out of a menu | Left, R or RUN/STOP |
@@ -259,17 +271,21 @@ reloaded.
 | `PQ.OV16` | the big foes: the dungeon keepers', the castle's and the realm's battle portraits, and the castle's and realm's foes' names, cries and falls | 2.6 KB |
 | `PQ.OV17` | the ending | 2.0 KB |
 | `PQ.OV18` | Sog'naroth's realm: its depths and rifts | 1.2 KB |
+| `PQ.OV19` | the deeds: telling of new ones, the Deeds page | 2.7 KB |
+| `PQ.OV20` | the Bag: polishing and Summon Dwarves | 2.2 KB |
 
 On a stock 1541 each takes roughly 5–7 seconds (about 400 bytes a second);
 a "Loading" note shows in the corner meanwhile. Overlays are kept to about
 2–3 KB for that reason.
 
-The world, battles, Bag, Gear and the camp menu stay resident, so exploring
-and fighting never wait on the disk. Saving loads its code with the Ledger
+The world, battles, Gear and the camp menu stay resident, so exploring and
+fighting never wait on the disk. The Bag used to be resident too; it moved
+out to make room, so opening it can wait on a load, unless it's still in
+the window. Saving loads its code with the Ledger
 first: it's a disk operation anyway. Generating a zone or a
 dungeon floor loads its generator behind the transition screen (unless it's
 still in the window from last time: going home and back out loads nothing).
-Resident memory is nearly full (about 0.45 KB free), so new screens should be
+Resident memory is nearly full (about 2.4 KB free, after the Bag moved out), so new screens should be
 overlays; the resident part of a feature should be the little the world
 itself needs (camp building keeps only the buildings' effects, positions,
 names and costs resident; dungeons keep entering and leaving). Text shown
@@ -387,6 +403,10 @@ make shot SCRIPT=test/pactledger.h CYCLES=42000000   # a pact in the Ledger
 make shot SCRIPT=test/castle.h  CYCLES=135000000 DEFS="-DTEST_EMPTY -DTEST_WEAK"   # climb it; the Wyrm's hoard
 make shot SCRIPT=test/rainbow.h CYCLES=110000000  # up the Cloudgate, the throne as a base, and home
 make shot SCRIPT=test/cloudgate.h CYCLES=66000000  # the Mayor unseals the Cloudgate
+make shot SCRIPT=test/deeds.h   CYCLES=10 DEFS="-DTEST_CLEAR -DTEST_DEEDS"   # (just to build it)
+tools/vicerun.py build/test.prg build/deeds.png 110000000 build/deeds.d64    # First Light, told and written
+make shot SCRIPT=test/deeds2.h  CYCLES=10         # (just to build it)
+tools/vicerun.py build/test.prg build/deeds2.png 50000000 build/deeds.d64   # a new hero: the deed's still there
 make shot SCRIPT=test/realm.h   CYCLES=185000000 DEFS="-DTEST_EMPTY -DTEST_WEAK -DTEST_NEAR"   # the portal, the realm, the ending
 make shot SCRIPT=test/elite.h   CYCLES=76000000 DEFS="-DTEST_ELITE=6 -DTEST_DUNGEON=0"   # a Radiant elite's spoils
 make shot SCRIPT=test/champion.h CYCLES=48000000 DEFS="-DTEST_CLEAR"   # a land freed
@@ -423,6 +443,8 @@ make shot SCRIPT=test/home.h   CYCLES=50000000                          # out a 
 - **`-DJUKEBOX=n`:** the title screen plays tune n (0 title, 1 village,
   2 gloom, 3 battle). Record it with VICE's `-sound -sounddev wav -soundarg
   out.wav -limitcycles 50000000`; the tune starts about 15 s in.
+- **`-DTEST_DEEDS`:** test builds don't stop to tell of new deeds (the
+  older scripts predate them); this brings it back.
 - **`-DTEST_WEAK`:** every foe starts with 1 HP (see `test/castle.h`).
 - **`-DTEST_ELITE=n`:** every monster that could be elite is mod n (1-6).
 - **`-DTEST_CLEAR`:** a zone is freed the moment you enter it.
@@ -453,7 +475,7 @@ make shot SCRIPT=test/home.h   CYCLES=50000000                          # out a 
 | `src/battle.c` | combat |
 | `src/ui.c` | title, stats and levelling, villagers, ledger, game over |
 | `src/kit.c` | skill and building effects, gem helpers, the menu kit, camp menu, doors into the overlays |
-| `src/bag.c` | the Bag: polishing and Summon Dwarves |
+| `src/bag.c` | the Bag: polishing and Summon Dwarves (PQ.OV20) |
 | `src/gear.c` | the Gear screen, item cards, faceting gems, equip/salvage |
 | `src/ov_*.c` | the overlays: title, the two dialogue halves, Spellbook, Power Tree (`ov_tree.inc`, built once per class), building the camp, the Village Ledger (with saving and loading), the dungeon floors, growing a zone, digging up a facet, the Glassworks, the Gloom Pact offer, the village's layout and a land freed (`ov_village.c`) |
 | `src/ovl.s` | overlay file headers: load address and signature |
@@ -545,6 +567,12 @@ its SAVE and LOAD can reach it.
 for example `if (!(P.skills & (1u << (b * 5 + t))))`. It checks only the high
 byte of the result, which quietly turned off half of the Power Tree. Test bits
 with a shift-and-mask (`(P.skills >> n) & 1`) or put the count in a `u8` first.
+- cc65 `-Oirs` can also build a byte array's address with whatever the X
+  register held as its high byte. `deeds.got[id >> 3] & bit[id & 7]`
+  (with `id` a `u8` parameter) read the wrong byte depending on the caller,
+  and the Deeds page starred deeds at random. Compute the index into a
+  `u8` variable first (see `has()` in `ov_deeds.c`), and check the `.s`
+  output (`cc65 -t c64 -Oirs -Cl -o x.s file.c`) when a lookup misbehaves.
 - Never wait for a raster line with `cpx $D012 / bne`. An interrupt that
   arrives at the very end of the line spins for a whole frame. Wait while the
   line is less than the target.
