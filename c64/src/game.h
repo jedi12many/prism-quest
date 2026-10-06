@@ -111,7 +111,7 @@ void sfx(u8 id);
 void sound_tick(void);
 void thunder(void);                      /* SID voice 3: noise through a falling low-pass */
 /* music: SID voices 1-2, played by the frame interrupt (music.s, tools/music.js) */
-enum { TUNE_TITLE, TUNE_VILLAGE, TUNE_WILDS, TUNE_BATTLE, TUNE_NONE = 0xFF };
+enum { TUNE_TITLE, TUNE_VILLAGE, TUNE_WILDS, TUNE_BATTLE, TUNE_CASTLE, TUNE_REALM, TUNE_DUNGEON, TUNE_NONE = 0xFF };
 void music(u8 tune);                     /* (carries on if it's already playing) */
 void __fastcall__ music_play(u8 tune);
 void music_stop(void);

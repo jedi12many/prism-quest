@@ -254,10 +254,18 @@ A work-in-progress port of the browser game to a stock Commodore 64 (64 KB,
 - **Smooth scrolling:** the map glides 2 pixels a frame at a steady 50 fps,
   under a fixed status panel (HUD and messages) at the top. See *Smooth
   scrolling* below.
-- **Music:** four two-voice SID tunes: the title ("Rainyday", A minor),
-  Drizzlewick (a bright C major), the gloomy lands (D minor, slow) and
-  battle (E minor, fast). The melody is a pulse wave whose width sweeps; the
-  bass is a triangle or a sawtooth. See *Music* below.
+- **Music:** seven two-voice SID tunes: the title ("Rainyday", A minor),
+  Drizzlewick (a bright C major), the gloomy lands (D minor, slow), battle
+  (E minor, fast), and three built on `js/audio.js` MUSIC_MOODS:
+  - the Rainycastle: E Lydian, climbing the "clouds" mood's E major
+    arpeggio, floating over E, C#m, A and B;
+  - Sog'naroth's realm: the "realm" mood's E-flat with its flat second and
+    tritone, a slow sawtooth over a drone a tritone wide;
+  - the dungeons: the "dungeon" mood's F Phrygian, sparse plucked triangle
+    notes over a low drone.
+
+  The melody is mostly a pulse wave whose width sweeps; the bass is a
+  triangle or a sawtooth. See *Music* below.
 - **Sound:** short SID sound effects and the thunder, on the third voice.
 
 Every part of the web game is ported. Its particle effects and pop-up
@@ -413,7 +421,7 @@ the interrupt doesn't touch the scroll registers meanwhile.
 
 `tools/music.js` holds the tunes as text: patterns of notes (`"E5/4"` is E in
 octave 5 for 4 steps) and, per voice, an order of patterns with transposes.
-`tools/gen_music.js` packs them into `src/musicdata.s` (about 450 bytes):
+`tools/gen_music.js` packs them into `src/musicdata.s` (about 690 bytes):
 
 - a note is one byte: its length (1, 2, 4 or 8 steps) in the top two bits, the
   pitch (A1 up, or a rest or a hold) in the rest;
@@ -425,10 +433,14 @@ doing. When the rain is off, a "quiet" mode keeps one interrupt a frame for
 it. The sound effects and the thunder share voice 3 (an effect cuts the
 thunder short). Which tune plays: the title on the title screen, Drizzlewick
 in the village and in sunny lands, the gloomy tune where it rains, battle in
-a fight, and silence on game over.
+a fight, the castle's tune in the Rainycastle, the realm's in Sog'naroth's
+realm, the dungeons' underground (as in `js/audio.js` setMusic), and silence
+on game over.
 
 The tunes live under the I/O chips with the battle portraits, so the player
-banks I/O out to read them and back in to play them. The once-a-frame part of
+banks I/O out to read them and back in to play them. That space is full, so
+the three newest tunes (marked `low` in `tools/music.js`, about 200 bytes)
+sit in main memory instead; the player reads them just the same. The once-a-frame part of
 the player sits at the top of the overlay window; `music_play` runs from the
 tape buffer. During disk calls the music pauses and the volume drops to 0:
 the KERNAL holds interrupts off while it waits on the drive, which would make
@@ -449,6 +461,8 @@ them. They are copyrighted, so they are not in this repo.
   on the real thing.
 - **A disk path as 4th argument:** keeps that disk between runs, for testing
   saves.
+- **`--wav=FILE`:** records the SID to a WAV file. That runs in real time,
+  since VICE makes no sound in warp mode.
 
 Test builds replay a scripted joystick (`test/*.h`). The game starts about
 15M cycles in, after the KERNAL has loaded it.
@@ -513,8 +527,9 @@ make shot SCRIPT=test/home.h   CYCLES=50000000                          # out a 
   In the storm (`test/zone.h`) it adds about 13 held frames per 234 swaps; in
   the village none.
 - **`-DJUKEBOX=n`:** the title screen plays tune n (0 title, 1 village,
-  2 gloom, 3 battle). Record it with VICE's `-sound -sounddev wav -soundarg
-  out.wav -limitcycles 50000000`; the tune starts about 15 s in.
+  2 gloom, 3 battle, 4 castle, 5 realm, 6 dungeon). Record it with
+  `tools/vicerun.py build/test.prg out.png 30000000 --wav=out.wav` (real
+  time, not warp); the tune starts about 15 s in.
 - **`-DTEST_FRAIL`:** any hit fells the hero (see `test/sanct.h`).
 - **`-DTEST_MOTES=n`:** the disk's Sanctuary gets n more Motes at startup.
 - **`-DTEST_SUNS=n`:** the disk's chronicle gets n more suns brought back at

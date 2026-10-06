@@ -5,6 +5,9 @@
 // 0 rest, 1-60 semitones up from A1, 62 hold the note before). $FF ends it.
 // An order byte: 0-$7F a pattern, $80-$BF transpose (-32..+31), $FF loop.
 // A tune: tempo, then for each voice: wave, AD, SR, pw, order (word).
+// The tables and most tunes ride under the I/O chips; a tune marked low (and
+// the patterns only it uses) goes in main memory, which the player reads the
+// same way.
 'use strict';
 const fs = require('fs');
 const path = require('path');
@@ -32,14 +35,15 @@ function packPattern(name, src) {
   return [...bytes, 0xFF];
 }
 
-// only the patterns the tunes use, in order
-const used = [];
+// only the patterns the tunes use, in order; which of them only low tunes use
+const used = [], high = new Set();
 const orders = songs.map(s => s.voices.map(v => {
   const out = [0x80 + 32];                   // transpose 0 at the top of each loop
   for (const tok of v.order.trim().split(/\s+/)) {
     if (/^[+-]\d+$/.test(tok)) { const t = +tok; if (t < -32 || t > 31) throw new Error('transpose ' + tok); out.push(0x80 + 32 + t); continue; }
     if (!(tok in patterns)) throw new Error(`${s.name}: no pattern ${tok}`);
     if (!used.includes(tok)) used.push(tok);
+    if (!s.low) high.add(tok);
     out.push(used.indexOf(tok));
   }
   return [...out, 0xFF];
@@ -61,13 +65,22 @@ s += 'mus_freq_hi:\n' + bytes(freq.map(f => f >> 8)) + '\n';
 s += 'mus_pat_lo:\n        .lobytes ' + used.map(p => 'pat_' + p).join(', ') + '\n';
 s += 'mus_pat_hi:\n        .hibytes ' + used.map(p => 'pat_' + p).join(', ') + '\n';
 s += 'mus_songs:\n        .word ' + songs.map(x => 'song_' + x.name).join(', ') + '\n';
-songs.forEach((x, i) => {
-  s += `song_${x.name}:\n        .byte ${x.tempo}\n`;
-  x.voices.forEach((v, k) => { s += bytes([v.wave, v.ad, v.sr, v.pw]) + `\n        .word ord_${x.name}_${k}\n`; });
-});
-songs.forEach((x, i) => x.voices.forEach((v, k) => { s += `ord_${x.name}_${k}:\n` + bytes(orders[i][k]) + '\n'; }));
-let total = 12 * 2 + used.length * 2 + songs.length * 2 + songs.length * 11;
-used.forEach(p => { const b = packPattern(p, patterns[p]); total += b.length; s += `pat_${p}:\n` + bytes(b) + '\n'; });
-orders.forEach(o => o.forEach(l => total += l.length));
+let total = 12 * 2 + used.length * 2 + songs.length * 2, low = 0;
+for (const lowPart of [false, true]) {
+  if (lowPart) s += '\n; (main memory)\n        .segment "RODATA"\n';
+  let n = 0;
+  songs.forEach((x, i) => {
+    if (!!x.low !== lowPart) return;
+    s += `song_${x.name}:\n        .byte ${x.tempo}\n`;
+    x.voices.forEach((v, k) => { s += bytes([v.wave, v.ad, v.sr, v.pw]) + `\n        .word ord_${x.name}_${k}\n`; });
+    x.voices.forEach((v, k) => { s += `ord_${x.name}_${k}:\n` + bytes(orders[i][k]) + '\n'; n += orders[i][k].length; });
+    n += 11;
+  });
+  used.forEach(p => {
+    if (high.has(p) === lowPart) return;
+    const b = packPattern(p, patterns[p]); n += b.length; s += `pat_${p}:\n` + bytes(b) + '\n';
+  });
+  total += n; if (lowPart) low = n;
+}
 fs.writeFileSync(path.resolve(__dirname, '..', 'src', 'musicdata.s'), s);
-console.log(`music: ${songs.length} tunes, ${used.length} patterns, ${total} bytes`);
+console.log(`music: ${songs.length} tunes, ${used.length} patterns, ${total} bytes (${low} in main memory)`);

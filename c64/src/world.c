@@ -605,7 +605,8 @@ static void redraw_all(void)
     draw_map();
     place_player_sprite();
     if (stormy()) storm_start(storm_tier());
-    music(map_id == MAP_DUNGEON || stormy() ? TUNE_WILDS : TUNE_VILLAGE);
+    music(map_id == MAP_DUNGEON ? TUNE_DUNGEON : map_id == MAP_CASTLE ? (realm() ? TUNE_REALM : TUNE_CASTLE)
+          : stormy() ? TUNE_WILDS : TUNE_VILLAGE);   /* (js/audio.js setMusic) */
 }
 
 /* ---------- actions ---------- */

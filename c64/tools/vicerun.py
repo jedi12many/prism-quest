@@ -2,7 +2,7 @@
 """Headless test run: put a build on a .d64, boot VICE with real ROMs, run for
 a number of CPU cycles, save a screenshot.
 
-  ROMDIR=... vicerun.py <prg> <out.png> <cycles> [--truedrive]
+  ROMDIR=... vicerun.py <prg> <out.png> <cycles> [--truedrive] [--wav=FILE]
 
 The game loads its second file (PQ.HI) and its overlays (PQ.OV1..7) from disk
 as it goes, so tests need a working KERNAL and drive. ROMDIR must hold kernal,
@@ -12,6 +12,9 @@ the upstream VICE source release; they're copyrighted, so not in this repo.
 By default the drive is VICE's IEC-level virtual device: disk access is
 instant in emulated time, so tests stay fast. --truedrive emulates a real 1541
 instead (every load takes as long as on the real thing).
+
+--wav=FILE records the SID to a WAV file. That runs in real time, not warp
+(VICE makes no sound in warp), so keep the cycle count small.
 """
 import os
 import subprocess
@@ -20,6 +23,7 @@ import tempfile
 
 args = [a for a in sys.argv[1:] if not a.startswith('--')]
 truedrive = '--truedrive' in sys.argv
+wav = next((a[6:] for a in sys.argv if a.startswith('--wav=')), None)   # record the SID (real time)
 prg, out, cycles = args[0], args[1], args[2]
 d64 = args[3] if len(args) > 3 else None          # keep a disk across runs (saves)
 roms = os.environ.get('ROMDIR')
@@ -49,7 +53,8 @@ drive = (['-dos1541', roms + '/dos1541', '-drive8type', '1541', '-drive8truedriv
          if truedrive else ['-drive8type', '1541', '+drive8truedrive', '-iecdevice8'])
 subprocess.run(['timeout', '900', 'xvfb-run', '-a', 'x64sc',
                 '-kernal', roms + '/kernal', '-basic', roms + '/basic', '-chargen', roms + '/chargen']
-               + drive + ['+sound', '-warp', '-autostart', '%s:prismquest' % os.path.abspath(d64),
+               + drive + (['-sound', '-sounddev', 'wav', '-soundarg', os.path.abspath(wav)] if wav else ['+sound', '-warp'])
+               + ['-autostart', '%s:prismquest' % os.path.abspath(d64),
                           '-limitcycles', cycles, '-exitscreenshot', os.path.abspath(out)],
                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 print('screenshot: %s' % out if os.path.exists(out) else 'no screenshot')
