@@ -17,7 +17,8 @@
 ;   goes back to the DOS.
 ;
 ; ATNA (VIA1 PB4) follows ATN, or the hardware would pull DATA low itself
-; whenever ATN is held. The ATN interrupt is off meanwhile: no DOS.
+; whenever ATN is held. The ATN interrupt is off meanwhile: no DOS. It ends
+; through the DOS's own end of a command, as the DOS's commands do.
 
 VIA1PB  = $1800
 VIA1PA  = $1801
@@ -27,18 +28,23 @@ TRK0    = $06
 SEC0    = $07
 BUF0    = $0300
 NAME    = $0205                 ; in the M-E command
+ENDCMD  = $C194                 ; the DOS's end of a command (all its own
+                                ; commands end there: an M-E that just
+                                ; returns leaves its command to run again)
 
 BUSY    = $0A                   ; CLK and DATA held
 
-; variables: the track/sector slots of job queue entries 1-4, which nothing
-; uses while this runs (the DOS sets them afresh for every job)
+; variables: the track/sector slots of job queue entries 1-3 ($08-$0D), which
+; nothing uses while this runs (the DOS sets them afresh for every job). Not
+; entry 4's, $0E/$0F: its buffer, $0700, holds the BAM, and the DOS writes it
+; back to the track and sector there (18/0) when it saves.
+ent     = $08
 atnexp  = $09                   ; ATN after the next toggle ($80: held;
                                 ; ATNA, $10, matches it)
 outv    = $0A
 sb      = $0B
 pairs   = $0C
 count   = $0D
-ent     = $0E
 
         .segment "DRIVE"
 start:  sei
@@ -90,9 +96,8 @@ file:   jsr read                ; X/Y: track/sector
         ldx BUF0+1              ; the last sector: bytes 2 .. its link byte
         dex
 :       stx count
-        jsr ready
-        lda count
-        jsr sendbyte
+        txa
+        jsr sendhdr
         ldy #2
 data:   lda BUF0,y
         jsr sendbyte
@@ -109,10 +114,7 @@ data:   lda BUF0,y
 done:   lda #0
         .byte $2C               ; (skip the next)
 fail:   lda #$FF
-        pha
-        jsr ready
-        pla
-        jsr sendbyte            ; the end, or an error
+        jsr sendhdr             ; the end, or an error
         lda #0
         jsr waitout             ; the last toggle: let go
         lda atnexp
@@ -124,15 +126,7 @@ exit:   lda VIA1PA              ; forget the ATN edges we caused (the lines
                                 ; the DOS listens again
         sta VIA1IER
         cli
-        rts
-
-; both lines free: a sector's ready
-ready:  lda atnexp
-        lsr a
-        lsr a
-        lsr a
-        sta VIA1PB
-        rts
+        jmp ENDCMD              ; ("00, OK")
 
 ; read track X sector Y into buffer 0: carry set on an error
 read:   stx TRK0
@@ -146,6 +140,15 @@ read:   stx TRK0
         cmp #2                  ; 1: OK
         rts
 
+; a sector's ready (both lines free), then send its first byte
+sendhdr:
+        pha
+        lda atnexp              ; (ATNA)
+        lsr a
+        lsr a
+        lsr a
+        sta VIA1PB
+        pla
 ; send A: four pairs, the highest first. Keeps Y.
 sendbyte:
         sta sb

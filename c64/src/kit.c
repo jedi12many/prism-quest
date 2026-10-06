@@ -194,8 +194,8 @@ void camp_menu(void)
     cls();
     POKE(0xD021, BLACK);
     put_str(1, 7, "Make camp:", PURPLE);
-    put_str(1, 21, "Auto-salvage never takes a legendary,", GREY);
-    put_str(1, 22, "set piece or relic, or an upgrade.", GREY);
+    put_str(1, 21, "Auto-salvage spares legendaries, sets,", GREY);
+    put_str(1, 22, "relics and upgrades.", GREY);
     for (;;) {                                  /* fire on Auto-salvage turns it up a notch */
         camp_items[9] = salvage_label[deeds.auto_salvage];
         sel = menu_pick(1, 9, camp_items, 11, sel);

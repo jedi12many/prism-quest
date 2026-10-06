@@ -16,6 +16,7 @@ FR_RECV = $02A7
 CMD     = $CFC0                 ; (disk.s DISK_CMD: the overlay window's tail)
 OVL     = $C540                 ; the overlay window
 OP_SEND = 4
+OP_CLOSE = 5
 
         .code
 _fast_load:
@@ -34,8 +35,11 @@ _fast_load:
         cpx #16
         bne :--
         lda #21
-        jsr send
+        jsr open
         jsr FR_RECV
+        pha
+        jsr close               ; (the drive code's done: the channel's free)
+        pla
         ldx #0
         rts
 
@@ -44,10 +48,16 @@ _drive_install:                 ; (PQ.DRV's own routine sends it up)
         ldx #>send
         jmp OVL
 
-send:   sta _disk_sendlen
+; a DOS command: A bytes from CMD. send opens the command channel with it and
+; closes it again (M-W); open leaves that to close (M-E). Keep Y.
+send:   jsr open
+close:  sty savey
+        lda #OP_CLOSE
+        bne doop                ; (always)
+open:   sta _disk_sendlen
         sty savey
         lda #OP_SEND
-        jsr _disk_op
+doop:   jsr _disk_op
         ldy savey
         rts
 

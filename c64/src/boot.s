@@ -13,10 +13,8 @@ CHROUT  = $FFD2
 SETLFS  = $FFBA
 SETNAM  = $FFBD
 LOAD    = $FFD5
-LISTEN  = $FFB1
-SECOND  = $FF93
-CIOUT   = $FFA8
-UNLSN   = $FFAE
+OPEN    = $FFC0
+CLOSE   = $FFC3
 DEV     = $BA                   ; the KERNAL's last-used device
 MAGIC   = $02FF
 GAME    = $080D                 ; PQ.MAIN's start (its SYS 2061)
@@ -104,6 +102,7 @@ boot:   ldy #0
         bne :-
         lda #38
         jsr send
+        jsr close
         ldy off
         tya
         clc
@@ -118,38 +117,10 @@ boot:   ldy #0
         bpl :-
         lda #21
         jsr send
-.ifdef DEBUGSTOP
-        lda #0                  ; (debug: time it in jiffies)
-        sta $A1
-        sta $A2
-.endif
         jsr fr_recv
-.ifdef DEBUGSTOP
-        tax
-        lda #5                  ; (debug: green = fast, red = not; the time; stop)
-        cpx #0
-        beq :+
-        lda #2
-:       sta $D020
-        lda $A1
-        jsr hex
-        lda $A2
-        jsr hex
-        jmp *
-hex:    pha
-        lsr a
-        lsr a
-        lsr a
-        lsr a
-        jsr :+
-        pla
-        and #$0F
-:       cmp #10
-        bcc :+
-        adc #6
-:       adc #$30
-        jmp CHROUT
-.endif
+        pha
+        jsr close               ; (always close the command channel: one
+        pla                     ; left open makes the DOS rerun its command)
         tax
         bne kernal
         lda #$A5
@@ -178,26 +149,26 @@ kernal: lda #0                  ; no fast loader: the KERNAL's own load
         bne :-
 :       rts                     ; back to BASIC
 
-; send cmd (A bytes) to the drive's command channel
-send:   sta len
-        lda DEV
-        jsr LISTEN
-        lda #$6F                ; channel 15
-        jsr SECOND
-        ldy #0
-:       lda cmd,y
-        jsr CIOUT
-        iny
-        cpy len
-        bne :-
-        jmp UNLSN
+; open the drive's command channel with cmd (A bytes) as the name: a DOS
+; command, run at the end of the OPEN; then close it
+send:   pha
+        lda #15
+        ldx DEV
+        ldy #15
+        jsr SETLFS
+        pla
+        ldx #<cmd
+        ldy #>cmd
+        jsr SETNAM
+        jmp OPEN
+close:  lda #15
+        jmp CLOSE
 
 hello:  .byte $93, 5, 13, "PRISM QUEST: RAINYDAY", 13, 13, "LOADING...", 0
 missing: .byte 13, "PQ.MAIN IS MISSING", 13, 0
 me:     .byte "M-E", $00, $04, "PQ.MAIN"
         .res 9, $A0
 off:    .byte 0
-len:    .byte 0
 cmd:    .res 38
 drive:  .incbin "build/drive.bin"
         .res 256 - (* - drive), 0

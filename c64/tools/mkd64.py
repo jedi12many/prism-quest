@@ -24,7 +24,7 @@ import sys
 SPT = [0] + [21] * 17 + [19] * 7 + [18] * 6 + [17] * 5     # sectors per track, 1-35
 # spacing per zone: about 150 ms of the 200 ms revolution (one sector: 9.5-11.8 ms)
 GAP = {21: 16, 19: 15, 18: 14, 17: 13}
-DIR_GAP = 3                                                 # (as the DOS spaces the directory)
+DIR_GAP = 9                                                 # (~85 ms; the DOS uses 3, too quick for the loader)
 
 
 def offset(t, s):

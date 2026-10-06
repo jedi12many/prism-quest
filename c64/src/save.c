@@ -31,33 +31,13 @@ void disk_file(const char *s)
     memcpy(disk_name, s, disk_namelen);
 }
 
-#ifdef LOADTIME                         /* (measuring: time spent loading overlays, by the CIA's clock) */
-u8 load_count;
-u8 calls[8], ncalls;
-static u16 tod(void)
-{
-    u8 m, sec, t;
-    m = PEEK(0xDC0B);                   /* (reading the hours holds the rest still) */
-    m = PEEK(0xDC0A); sec = PEEK(0xDC09); t = PEEK(0xDC08);
-    return ((m >> 4) * 10 + (m & 15)) * 600 + ((sec >> 4) * 10 + (sec & 15)) * 10 + t;
-}
-#endif
-
 /* disk_name -> the address in its header: fast if the drive code's there,
  * else (or if that fails) the KERNAL. 0 when loaded. */
 u8 load_file(void)                      /* (its local stays out of BSS: load_hi uses it) */
 {
     u8 r;
     if (fast == 1) {
-#ifdef LOADTIME
-        u16 t0 = tod();
-        r = fast_load();
-        t0 = tod() - t0;
-        if (ncalls < 8) calls[ncalls++] = t0 > 255 ? 255 : t0;
-        if (!r) return 0;
-#else
         if (!(r = fast_load())) return 0;
-#endif
         if (r == 2) fast = 0;           /* (no answer: a drive that can't run it) */
     }
     return disk_op(OP_LOADHI);
@@ -69,12 +49,6 @@ void disk_init(void)
     u8 d = PEEK(0xBA);                  /* the KERNAL's last-used device */
     disk_dev = (d >= 8 && d <= 30) ? d : 8;
     fast = PEEK(0x2FF) == 0xA5;         /* (the boot file's word for it) */
-#ifdef LOADTIME
-    POKE(0xDC0B, 0); POKE(0xDC0A, 0); POKE(0xDC09, 0); POKE(0xDC08, 0);   /* (start the clock) */
-#endif
-#ifdef NOFAST
-    fast = 0;
-#endif
     POKE(0x2FF, 0);
 }
 #pragma code-name (pop)
@@ -151,9 +125,6 @@ void ovl(u8 id)
         put_str(32, y + 1, "       ", GREY);
         if (!err && w[0] == 0x4F && w[1] == id) {
             cur_ovl = id;
-#ifdef LOADTIME
-            ++load_count;
-#endif
             return;
         }
         /* keep asking: the game can't go on without it */

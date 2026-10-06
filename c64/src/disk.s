@@ -14,8 +14,12 @@
 ;     op 1  LOAD   file disk_name -> disk_start (secondary address 0)
 ;     op 3  LOAD   file disk_name -> the address in its header (secondary address 1)
 ;     op 2  CMD    send disk_name as a DOS command on channel 15
-;     op 4  SEND   send disk_sendlen bytes from DISK_CMD to channel 15 as they
-;                  are (the fast loader's M-W and M-E: fast.s); no status read
+;     op 4  SEND   open channel 15 with disk_sendlen bytes from DISK_CMD as
+;                  its name: a DOS command (the fast loader's M-W and M-E:
+;                  fast.s); no status read
+;     op 5  CLOSE  close channel 15 again (after an M-E: once its drive code
+;                  is done). Always close what SEND opened: a command channel
+;                  left open makes the DOS run its old command again
 ;   Every other op then reads the drive's error channel into disk_status --
 ;   and, as the DOS may have used its buffers, marks the fast loader's drive
 ;   code as gone (fast = 2: fast.s puts it back before the next fast load).
@@ -36,10 +40,6 @@ CLRCHN  = $FFCC
 CHRIN   = $FFCF
 LOAD    = $FFD5
 SAVE    = $FFD8
-LISTEN  = $FFB1
-SECOND  = $FF93
-CIOUT   = $FFA8
-UNLSN   = $FFAE
 DISK_CMD = $CFC0                ; the fast loader's commands: the overlay window's
                                 ; tail, which an overlay load is about to replace
 READST  = $FFB7
@@ -116,6 +116,9 @@ _disk_op:
         beq do_cmd
         cpx #4
         beq do_send
+        cpx #5
+        bne do_save
+        jmp do_close
 
 do_save:
         lda #1
@@ -164,21 +167,22 @@ do_cmd:
         jmp done
 :       lda #15
         jsr CLOSE
+        jmp status
 
-do_send:                        ; LISTEN, the command channel, the bytes, UNLISTEN:
-        lda _disk_dev           ; the DOS runs the command at the UNLISTEN
-        jsr LISTEN
-        lda #$6F
-        jsr SECOND
-        ldy #0
-:       sty loadsa              ; (CIOUT's registers aren't promised)
-        lda DISK_CMD,y
-        jsr CIOUT
-        ldy loadsa
-        iny
-        cpy _disk_sendlen
-        bne :-
-        jsr UNLSN
+do_send:                        ; the DOS runs the command at the end of the OPEN
+        lda #15
+        ldx _disk_dev
+        ldy #15
+        jsr SETLFS
+        lda _disk_sendlen
+        ldx #<DISK_CMD
+        ldy #>DISK_CMD
+        jsr SETNAM
+        jsr OPEN
+        jmp done2
+do_close:
+        lda #15
+        jsr CLOSE
         jmp done2
 
 status:                         ; read the drive's error channel

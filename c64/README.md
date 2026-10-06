@@ -267,6 +267,9 @@ A work-in-progress port of the browser game to a stock Commodore 64 (64 KB,
   The melody is mostly a pulse wave whose width sweeps; the bass is a
   triangle or a sawtooth. See *Music* below.
 - **Sound:** short SID sound effects and the thunder, on the third voice.
+- **A fast loader:** on a 1541 the game reaches its title in about 50
+  seconds instead of 150, and overlays load about twice as fast, with the
+  music and rain going on meanwhile. See *The fast loader* below.
 
 Every part of the web game is ported. Its particle effects and pop-up
 toasts become messages, colour flashes and SID sounds.
@@ -292,8 +295,8 @@ toasts become messages, colour flashes and SID sounds.
 ```
 sudo apt install cc65 vice     # node is also needed, for the asset converter
 cd c64
-make                           # -> build/prismquest.prg + build/prismquest.prg.hi
-make d64                       # -> build/prismquest.d64, a 1541 disk with both files
+make                           # -> build/prismquest.prg (+ .hi, the overlays, .boot, .drv)
+make d64                       # -> build/prismquest.d64, a 1541 disk with them all
 make run                       # autostarts it in VICE (needs a VICE with the C64 ROMs)
 ```
 
@@ -301,20 +304,68 @@ The game is several files on one disk:
 
 | File | Build output | Contents |
 |---|---|---|
-| `PRISMQUEST` | `prismquest.prg` | the resident game, which you load and run |
+| `PRISMQUEST` | `prismquest.prg.boot` | the boot file, which you load and run: it starts the fast loader, then loads the game |
+| `PQ.MAIN` | `prismquest.prg` | the resident game |
+| `PQ.DRV` | `.prg.drv` | the fast loader's drive code, to put it back after a save |
 | `PQ.HI` | `.prg.hi` | the loot engine, charset and sprite art; loaded at startup |
-| `PQ.OV1`–`PQ.OV18` | `.prg.1`–`.prg.18` | overlays, loaded on demand (below) |
+| `PQ.OV1`–`PQ.OV25` | `.prg.1`–`.prg.25` | overlays, loaded on demand (below) |
 
-`make d64` puts them all on a 1541 image. On a real C64 or in VICE, mount
-or insert it, then `LOAD"PRISMQUEST",8,1` and `RUN`. Saves go to the same
-drive, so the disk must not be write-protected.
+`make d64` puts them all on a 1541 image, laid out for the fast loader
+(below). On a real C64 or in VICE, mount or insert it, then
+`LOAD"PRISMQUEST",8,1` (or `LOAD"*",8,1`) and `RUN`; dragging the image onto
+VICE does the same. Saves go to the same drive, so the disk must not be
+write-protected.
 
 **microSD:** SD2IEC, Pi1541, Kung Fu Flash and the 1541 Ultimate all look
-like a disk drive to the C64, and the game only uses the standard KERNAL
-LOAD and SAVE calls. Mount `prismquest.d64` and saves go into the image.
-Speed depends on the device: SD2IEC on a stock KERNAL and Pi1541 run at
-roughly 1541 speed, while JiffyDOS, Kung Fu Flash or a 1541 Ultimate make
-every load near-instant.
+like a disk drive to the C64. Mount `prismquest.d64` and saves go into the
+image. A device that runs 1541 code (Pi1541, a 1541 Ultimate's emulated
+1541) gets the fast loader; one that doesn't (SD2IEC, Kung Fu Flash) is
+found out in about a second at boot, and the game then uses the standard
+KERNAL calls throughout. JiffyDOS, Kung Fu Flash or a 1541 Ultimate make
+those near-instant anyway.
+
+### The fast loader
+
+A stock 1541 sends the C64 about 400 bytes a second through the KERNAL: the
+game took about 2.5 minutes to reach its title screen, and each overlay about
+7 seconds. The boot file brings its own loader:
+
+- **The boot** (`src/boot.s`), small enough to load quickly the slow way,
+  copies the loader's C64 side into free low RAM, sends the drive code up
+  with `M-W`, and loads `PQ.MAIN` through it.
+- **The drive code** (`src/drive.s`, one page at the drive's `$0400`) is
+  started with `M-E`, the file name riding in the same command. It finds the
+  file in the directory and reads it a sector at a time through the DOS's
+  own job queue, sending each one over the serial bus two bits at a time:
+  DATA and CLK carry the bits, and the C64 clocks every pair with ATN.
+- **Fully handshaked:** the C64 reads each pair a fixed time after asking
+  for it, a time the drive always beats (with 19 cycles to spare). So the
+  C64 can be held up by interrupts, sprites or bad lines as long as it
+  likes: the music and the rain keep going during loads, and the screen
+  stays up.
+- **The game** (`src/fast.s`) loads PQ.HI and every overlay through it.
+  Saving, loading a hero and the deeds' file still use the KERNAL. The DOS
+  may then reuse the drive code's buffers, so it's put back from `PQ.DRV`
+  before the next fast load (about two seconds).
+- **No drive code answering** (VICE's virtual drive, SD2IEC): the boot sees
+  no reply within about a second and loads the game with the KERNAL, and
+  the game then never tries the fast loader. A load that fails for any other
+  reason is simply retried with the KERNAL.
+- **The disk layout** (`tools/mkd64.py`, which `make d64` uses instead of
+  c1541): the DOS spaces a file's blocks 10 sectors apart, about 95 ms of
+  the disk's spin. The loader needs about 145 ms per block -- sending it,
+  then the DOS's handling of the next read -- so it would miss the next
+  block and wait a whole revolution. The image spaces them about 150 ms
+  apart instead (16 sectors on the outer tracks, 13 on the inner ones), and
+  the directory's sectors 9 apart. The DOS reads it all as usual. A copy
+  made with another tool still works, just more slowly.
+
+Measured in VICE's true 1541 emulation: the title screen comes up after
+about 50 seconds instead of 150 (the 48 KB game file takes 31 of them),
+and an overlay takes 3 to 5 seconds instead of about 7 -- about one of
+those is the drive's motor spinning up again, which every load pays. A
+scripted session of six overlay loads (`test/loads.h`) reaches its end in
+99 seconds instead of 218.
 
 ### Overlays: screens loaded on demand
 
@@ -442,9 +493,10 @@ banks I/O out to read them and back in to play them. That space is full, so
 the three newest tunes (marked `low` in `tools/music.js`, about 200 bytes)
 sit in main memory instead; the player reads them just the same. The once-a-frame part of
 the player sits at the top of the overlay window; `music_play` runs from the
-tape buffer. During disk calls the music pauses and the volume drops to 0:
-the KERNAL holds interrupts off while it waits on the drive, which would make
-the tune stumble.
+tape buffer. During the KERNAL's disk calls the music pauses and the volume
+drops to 0: the KERNAL holds interrupts off while it waits on the drive,
+which would make the tune stumble. The fast loader leaves interrupts on, so
+the tune plays on through its loads.
 
 ## Headless testing
 
@@ -455,10 +507,13 @@ screenshot. Point `ROMDIR` at a folder with `kernal`, `basic`, `chargen` and
 `dos1541` images. The `data/` folder of the upstream VICE source release has
 them. They are copyrighted, so they are not in this repo.
 
-- **Default drive:** VICE's IEC-level virtual device (`-iecdevice8`). Disk
-  access takes almost no emulated time, so tests stay quick.
+- **Default drive:** VICE's IEC-level virtual device (`-iecdevice8`). The
+  game goes on the disk as `PRISMQUEST` itself (no boot file, no fast
+  loader), and its loads take almost no emulated time, so tests stay quick.
 - **`--truedrive`:** emulates a real 1541, so loads take as long as they would
-  on the real thing.
+  on the real thing. The disk is the real one: the boot file, `PQ.MAIN` and
+  the fast loader. `test/loads.h` (six overlay loads, from the camp menu) is
+  the one to time it with: it reaches How to Play at about 98M cycles.
 - **A disk path as 4th argument:** keeps that disk between runs, for testing
   saves.
 - **`--wav=FILE`:** records the SID to a WAV file. That runs in real time,
@@ -576,7 +631,13 @@ make shot SCRIPT=test/home.h   CYCLES=50000000                          # out a 
 | `src/items.c` | item stats and names (in PQ.HI too), and the Prism relics' table (resident) |
 | `src/save.c` | the doors into saving and loading (`ov_save.c`, with the Ledger), erase-on-death, loading PQ.HI, the overlay loader `ovl()` |
 | `src/hi.s` | PQ.HI's load address and signature |
-| `src/disk.s` | assembly: switches the KERNAL in and calls its SAVE/LOAD/OPEN, reads the drive's error channel |
+| `src/disk.s` | assembly: switches the KERNAL in and calls its SAVE/LOAD/OPEN, sends the fast loader's commands, reads the drive's error channel |
+| `src/boot.s` | the boot file, PRISMQUEST: starts the fast loader and loads the game (`boot.cfg`) |
+| `src/drive.s` | the fast loader's drive code: finds a file, sends its sectors (`drive.cfg`) |
+| `src/fastrecv.inc` | the fast loader's C64 side, which the boot puts in low RAM |
+| `src/fast.s` | the game's side of the fast loader: the `M-E`, and putting the drive code back |
+| `src/drvfile.s` | PQ.DRV: the drive code, and the routine that sends it up (`drvfile.cfg`) |
+| `tools/mkd64.py` | writes the disk image, each file's blocks spaced for the fast loader |
 | `src/rainirq.s` | the frame interrupt: the rain multiplexer, the world's split screen, the camera queue |
 | `src/scroll.s` | the scroller's shifts (screen copy, colour RAM), and `compose()` and the cell loop of the map renderer |
 | `src/rain.c` | rain frames, lightning, thunder, the sun breaking through |
@@ -593,13 +654,17 @@ The C64 has 64 KB, and the game uses nearly all of it. See `prismquest.cfg`.
 
 | Address | Contents |
 |---|---|
-| `$0334–$03FB` | the music player's start and stop (the tape buffer: no tape here) |
+| `$0200–$0258` | the fast loader's receiver, part 1 (BASIC's input buffer: no BASIC here) |
+| `$02A7–$02FE` | the receiver, part 2 (its entry, `$02A7`) |
+| `$02FF` | the boot file's word to the game: `$A5`, the fast loader's in place |
+| `$0334–$03E3` | the music player's start and stop (the tape buffer: no tape here) |
+| `$03E4–$03FB` | the receiver, part 3 (the tape buffer's tail) |
 | `$0400–$05EF` | scratch: the save buffer, shared with the map-view buffers |
 | `$05F0–$07FF` | monster, node, gate and villager tables (the KERNAL's old text screen) |
 | `$0801–$BFDF` | the resident program: code, read-only data, initialised data (about 46 KB), then `world.c`'s variables (WBSS, zeroed by `main()`) |
 | `$C000–$C3FF` | the map's second screen (the scroller double-buffers); at startup, the startup code |
 | `$C400–$C53F` | the music player's once-a-frame code |
-| `$C540–$CFFF` | the overlay window: PQ.OV1–25 load here on demand |
+| `$C540–$CFFF` | the overlay window: PQ.OV1–25 load here on demand (PQ.DRV too, and the fast loader's drive commands are built at its tail, `$CFC0`, just before a load replaces it) |
 | `$D000–$D7FF` | character set, in the RAM under the I/O chips (only the VIC reads it) |
 | `$D800–$DDFF` | the battle portraits (packed) and the tunes, also under the I/O chips |
 | `$DE00–$DFBF` | the rain's sprite frames |
