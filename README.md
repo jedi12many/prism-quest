@@ -155,9 +155,12 @@ occasional godlike **crush** (won without ever being truly threatened).
 
 ## Commodore 64 port
 
-A C64 port is under way in [`c64/`](c64/README.md): the village, the four procedural zones,
-the champions and turn-based battles run on a stock 64 KB C64, with art converted
-automatically from `js/sprites.js`.
+A full C64 port lives in [`c64/`](c64/README.md). It runs on a stock 64 KB C64
+with a 1541 drive, loading overlays from disk as it goes. It has the whole game,
+from Drizzlewick to Sog'naroth: the four procedural lands and their champions,
+the dungeons, the Prism Facets, the Rainycastle and the realm, deeds, the
+Sanctuary, difficulty and How to Play. Its art is converted automatically from
+`js/sprites.js`, and it has seven SID tunes.
 
 ## Tech
 
