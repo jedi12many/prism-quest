@@ -1,6 +1,7 @@
 /* The disk: overlays, PQ.HI at startup, and the doors into saving and
  * loading (ov_save.c). Device 8 by default, or whichever drive the game was
- * loaded from. The KERNAL calls live in disk.s. */
+ * loaded from. The KERNAL calls live in disk.s; PQ.HI and the overlays come
+ * through the fast loader (fast.s) when the boot file put it in place. */
 #include <string.h>
 #include "game.h"
 
@@ -9,6 +10,9 @@ extern u8 disk_dev, disk_namelen;
 extern char disk_name[20];
 extern u16 disk_start, disk_end;
 extern char disk_status[40];
+extern u8 fast;                         /* 0 no fast loader; 1 ready; 2 put its drive code back first */
+u8 fast_load(void);
+void drive_install(void);
 
 enum { OP_SAVE, OP_LOAD, OP_CMD, OP_LOADHI };
 
@@ -27,11 +31,51 @@ void disk_file(const char *s)
     memcpy(disk_name, s, disk_namelen);
 }
 
+#ifdef LOADTIME                         /* (measuring: time spent loading overlays, by the CIA's clock) */
+u8 load_count;
+u8 calls[8], ncalls;
+static u16 tod(void)
+{
+    u8 m, sec, t;
+    m = PEEK(0xDC0B);                   /* (reading the hours holds the rest still) */
+    m = PEEK(0xDC0A); sec = PEEK(0xDC09); t = PEEK(0xDC08);
+    return ((m >> 4) * 10 + (m & 15)) * 600 + ((sec >> 4) * 10 + (sec & 15)) * 10 + t;
+}
+#endif
+
+/* disk_name -> the address in its header: fast if the drive code's there,
+ * else (or if that fails) the KERNAL. 0 when loaded. */
+u8 load_file(void)                      /* (its local stays out of BSS: load_hi uses it) */
+{
+    u8 r;
+    if (fast == 1) {
+#ifdef LOADTIME
+        u16 t0 = tod();
+        r = fast_load();
+        t0 = tod() - t0;
+        if (ncalls < 8) calls[ncalls++] = t0 > 255 ? 255 : t0;
+        if (!r) return 0;
+#else
+        if (!(r = fast_load())) return 0;
+#endif
+        if (r == 2) fast = 0;           /* (no answer: a drive that can't run it) */
+    }
+    return disk_op(OP_LOADHI);
+}
+
 #pragma code-name (push, "INITCODE")      /* (startup only: see main) */
 void disk_init(void)
 {
     u8 d = PEEK(0xBA);                  /* the KERNAL's last-used device */
     disk_dev = (d >= 8 && d <= 30) ? d : 8;
+    fast = PEEK(0x2FF) == 0xA5;         /* (the boot file's word for it) */
+#ifdef LOADTIME
+    POKE(0xDC0B, 0); POKE(0xDC0A, 0); POKE(0xDC09, 0); POKE(0xDC08, 0);   /* (start the clock) */
+#endif
+#ifdef NOFAST
+    fast = 0;
+#endif
+    POKE(0x2FF, 0);
 }
 #pragma code-name (pop)
 
@@ -51,7 +95,7 @@ u8 hi_present(void)
 u8 load_hi(void)
 {
     disk_file("pq.hi");
-    disk_op(OP_LOADHI);
+    load_file();
     return hi_present();
 }
 
@@ -77,6 +121,15 @@ void unpack_hi(void)
 
 #pragma bss-name (pop)
 
+/* after any other disk call, the drive code may be gone: put it back */
+static void fast_ready(void)
+{
+    if (fast != 2) return;
+    fast = 0;
+    disk_file("pq.drv");                /* (into the overlay window, about to be reloaded anyway) */
+    if (!disk_op(OP_LOADHI)) { drive_install(); fast = 1; }
+}
+
 static u8 cur_ovl;
 
 /* make sure overlay `id` (file PQ.OVid) is in the window */
@@ -88,14 +141,21 @@ void ovl(u8 id)
     cur_ovl = 0;
     y = split_mode == 1 ? MSG_ROW + MSG_ROWS - 2 : 23;  /* in the world: the message panel */
     for (;;) {
+        fast_ready();
         if (id < 10) { disk_file("pq.ov0"); err = id; }   /* PQ.OV1 .. PQ.OV20: the last digit */
         else if (id < 20) { disk_file("pq.ov10"); err = id - 10; }
         else { disk_file("pq.ov20"); err = id - 20; }
         disk_name[disk_namelen - 1] += err;
         put_str(32, y + 1, "Loading", GREY);
-        err = disk_op(OP_LOADHI);
+        err = load_file();
         put_str(32, y + 1, "       ", GREY);
-        if (!err && w[0] == 0x4F && w[1] == id) { cur_ovl = id; return; }
+        if (!err && w[0] == 0x4F && w[1] == id) {
+            cur_ovl = id;
+#ifdef LOADTIME
+            ++load_count;
+#endif
+            return;
+        }
         /* keep asking: the game can't go on without it */
         sb_reset(); sb_str("Couldn't load PQ.OV"); sb_num(id); sb_str(" - check the disk, then press fire.");
         clear_rows(y, y + 1);

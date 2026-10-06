@@ -2,7 +2,7 @@
 # Needs cc65 (apt install cc65) and node; VICE for `make run` / `make shot`.
 
 SRC    := src/main.c src/system.c src/data.c src/world.c src/battle.c src/ui.c src/kit.c src/bag.c src/gear.c \
-          src/loot.c src/items.c src/save.c src/rain.c src/rainirq.s src/scroll.s src/input.s src/disk.s src/music.s src/musicdata.s src/hi.s src/ovl.s src/assets.c src/tree.c \
+          src/loot.c src/items.c src/save.c src/rain.c src/rainirq.s src/scroll.s src/input.s src/disk.s src/fast.s src/music.s src/musicdata.s src/hi.s src/ovl.s src/assets.c src/tree.c \
           src/ov_title.c src/ov_talk_a.c src/ov_talk_b.c src/ov_camp.c \
           src/ov_tree_mage.c src/ov_tree_knight.c src/ov_tree_whisperer.c src/ov_build.c src/ov_ledger.c src/ov_save.c src/ov_dungeon.c src/ov_lands.c src/ov_dig.c src/ov_village.c src/ov_glass.c src/ov_pact.c src/ov_castle.c src/ov_foes.c src/ov_end.c src/ov_realm.c src/ov_deeds.c src/ov_sanct.c src/ov_boss.c src/ov_fall.c src/ov_talk_c.c src/ov_guide.c
 OVLS   := 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25
@@ -11,7 +11,7 @@ CFLAGS := -t c64 -Oirs -Cl
 # memory layout: see prismquest.cfg
 LDFLAGS := -C prismquest.cfg
 
-all: $(PRG)
+all: $(PRG) $(PRG).boot $(PRG).drv
 
 src/assets.c src/assets.h src/assets.inc: tools/gen_assets.js tools/heroes.js tools/monsters.js ../js/sprites.js
 	node tools/gen_assets.js
@@ -30,12 +30,27 @@ $(PRG): src/assets.h src/tree.h src/tree_text.h src/ov_tree.inc $(SRC) src/game.
 build:
 	mkdir -p build
 
-# a 1541 disk image with the game on it (saves go on the same disk)
+# the fast loader: its drive code (one page, run in the 1541 at $0400), that
+# code as PQ.DRV (loaded into the overlay window to put it back, with the
+# routine that does), and the boot file that starts it all (see src/boot.s)
+build/drive.bin: src/drive.s drive.cfg | build
+	ca65 -o build/drive.o src/drive.s
+	ld65 -C drive.cfg -o $@ build/drive.o
+
+$(PRG).drv: src/drvfile.s build/drive.bin drvfile.cfg | build
+	ca65 -o build/drvfile.o src/drvfile.s
+	ld65 -C drvfile.cfg -o $@ build/drvfile.o
+
+$(PRG).boot: src/boot.s src/fastrecv.inc build/drive.bin boot.cfg | build
+	ca65 -I src -o build/boot.o src/boot.s
+	ld65 -C boot.cfg -o $@ build/boot.o
+
+# a 1541 disk image with the game on it (saves go on the same disk), its
+# files' sectors spaced for the fast loader (tools/mkd64.py)
 D64 := build/prismquest.d64
-d64: $(PRG)
-	rm -f $(D64)
-	c1541 -format "prism quest,pq" d64 $(D64) -write $(PRG) prismquest -write $(PRG).hi pq.hi \
-	  $(foreach n,$(OVLS),-write $(PRG).$(n) pq.ov$(n)) >/dev/null
+d64: $(PRG) $(PRG).boot $(PRG).drv
+	tools/mkd64.py $(D64) "prism quest,pq" $(PRG).boot=prismquest $(PRG)=pq.main $(PRG).drv=pq.drv \
+	  $(PRG).hi=pq.hi $(foreach n,$(OVLS),$(PRG).$(n)=pq.ov$(n))
 	@echo "built $(D64)"
 
 # run in VICE (uses the real ROMs if your VICE has them)

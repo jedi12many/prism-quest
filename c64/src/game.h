@@ -548,6 +548,7 @@ void game_over(void);
 void disk_init(void);
 u8 hi_present(void);
 u8 load_hi(void);
+u8 load_file(void);                     /* disk_name -> its header's address: fast, or the KERNAL */
 void unpack_hi(void);
 u8 save_game(void);
 u8 load_game(void);
